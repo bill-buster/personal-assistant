@@ -118,9 +118,11 @@ function generateHandler(toolName: string, args: ArgDef[]): string {
 export function ${handlerName}(args: ${typeName}, context: ExecutorContext): ToolResult {
     const { start } = context;
     
-    // TODO: Implement tool logic
+    // IMPLEMENTATION REQUIRED: Replace this placeholder with actual tool logic
+    // Access validated args: ${argsList || 'none'}
+    // Use context.paths, context.commands, context.readMemory, etc. as needed
     const result = {
-        // TODO: Return actual result
+        // IMPLEMENTATION REQUIRED: Return the actual result data here
         success: true,
     };
     
@@ -159,7 +161,7 @@ function generateToolSpec(toolName: string, args: ArgDef[]): string {
 
     return `export const ${toolName.toUpperCase()}_TOOL_SPEC: ToolSpec = {
     status: 'ready',
-    description: 'TODO: Add description for ${toolName}',
+    description: 'IMPLEMENTATION REQUIRED: Add description for ${toolName}',
     required: ${JSON.stringify(required)},
     parameters: {
 ${parameters.join('\n')}

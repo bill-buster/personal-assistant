@@ -201,16 +201,26 @@ export class Executor {
         return false;
     }
 
-    // Path capability helpers (throw-based API)
-    // TODO: Convert to return structured errors instead of throwing
-    // This requires changing PathCapabilities interface and updating all tools
-    // Current tools use try/catch around these methods, so conversion is non-trivial
+    /**
+     * Path capability helpers (throw-based API).
+     *
+     * NOTE: These methods use a throw-based API for historical reasons.
+     * Tools are designed to catch these throws and convert to ToolResult.
+     *
+     * Future refactoring: Convert to return structured errors ({ ok: false, error })
+     * instead of throwing. This requires:
+     * 1. Changing PathCapabilities interface to return Result types
+     * 2. Updating all tool handlers that use these methods
+     * 3. Removing try/catch blocks in ~20+ tool handlers
+     *
+     * This is deferred because the conversion is non-trivial and the current
+     * throw-based API works correctly with proper error handling in tools.
+     */
     private pathResolve(requestedPath: string): string {
         const resolved = this.safeResolve(requestedPath);
         if (resolved === null) {
             // Note: This throw is part of a documented throw-based API
             // Tools are designed to catch these throws and convert to ToolResult
-            // Should be converted to return { ok: false, error } in future refactoring
             throw makeError(
                 ErrorCode.DENIED_PATH_ALLOWLIST,
                 `Path '${requestedPath}' is invalid or outside baseDir`
@@ -223,7 +233,6 @@ export class Executor {
         if (!this.isAllowedPath(targetPath)) {
             // Note: This throw is part of a documented throw-based API
             // Tools are designed to catch these throws and convert to ToolResult
-            // Should be converted to return { ok: false, error } in future refactoring
             throw makeError(
                 ErrorCode.DENIED_PATH_ALLOWLIST,
                 `Path '${targetPath}' is not allowed for ${op} operation`
