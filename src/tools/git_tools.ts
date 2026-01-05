@@ -14,11 +14,22 @@ import { makeError, ErrorCode } from '../core/tool_contract';
 
 /**
  * Execute a git command safely
+ * Checks allow_commands before executing.
  */
 function runGitCommand(
     args: string[],
-    cwd: string
-): { ok: boolean; output?: string; error?: string } {
+    cwd: string,
+    allowedCommands: string[]
+): { ok: boolean; output?: string; error?: string; errorCode?: string } {
+    // Security: Check if git is in the allowlist
+    if (!allowedCommands.includes('git')) {
+        return {
+            ok: false,
+            error: `Command 'git' is not allowed. Listed in permissions.json: ${allowedCommands.join(', ')}`,
+            errorCode: ErrorCode.DENIED_COMMAND_ALLOWLIST,
+        };
+    }
+
     const result = spawnSync('git', args, { cwd, encoding: 'utf8', timeout: 10000 });
 
     if (result.error) {
@@ -39,12 +50,17 @@ function runGitCommand(
 export function handleGitStatus(args: GitStatusArgs, context: ExecutorContext): ToolResult {
     const start = context.start;
 
-    const result = runGitCommand(['status', '--short'], context.baseDir);
+    const result = runGitCommand(
+        ['status', '--short'],
+        context.baseDir,
+        context.permissions.allow_commands
+    );
 
     if (!result.ok) {
+        const errorCode = result.errorCode || ErrorCode.EXEC_ERROR;
         return {
             ok: false,
-            error: makeError(ErrorCode.EXEC_ERROR, result.error || 'git status failed'),
+            error: makeError(errorCode, result.error || 'git status failed'),
             _debug: makeDebug({
                 path: 'git_status',
                 start,
@@ -113,12 +129,13 @@ export function handleGitDiff(args: GitDiffArgs, context: ExecutorContext): Tool
         gitArgs.push('--', args.path);
     }
 
-    const result = runGitCommand(gitArgs, context.baseDir);
+    const result = runGitCommand(gitArgs, context.baseDir, context.permissions.allow_commands);
 
     if (!result.ok) {
+        const errorCode = result.errorCode || ErrorCode.EXEC_ERROR;
         return {
             ok: false,
-            error: makeError(ErrorCode.EXEC_ERROR, result.error || 'git diff failed'),
+            error: makeError(errorCode, result.error || 'git diff failed'),
             _debug: makeDebug({
                 path: 'git_diff',
                 start,
@@ -155,13 +172,15 @@ export function handleGitLog(args: GitLogArgs, context: ExecutorContext): ToolRe
 
     const result = runGitCommand(
         ['log', `--oneline`, `-${limit}`, '--format=%h|%s|%an|%ar'],
-        context.baseDir
+        context.baseDir,
+        context.permissions.allow_commands
     );
 
     if (!result.ok) {
+        const errorCode = result.errorCode || ErrorCode.EXEC_ERROR;
         return {
             ok: false,
-            error: makeError(ErrorCode.EXEC_ERROR, result.error || 'git log failed'),
+            error: makeError(errorCode, result.error || 'git log failed'),
             _debug: makeDebug({
                 path: 'git_log',
                 start,

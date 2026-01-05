@@ -182,33 +182,14 @@ export function handleReadFile(args: ReadFileArgs, context: ExecutorContext): To
         };
     }
 
-    // Get file stats
-    let fileSize: number;
-    try {
-        const stats = fs.statSync(targetPath);
-        if (stats.isDirectory()) {
-            return {
-                ok: false,
-                result: null,
-                error: makeError(
-                    ErrorCode.EXEC_ERROR,
-                    `Path '${args.path}' is a directory, not a file.`
-                ),
-                _debug: makeDebug({
-                    path: 'tool_json',
-                    start,
-                    model: null,
-                    memory_read: false,
-                    memory_write: false,
-                }),
-            };
-        }
-        fileSize = stats.size;
-    } catch (statErr: any) {
+    // Get file stats (with caching)
+    const statCache = getStatCache();
+    const stats = statCache.get(targetPath);
+    if (!stats) {
         return {
             ok: false,
             result: null,
-            error: makeError(ErrorCode.EXEC_ERROR, `Failed to stat file: ${statErr.message}`),
+            error: makeError(ErrorCode.EXEC_ERROR, `File not found: ${args.path}`),
             _debug: makeDebug({
                 path: 'tool_json',
                 start,
@@ -218,6 +199,24 @@ export function handleReadFile(args: ReadFileArgs, context: ExecutorContext): To
             }),
         };
     }
+    if (stats.isDirectory()) {
+        return {
+            ok: false,
+            result: null,
+            error: makeError(
+                ErrorCode.EXEC_ERROR,
+                `Path '${args.path}' is a directory, not a file.`
+            ),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
+    }
+    const fileSize = stats.size;
 
     // Use provided offset and limit (validated by Zod schema)
     const offset = args.offset ?? 0;
@@ -334,33 +333,16 @@ export function handleListFiles(args: ListFilesArgs, context: ExecutorContext): 
                 }),
             };
         }
-        // Verify it's a directory
-        try {
-            const stats = fs.statSync(resolved);
-            if (!stats.isDirectory()) {
-                return {
-                    ok: false,
-                    result: null,
-                    error: makeError(
-                        ErrorCode.VALIDATION_ERROR,
-                        `Path '${args.path}' is not a directory.`
-                    ),
-                    _debug: makeDebug({
-                        path: 'tool_json',
-                        start,
-                        model: null,
-                        memory_read: false,
-                        memory_write: false,
-                    }),
-                };
-            }
-        } catch (err: any) {
+        // Verify it's a directory (with caching)
+        const statCache = getStatCache();
+        const stats = statCache.get(resolved);
+        if (!stats || !stats.isDirectory()) {
             return {
                 ok: false,
                 result: null,
                 error: makeError(
-                    ErrorCode.EXEC_ERROR,
-                    `Failed to access path '${args.path}': ${err.message}`
+                    ErrorCode.VALIDATION_ERROR,
+                    `Path '${args.path}' is not a directory.`
                 ),
                 _debug: makeDebug({
                     path: 'tool_json',
@@ -795,31 +777,31 @@ export function handleCopyFile(args: CopyFileArgs, context: ExecutorContext): To
         };
     }
 
-    // Check if source file exists and is not a directory
-    try {
-        const stats = fs.statSync(sourcePath);
-        if (stats.isDirectory()) {
-            return {
-                ok: false,
-                result: null,
-                error: makeError(
-                    ErrorCode.EXEC_ERROR,
-                    `Source path '${args.source}' is a directory, not a file.`
-                ),
-                _debug: makeDebug({
-                    path: 'tool_json',
-                    start,
-                    model: null,
-                    memory_read: false,
-                    memory_write: false,
-                }),
-            };
-        }
-    } catch (err: any) {
+    // Check if source file exists and is not a directory (with caching)
+    const statCache = getStatCache();
+    const stats = statCache.get(sourcePath);
+    if (!stats) {
         return {
             ok: false,
             result: null,
-            error: makeError(ErrorCode.EXEC_ERROR, `Source file not found: ${err.message}`),
+            error: makeError(ErrorCode.EXEC_ERROR, `Source file not found: ${args.source}`),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
+    }
+    if (stats.isDirectory()) {
+        return {
+            ok: false,
+            result: null,
+            error: makeError(
+                ErrorCode.EXEC_ERROR,
+                `Source path '${args.source}' is a directory, not a file.`
+            ),
             _debug: makeDebug({
                 path: 'tool_json',
                 start,
@@ -830,30 +812,27 @@ export function handleCopyFile(args: CopyFileArgs, context: ExecutorContext): To
         };
     }
 
-    // Check if destination already exists
-    try {
-        const destStats = fs.statSync(destinationPath);
-        if (destStats.isDirectory()) {
-            return {
-                ok: false,
-                result: null,
-                error: makeError(
-                    ErrorCode.EXEC_ERROR,
-                    `Destination path '${args.destination}' is a directory, not a file.`
-                ),
-                _debug: makeDebug({
-                    path: 'tool_json',
-                    start,
-                    model: null,
-                    memory_read: false,
-                    memory_write: false,
-                }),
-            };
-        }
-        // If destination is a file, it will be overwritten (Node.js fs.copyFileSync behavior)
-    } catch {
-        // Destination doesn't exist, which is fine - we'll create it
+    // Check if destination already exists (with caching)
+    const destStats = statCache.get(destinationPath);
+    if (destStats && destStats.isDirectory()) {
+        return {
+            ok: false,
+            result: null,
+            error: makeError(
+                ErrorCode.EXEC_ERROR,
+                `Destination path '${args.destination}' is a directory, not a file.`
+            ),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
     }
+    // If destStats is null, destination doesn't exist, which is fine - we'll create it
+    // If destStats exists and is a file, it will be overwritten (Node.js fs.copyFileSync behavior)
 
     // Ensure destination directory exists
     try {
@@ -945,15 +924,14 @@ export function handleFileInfo(args: FileInfoArgs, context: ExecutorContext): To
         };
     }
 
-    // Get file stats
-    let stats: fs.Stats;
-    try {
-        stats = fs.statSync(targetPath);
-    } catch (err: any) {
+    // Get file stats (with caching)
+    const statCache = getStatCache();
+    const stats = statCache.get(targetPath);
+    if (!stats) {
         return {
             ok: false,
             result: null,
-            error: makeError(ErrorCode.EXEC_ERROR, `Failed to stat file: ${err.message}`),
+            error: makeError(ErrorCode.EXEC_ERROR, `File not found: ${args.path}`),
             _debug: makeDebug({
                 path: 'tool_json',
                 start,
@@ -1046,14 +1024,50 @@ export function handleCreateDirectory(
         };
     }
 
-    // Check if path already exists
-    try {
-        const stats = fs.statSync(targetPath);
-        if (stats.isDirectory()) {
-            // Directory already exists - this is OK, return success
+    // Check if path already exists (with caching)
+    const statCache = getStatCache();
+    const stats = statCache.get(targetPath);
+    if (stats && stats.isDirectory()) {
+        // Directory already exists - this is OK, return success
+        return {
+            ok: true,
+            result: { path: args.path, created: false, message: 'Directory already exists' },
+            error: null,
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
+    } else if (stats && stats.isFile()) {
+        // Path exists but is a file
+        return {
+            ok: false,
+            result: null,
+            error: makeError(
+                ErrorCode.EXEC_ERROR,
+                `Path '${args.path}' already exists and is a file, not a directory.`
+            ),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
+    } else {
+        // Path doesn't exist (stats is null) - create it
+        try {
+            // Create directory with parent directories (recursive)
+            fs.mkdirSync(targetPath, { recursive: true });
+            // Invalidate cache after creation
+            statCache.invalidate(targetPath);
             return {
                 ok: true,
-                result: { path: args.path, created: false, message: 'Directory already exists' },
+                result: { path: args.path, created: true, message: 'Directory created' },
                 error: null,
                 _debug: makeDebug({
                     path: 'tool_json',
@@ -1063,14 +1077,13 @@ export function handleCreateDirectory(
                     memory_write: false,
                 }),
             };
-        } else {
-            // Path exists but is a file
+        } catch (mkdirErr: any) {
             return {
                 ok: false,
                 result: null,
                 error: makeError(
                     ErrorCode.EXEC_ERROR,
-                    `Path '${args.path}' already exists and is a file, not a directory.`
+                    `Failed to create directory: ${mkdirErr.message}`
                 ),
                 _debug: makeDebug({
                     path: 'tool_json',
@@ -1081,54 +1094,5 @@ export function handleCreateDirectory(
                 }),
             };
         }
-    } catch (err: any) {
-        // Path doesn't exist - create it
-        if (err.code === 'ENOENT') {
-            try {
-                // Create directory with parent directories (recursive)
-                fs.mkdirSync(targetPath, { recursive: true });
-                return {
-                    ok: true,
-                    result: { path: args.path, created: true, message: 'Directory created' },
-                    error: null,
-                    _debug: makeDebug({
-                        path: 'tool_json',
-                        start,
-                        model: null,
-                        memory_read: false,
-                        memory_write: false,
-                    }),
-                };
-            } catch (mkdirErr: any) {
-                return {
-                    ok: false,
-                    result: null,
-                    error: makeError(
-                        ErrorCode.EXEC_ERROR,
-                        `Failed to create directory: ${mkdirErr.message}`
-                    ),
-                    _debug: makeDebug({
-                        path: 'tool_json',
-                        start,
-                        model: null,
-                        memory_read: false,
-                        memory_write: false,
-                    }),
-                };
-            }
-        }
-        // Other error
-        return {
-            ok: false,
-            result: null,
-            error: makeError(ErrorCode.EXEC_ERROR, `Failed to check path: ${err.message}`),
-            _debug: makeDebug({
-                path: 'tool_json',
-                start,
-                model: null,
-                memory_read: false,
-                memory_write: false,
-            }),
-        };
     }
 }

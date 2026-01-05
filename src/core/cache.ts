@@ -136,7 +136,11 @@ export class FileCache<T> {
             const files = fs.readdirSync(this.cacheDir);
             for (const file of files) {
                 if (file.endsWith('.json')) {
-                    fs.unlinkSync(path.join(this.cacheDir, file));
+                    try {
+                        fs.unlinkSync(path.join(this.cacheDir, file));
+                    } catch {
+                        // Ignore individual file errors
+                    }
                 }
             }
         } catch (err: any) {
@@ -169,8 +173,12 @@ export class FileCache<T> {
                     }
                 } catch {
                     // Corrupt file, remove it
-                    fs.unlinkSync(cachePath);
-                    pruned++;
+                    try {
+                        fs.unlinkSync(cachePath);
+                        pruned++;
+                    } catch {
+                        // Ignore cleanup errors
+                    }
                 }
             }
         } catch {
@@ -182,8 +190,9 @@ export class FileCache<T> {
 
     /**
      * Get cache statistics.
+     * Optimized: Uses parallel stat operations for better performance.
      */
-    stats(): { total: number; size: number } {
+    async stats(): Promise<{ total: number; size: number }> {
         if (!this.enabled || !fs.existsSync(this.cacheDir)) {
             return { total: 0, size: 0 };
         }
@@ -193,18 +202,22 @@ export class FileCache<T> {
 
         try {
             const files = fs.readdirSync(this.cacheDir);
-            for (const file of files) {
-                if (file.endsWith('.json')) {
-                    total++;
-                    const filePath = path.join(this.cacheDir, file);
-                    try {
-                        const stat = fs.statSync(filePath);
-                        size += stat.size;
-                    } catch {
-                        // Ignore stat errors
-                    }
+            const jsonFiles = files.filter(file => file.endsWith('.json'));
+            total = jsonFiles.length;
+
+            // Parallel stat operations for better performance
+            const statPromises = jsonFiles.map(async file => {
+                const filePath = path.join(this.cacheDir, file);
+                try {
+                    const stat = await fs.promises.stat(filePath);
+                    return stat.size;
+                } catch {
+                    return 0;
                 }
-            }
+            });
+
+            const sizes = await Promise.all(statPromises);
+            size = sizes.reduce((sum, fileSize) => sum + fileSize, 0);
         } catch {
             // Ignore errors
         }

@@ -104,6 +104,17 @@ export function handleMessageSend(args: MessageSendArgs, context: ExecutorContex
         };
     }
 
+    // Security: Check if osascript is in the allowlist
+    if (!context.permissions.allow_commands.includes('osascript')) {
+        return {
+            ok: false,
+            error: makeError(
+                ErrorCode.DENIED_COMMAND_ALLOWLIST,
+                `Command 'osascript' is not allowed. Listed in permissions.json: ${context.permissions.allow_commands.join(', ')}`
+            ),
+        };
+    }
+
     // AppleScript command to send iMessage safely using arguments
     // We use 'on run argv' to accept arguments and avoid shell injection
     const script = `

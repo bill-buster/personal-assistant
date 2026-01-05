@@ -1,12 +1,24 @@
 import { spawnSync } from 'node:child_process';
-import { ToolResult, ReadUrlArgs } from '../core/types';
+import { ToolResult, ReadUrlArgs, ExecutorContext } from '../core/types';
 import { makeError, ErrorCode } from '../core/tool_contract';
 
 /**
  * Handle reading content from a URL using curl (sync).
+ * Checks allow_commands before executing.
  */
-export function handleReadUrl(args: ReadUrlArgs): ToolResult {
+export function handleReadUrl(args: ReadUrlArgs, context: ExecutorContext): ToolResult {
     const { url } = args;
+
+    // Security: Check if curl is in the allowlist
+    if (!context.permissions.allow_commands.includes('curl')) {
+        return {
+            ok: false,
+            error: makeError(
+                ErrorCode.DENIED_COMMAND_ALLOWLIST,
+                `Command 'curl' is not allowed. Listed in permissions.json: ${context.permissions.allow_commands.join(', ')}`
+            ),
+        };
+    }
 
     // Security: Block file:// and only allow http/https
     try {

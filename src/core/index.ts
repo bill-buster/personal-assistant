@@ -91,6 +91,8 @@ export { createNodeToolRegistry } from './tool_registry';
 export { FileCache, createCacheKey } from './cache';
 export type { CacheEntry, CacheOptions } from './cache';
 
+export { getStatCache, resetStatCache, StatCache } from './stat_cache';
+
 // Test cache
 export { TestCache } from './test_cache';
 export type { TestResult, TestSummary } from './test_cache';
