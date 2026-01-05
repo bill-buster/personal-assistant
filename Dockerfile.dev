@@ -1,0 +1,23 @@
+# Development Dockerfile for Personal Assistant
+# Usage: docker build -f Dockerfile.dev -t personal-assistant:dev .
+
+FROM node:20-slim
+
+WORKDIR /app
+
+# Install dependencies
+COPY package*.json ./
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Build the project
+RUN npm run build
+
+# Expose ports for web dashboard
+EXPOSE 3000
+
+# Default command: REPL
+CMD ["npm", "run", "repl"]
+

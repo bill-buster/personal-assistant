@@ -1,0 +1,208 @@
+---
+description: Core conventions and architecture patterns for the Personal Assistant codebase
+globs: ["**/*.ts"]
+alwaysApply: true
+---
+
+# Personal Assistant - Core Conventions
+
+## Project Overview
+
+This is a local-first CLI assistant that routes natural language to tools with optional LLM fallback. It uses a multi-stage routing strategy: Regex → Heuristic → Parsers → LLM.
+
+## Technology Stack
+
+- **Runtime**: Node.js 18+ with TypeScript (ES2020 target, CommonJS modules)
+- **Validation**: Zod v4 for runtime validation at all boundaries
+- **Build**: tsc with strict mode enabled
+- **Testing**: Custom test runner with colocated test files (`*.test.ts`)
+
+## Architecture Layers
+
+```
+src/
+├── app/         # Entry points: CLI, REPL, router, web server
+├── core/        # Config, executor, types, validation, tool registry
+├── agents/      # Agent definitions with role-based tool access
+├── parsers/     # Heuristic, task, memory parsers (NLP patterns)
+├── providers/   # LLM provider adapters (Groq, OpenRouter)
+├── llm/         # ChatModel interface (provider-agnostic)
+├── embeddings/  # EmbeddingModel interface
+├── storage/     # JSONL persistence, memory store
+├── runtime/     # Composition root, bootstrap
+└── tools/       # Tool implementations
+```
+
+## Import Conventions
+
+```typescript
+// 1. Node built-ins with 'node:' prefix
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { spawnSync } from 'node:child_process';
+
+// 2. External packages
+import { z } from 'zod';
+
+// 3. Internal imports (relative paths only, no @repo/* aliases)
+import { ExecutorContext, ToolResult } from '../core/types';
+import { makeError, makeDebug } from '../core';
+```
+
+## Type Patterns
+
+### Use Zod Schemas for Validation
+
+```typescript
+// Define schema
+export const TaskAddSchema = z.object({
+    text: z.string().min(1),
+    due: z.string().optional(),
+    priority: z.enum(['low', 'medium', 'high']).optional(),
+});
+
+// Derive type from schema
+export type TaskAddArgs = z.infer<typeof TaskAddSchema>;
+```
+
+### Use Discriminated Unions for Results
+
+```typescript
+export type RouteResult =
+    | RouteError
+    | RouteToolCall
+    | RouteReply;
+
+// With type guards
+export function isRouteError(result: RouteResult): result is RouteError {
+    return 'error' in result;
+}
+```
+
+### Structured Error Objects
+
+```typescript
+export interface ToolError {
+    code: string;    // e.g., 'EXEC_ERROR', 'VALIDATION_ERROR'
+    message: string;
+    details?: any;
+}
+
+// Create errors with makeError helper
+return {
+    ok: false,
+    error: makeError('EXEC_ERROR', `Failed to read file: ${err.message}`),
+};
+```
+
+## Function Documentation
+
+Use JSDoc for all exported functions:
+
+```typescript
+/**
+ * Handle remember tool.
+ * @param args - Tool arguments containing text.
+ * @param context - Execution context.
+ * @returns Result object with ok, result, error, debug.
+ */
+export function handleRemember(args: RememberArgs, context: ExecutorContext): ToolResult {
+    // ...
+}
+```
+
+## Code Style
+
+- Use `const` by default, `let` only when reassignment needed
+- Prefer early returns to reduce nesting
+- Use optional chaining (`?.`) and nullish coalescing (`??`)
+- Prefix unused parameters with underscore: `(_unused, used) => {}`
+- Empty catch blocks are allowed: `catch { }`
+- Console logging is allowed (no-console: off)
+
+## File Naming
+
+- Source files: `snake_case.ts` (e.g., `memory_tools.ts`, `tool_registry.ts`)
+- Test files: `*.test.ts` colocated with source
+- Index files: `index.ts` for barrel exports
+
+## Async Patterns
+
+Always use async/await, never raw Promises:
+
+```typescript
+// ✅ Good
+async function fetchData(): Promise<Data> {
+    const result = await provider.complete(prompt);
+    return result.data;
+}
+
+// ❌ Bad - raw Promise chains
+function fetchData(): Promise<Data> {
+    return provider.complete(prompt).then(r => r.data);
+}
+```
+
+Handle async errors with try/catch:
+
+```typescript
+async function safeOperation(): Promise<ToolResult> {
+    try {
+        const data = await riskyAsyncCall();
+        return { ok: true, result: data };
+    } catch (err: any) {
+        return { ok: false, error: makeError('EXEC_ERROR', err.message) };
+    }
+}
+```
+
+## Configuration Priority
+
+Environment variables override config files:
+
+```typescript
+// Priority order (highest to lowest):
+// 1. Environment variables (GROQ_API_KEY, ASSISTANT_DATA_DIR)
+// 2. Config file (~/.assistant/config.json)
+// 3. Hardcoded defaults
+
+const apiKey = process.env.GROQ_API_KEY || config.apiKeys?.groq || null;
+```
+
+## Logging Conventions
+
+Use console methods directly (no-console is off):
+
+```typescript
+// Verbose/debug output (only when --verbose flag)
+if (verbose) console.log('[Verbose] Processing:', input);
+
+// Errors always go to stderr
+console.error('[Error] Failed to connect:', err.message);
+
+// Prefix with context for traceability
+console.log(`[Router] Matched tool: ${toolName}`);
+console.log(`[Executor] Running: ${toolName}`);
+```
+
+## Common Helpers
+
+Use helpers from `src/core/`:
+
+```typescript
+import { 
+    makeError,      // Create structured ToolError
+    makeDebug,      // Create DebugInfo object
+    nowMs,          // Current timestamp in ms
+    makeToolCall,   // Create ToolCall object
+    parseArgs,      // Parse CLI arguments
+} from '../core';
+```
+
+## Related Rules
+
+- **Error Handling**: See `.cursor/rules/errors.mdc` for error patterns and error codes
+- **Performance**: See `.cursor/rules/performance.mdc` for optimization patterns
+- **Security**: See `.cursor/rules/security.mdc` for security patterns
+- **Tools**: See `.cursor/rules/tools.mdc` for tool implementation patterns
+- **Testing**: See `.cursor/rules/testing.mdc` for test patterns

@@ -1,0 +1,15 @@
+node_modules
+dist
+coverage
+.test-results
+.git
+.vscode
+*.log
+*.prof
+*.profraw
+*.cpuprofile
+*.heapsnapshot
+.DS_Store
+.env
+.env.local
+

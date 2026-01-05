@@ -1,0 +1,215 @@
+---
+description: Debugging patterns and troubleshooting
+globs: ["**/*.ts"]
+alwaysApply: false
+---
+
+# Debugging Guide
+
+## Verbose Mode
+
+Enable verbose output for debugging:
+
+```bash
+# CLI
+./cli.js --verbose "remember: test"
+
+# REPL
+/verbose on
+```
+
+Verbose mode shows:
+- Agent selection
+- Provider selection
+- Routing path (regex/heuristic/LLM)
+- Tool schemas sent to LLM
+- Token usage
+
+## Debug Info in Results
+
+Every tool result includes `_debug`:
+
+```typescript
+{
+    ok: true,
+    result: { ... },
+    _debug: {
+        path: 'regex_fast_path',  // How request was routed
+        duration_ms: 12,           // Execution time
+        model: null,               // LLM model if used
+        memory_read: true,         // Did tool read memory?
+        memory_write: false,       // Did tool write memory?
+    }
+}
+```
+
+### Debug Path Values
+
+| Path | Meaning |
+|------|---------|
+| `regex_fast_path` | Matched pre-compiled regex pattern |
+| `heuristic_parse` | Matched heuristic parser |
+| `cli_parse` | Matched task/memory parser |
+| `llm_fallback` | Routed to LLM |
+| `tool_json` | Direct tool execution |
+
+## Common Issues
+
+### "Command not allowed"
+
+```
+DENIED_COMMAND_ALLOWLIST: Command 'xyz' is not allowed
+```
+
+**Fix**: Add command to `permissions.json`:
+```json
+{
+    "allow_commands": ["ls", "pwd", "cat", "xyz"]
+}
+```
+
+### "Path not allowed"
+
+```
+DENIED_PATH_ALLOWLIST: Path 'foo/bar' is not allowed
+```
+
+**Fix**: Add path to `permissions.json`:
+```json
+{
+    "allow_paths": ["./", "foo/"]
+}
+```
+
+### "No API key configured"
+
+```
+Error: No API key for provider 'groq'
+```
+
+**Fix**: Set environment variable:
+```bash
+export GROQ_API_KEY=your-key
+```
+
+Or create config file:
+```bash
+mkdir -p ~/.assistant
+echo '{"apiKeys":{"groq":"your-key"}}' > ~/.assistant/config.json
+```
+
+### "Tool requires agent context"
+
+```
+DENIED_AGENT_TOOLSET: tool 'X' requires agent context
+```
+
+**Fix**: Use `--agent` flag:
+```bash
+./cli.js --agent system "read file.txt"
+```
+
+## Logging
+
+Add strategic logging:
+
+```typescript
+// Use consistent prefixes
+console.log('[Router] Matched tool:', toolName);
+console.log('[Executor] Running:', toolName, args);
+console.error('[Error] Failed:', err.message);
+
+// Conditional verbose logging
+if (verbose) {
+    console.log('[Verbose] Full context:', JSON.stringify(context, null, 2));
+}
+```
+
+## Inspecting Data Files
+
+Check stored data:
+
+```bash
+# Memory
+cat ~/.assistant-data/memory.json | jq .
+
+# Tasks
+cat ~/.assistant-data/tasks.jsonl
+
+# Audit log (last 10 entries)
+tail -10 ~/.assistant/data/audit.jsonl | jq .
+```
+
+## Test Debugging
+
+Run single test with output:
+
+```bash
+npm run build
+TEST_DIST=1 node dist/executor.test.js 2>&1 | tee test.log
+```
+
+Check test output file:
+
+```bash
+cat src/executor.test.output.txt
+```
+
+## Doctor Command
+
+Run diagnostics:
+
+```bash
+npm run doctor
+```
+
+Checks:
+- Config file exists and is valid
+- Data directory writable
+- Permissions file valid
+- API keys configured
+
+## Tracing a Request
+
+To trace a request through the system:
+
+### 1. Router
+```typescript
+// In route()
+console.log('[Trace] Input:', body);
+console.log('[Trace] Matched regex:', matchedPattern);
+console.log('[Trace] Heuristic result:', heuristicCommand);
+console.log('[Trace] Final route:', result.mode, result.tool_call?.tool_name);
+```
+
+### 2. Executor
+```typescript
+// In execute()
+console.log('[Trace] Tool:', toolName);
+console.log('[Trace] Args:', JSON.stringify(args));
+console.log('[Trace] Agent:', this.agent?.name);
+console.log('[Trace] Result:', result.ok, result.error?.code);
+```
+
+### 3. Tool Handler
+```typescript
+// In handler
+console.log('[Trace] Handler start:', toolName, args);
+console.log('[Trace] Handler result:', { ok, result: result?.substring?.(0, 100) });
+```
+
+## Performance Profiling
+
+Add timing:
+
+```typescript
+const start = Date.now();
+// ... operation
+console.log(`[Perf] ${operationName}: ${Date.now() - start}ms`);
+```
+
+For benchmarks, use:
+```bash
+npm run build
+node dist/benchmarks/executor_bench.js
+```
