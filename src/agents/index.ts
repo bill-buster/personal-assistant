@@ -2,19 +2,32 @@ import { Agent } from '../core/types';
 
 // Ready tools - fully working
 const READY_TOOLS = [
-    'read_file', 'write_file', 'list_files', 'run_cmd',
-    'remember', 'recall', 'memory_add', 'memory_search',
-    'task_add', 'task_list', 'task_done',
-    'calculate', 'get_time',
-    'git_status', 'git_diff', 'git_log',
-    'read_url'
+    'read_file',
+    'write_file',
+    'list_files',
+    'run_cmd',
+    'remember',
+    'recall',
+    'memory_add',
+    'memory_search',
+    'task_add',
+    'task_list',
+    'task_done',
+    'calculate',
+    'get_time',
+    'git_status',
+    'git_diff',
+    'git_log',
+    'read_url',
 ];
 
 // Experimental tools - partial functionality
 const EXPERIMENTAL_TOOLS = [
     'reminder_add',
-    'delegate_to_coder', 'delegate_to_organizer', 'delegate_to_assistant',
-    'return_to_supervisor'
+    'delegate_to_coder',
+    'delegate_to_organizer',
+    'delegate_to_assistant',
+    'return_to_supervisor',
 ];
 
 // All available tools for SYSTEM agent
@@ -25,7 +38,7 @@ export const SYSTEM: Agent = {
     name: 'System',
     description: 'Direct CLI access with all tools.',
     systemPrompt: 'You are a helpful assistant with access to all system tools.',
-    tools: ALL_TOOLS
+    tools: ALL_TOOLS,
 };
 
 export const SUPERVISOR: Agent = {
@@ -54,12 +67,19 @@ DELEGATION (only for complex multi-step work):
 - delegate_to_organizer: For complex task reorganization or memory management.
 - delegate_to_assistant: For communication tasks (email, messages, calendar).`,
     tools: [
-        'delegate_to_coder', 'delegate_to_organizer', 'delegate_to_assistant',
-        'calculate', 'get_time', 'get_weather',
-        'task_list', 'task_add', 'task_done', // Direct access for fast-path
-        'remember', 'recall',                 // Direct access for fast-path
-        'read_url'
-    ]
+        'delegate_to_coder',
+        'delegate_to_organizer',
+        'delegate_to_assistant',
+        'calculate',
+        'get_time',
+        'get_weather',
+        'task_list',
+        'task_add',
+        'task_done', // Direct access for fast-path
+        'remember',
+        'recall', // Direct access for fast-path
+        'read_url',
+    ],
 };
 
 export const CODER: Agent = {
@@ -72,7 +92,17 @@ Use 'run_cmd' for shell commands.
 Use 'git_status', 'git_diff', 'git_log' for version control.
 Be concise and effective.
 Strictly adhere to the tool schemas for arguments.`,
-    tools: ['read_file', 'write_file', 'list_files', 'run_cmd', 'git_status', 'git_diff', 'git_log', 'return_to_supervisor', 'read_url']
+    tools: [
+        'read_file',
+        'write_file',
+        'list_files',
+        'run_cmd',
+        'git_status',
+        'git_diff',
+        'git_log',
+        'return_to_supervisor',
+        'read_url',
+    ],
 };
 
 export const ORGANIZER: Agent = {
@@ -83,7 +113,16 @@ You manage the user's tasks (todo list) and long-term memory (notes/reminders).
 Use 'task_add' / 'task_list' for todos.
 Use 'remember' / 'recall' for memory.
 Strictly adhere to the tool schemas for arguments.`,
-    tools: ['task_add', 'task_list', 'task_done', 'remember', 'recall', 'memory_search', 'reminder_add', 'return_to_supervisor']
+    tools: [
+        'task_add',
+        'task_list',
+        'task_done',
+        'remember',
+        'recall',
+        'memory_search',
+        'reminder_add',
+        'return_to_supervisor',
+    ],
 };
 
 // Personal Assistant - stub tools removed until real integrations built
@@ -96,9 +135,14 @@ For now, you can help with memory and task management.
 Be polite, professional, and helpful.`,
     tools: [
         // Ready tools only - stub tools removed
-        'remember', 'recall', 'task_add', 'task_list', 'return_to_supervisor', 'read_url'
+        'remember',
+        'recall',
+        'task_add',
+        'task_list',
+        'return_to_supervisor',
+        'read_url',
         // Stub tools (email_*, message_*, contact_*, calendar_*) not included
-    ]
+    ],
 };
 
 export const AGENTS: Record<string, Agent> = {
@@ -106,6 +150,5 @@ export const AGENTS: Record<string, Agent> = {
     supervisor: SUPERVISOR,
     coder: CODER,
     organizer: ORGANIZER,
-    assistant: ASSISTANT
+    assistant: ASSISTANT,
 };
-

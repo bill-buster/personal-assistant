@@ -1,11 +1,11 @@
 /**
  * Embeddings Module
- * 
+ *
  * Provides text embedding generation and similarity search
  * for semantic memory recall.
- * 
+ *
  * Uses OpenAI-compatible embedding endpoints.
- * 
+ *
  * @module llm/embeddings
  */
 
@@ -53,7 +53,7 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
         private apiKey: string,
         private baseUrl: string = 'https://api.openai.com/v1',
         private model: string = 'text-embedding-3-small'
-    ) { }
+    ) {}
 
     async embed(text: string): Promise<EmbeddingResult> {
         try {
@@ -61,31 +61,34 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
 
             const bodyStr = JSON.stringify({
                 model: this.model,
-                input: text
+                input: text,
             });
 
             const response = await new Promise<any>((resolve, reject) => {
-                const req = httpsRequest({
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${this.apiKey}`
+                const req = httpsRequest(
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${this.apiKey}`,
+                        },
+                        hostname: urlObj.hostname,
+                        port: urlObj.port,
+                        path: `${urlObj.pathname}${urlObj.search}`,
                     },
-                    hostname: urlObj.hostname,
-                    port: urlObj.port,
-                    path: `${urlObj.pathname}${urlObj.search}`,
-                }, (res) => {
-                    let data = '';
-                    res.setEncoding('utf8');
-                    res.on('data', chunk => data += chunk);
-                    res.on('end', () => {
-                        resolve({
-                            ok: res.statusCode! >= 200 && res.statusCode! < 300,
-                            status: res.statusCode,
-                            data
+                    res => {
+                        let data = '';
+                        res.setEncoding('utf8');
+                        res.on('data', chunk => (data += chunk));
+                        res.on('end', () => {
+                            resolve({
+                                ok: res.statusCode! >= 200 && res.statusCode! < 300,
+                                status: res.statusCode,
+                                data,
+                            });
                         });
-                    });
-                });
+                    }
+                );
 
                 req.on('error', reject);
                 req.write(bodyStr);

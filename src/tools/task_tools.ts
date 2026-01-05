@@ -5,7 +5,17 @@
 
 import { makeError } from '../core/tool_contract';
 import { makeDebug } from '../core/debug';
-import { ExecutorContext, ToolResult, Task, Reminder, TaskAddArgs, TaskListArgs, TaskDoneArgs, ReminderAddArgs, ReminderListArgs } from '../core/types';
+import {
+    ExecutorContext,
+    ToolResult,
+    Task,
+    Reminder,
+    TaskAddArgs,
+    TaskListArgs,
+    TaskDoneArgs,
+    ReminderAddArgs,
+    ReminderListArgs,
+} from '../core/types';
 
 /**
  * Generate a unique task ID.
@@ -39,7 +49,13 @@ export function handleTaskAdd(args: TaskAddArgs, context: ExecutorContext): Tool
             ok: false,
             result: null,
             error: makeError('VALIDATION_ERROR', 'Invalid due date.'),
-            _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
         };
     }
 
@@ -47,7 +63,11 @@ export function handleTaskAdd(args: TaskAddArgs, context: ExecutorContext): Tool
 
     const tasks = readJsonl<Task>(
         tasksPath,
-        (entry) => entry && typeof entry.id === 'number' && typeof entry.text === 'string' && typeof entry.done === 'boolean'
+        entry =>
+            entry &&
+            typeof entry.id === 'number' &&
+            typeof entry.text === 'string' &&
+            typeof entry.done === 'boolean'
     );
 
     const task: Task = {
@@ -68,7 +88,13 @@ export function handleTaskAdd(args: TaskAddArgs, context: ExecutorContext): Tool
             ok: false,
             result: null,
             error: makeError('EXEC_ERROR', `Failed to write tasks: ${err.message}`),
-            _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
         };
     }
 
@@ -76,7 +102,13 @@ export function handleTaskAdd(args: TaskAddArgs, context: ExecutorContext): Tool
         ok: true,
         result: { task },
         error: null,
-        _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+        _debug: makeDebug({
+            path: 'tool_json',
+            start,
+            model: null,
+            memory_read: false,
+            memory_write: false,
+        }),
     };
 }
 
@@ -92,7 +124,7 @@ export function handleReminderList(args: ReminderListArgs, context: ExecutorCont
 
     const reminders = readJsonl<Reminder>(
         remindersPath,
-        (entry) =>
+        entry =>
             entry &&
             typeof entry.id === 'number' &&
             typeof entry.text === 'string' &&
@@ -100,7 +132,7 @@ export function handleReminderList(args: ReminderListArgs, context: ExecutorCont
             typeof entry.done === 'boolean'
     );
 
-    const filtered = reminders.filter((reminder) => {
+    const filtered = reminders.filter(reminder => {
         if (startTime) {
             return new Date(reminder.due_at) >= new Date(startTime);
         }
@@ -111,7 +143,13 @@ export function handleReminderList(args: ReminderListArgs, context: ExecutorCont
         ok: true,
         result: { entries: filtered },
         error: null,
-        _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+        _debug: makeDebug({
+            path: 'tool_json',
+            start,
+            model: null,
+            memory_read: false,
+            memory_write: false,
+        }),
     };
 }
 
@@ -129,10 +167,14 @@ export function handleTaskList(args: TaskListArgs, context: ExecutorContext): To
 
     const tasks = readJsonl<Task>(
         tasksPath,
-        (entry) => entry && typeof entry.id === 'number' && typeof entry.text === 'string' && typeof entry.done === 'boolean'
+        entry =>
+            entry &&
+            typeof entry.id === 'number' &&
+            typeof entry.text === 'string' &&
+            typeof entry.done === 'boolean'
     );
 
-    const filtered = tasks.filter((task) => {
+    const filtered = tasks.filter(task => {
         if (status === 'open') return !task.done;
         if (status === 'done') return task.done;
         return true;
@@ -142,7 +184,13 @@ export function handleTaskList(args: TaskListArgs, context: ExecutorContext): To
         ok: true,
         result: { entries: filtered },
         error: null,
-        _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+        _debug: makeDebug({
+            path: 'tool_json',
+            start,
+            model: null,
+            memory_read: false,
+            memory_write: false,
+        }),
     };
 }
 
@@ -158,16 +206,26 @@ export function handleTaskDone(args: TaskDoneArgs, context: ExecutorContext): To
 
     const tasks = readJsonl<Task>(
         tasksPath,
-        (entry) => entry && typeof entry.id === 'number' && typeof entry.text === 'string' && typeof entry.done === 'boolean'
+        entry =>
+            entry &&
+            typeof entry.id === 'number' &&
+            typeof entry.text === 'string' &&
+            typeof entry.done === 'boolean'
     );
 
-    const task = tasks.find((entry) => entry.id === id);
+    const task = tasks.find(entry => entry.id === id);
     if (!task) {
         return {
             ok: false,
             result: null,
             error: makeError('VALIDATION_ERROR', 'Task not found.'),
-            _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
         };
     }
 
@@ -183,7 +241,13 @@ export function handleTaskDone(args: TaskDoneArgs, context: ExecutorContext): To
             ok: false,
             result: null,
             error: makeError('EXEC_ERROR', `Failed to update task: ${err.message}`),
-            _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
         };
     }
 
@@ -191,7 +255,13 @@ export function handleTaskDone(args: TaskDoneArgs, context: ExecutorContext): To
         ok: true,
         result: { task },
         error: null,
-        _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+        _debug: makeDebug({
+            path: 'tool_json',
+            start,
+            model: null,
+            memory_read: false,
+            memory_write: false,
+        }),
     };
 }
 
@@ -210,7 +280,7 @@ export function handleReminderAdd(args: ReminderAddArgs, context: ExecutorContex
 
     const reminders = readJsonl<Reminder>(
         remindersPath,
-        (entry) =>
+        entry =>
             entry &&
             typeof entry.id === 'number' &&
             typeof entry.text === 'string' &&
@@ -234,7 +304,13 @@ export function handleReminderAdd(args: ReminderAddArgs, context: ExecutorContex
             ok: false,
             result: null,
             error: makeError('EXEC_ERROR', `Failed to write reminder: ${err.message}`),
-            _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
         };
     }
 
@@ -242,6 +318,12 @@ export function handleReminderAdd(args: ReminderAddArgs, context: ExecutorContex
         ok: true,
         result: { reminder: entry },
         error: null,
-        _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+        _debug: makeDebug({
+            path: 'tool_json',
+            start,
+            model: null,
+            memory_read: false,
+            memory_write: false,
+        }),
     };
 }

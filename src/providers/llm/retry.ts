@@ -1,9 +1,9 @@
 /**
  * Retry utility with exponential backoff.
- * 
+ *
  * Provides a wrapper for async operations that automatically retries
  * on transient failures (429, 5xx errors).
- * 
+ *
  * @module llm/retry
  */
 
@@ -72,12 +72,12 @@ function calculateDelay(attempt: number, baseDelayMs: number, maxDelayMs: number
 
 /**
  * Execute a function with automatic retries on failure.
- * 
+ *
  * @param fn - Async function to execute
  * @param options - Retry configuration options
  * @returns Result of the function
  * @throws Last error if all retries are exhausted
- * 
+ *
  * @example
  * ```typescript
  * const result = await withRetry(
@@ -86,10 +86,7 @@ function calculateDelay(attempt: number, baseDelayMs: number, maxDelayMs: number
  * );
  * ```
  */
-export async function withRetry<T>(
-    fn: () => Promise<T>,
-    options: RetryOptions = {}
-): Promise<T> {
+export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions = {}): Promise<T> {
     const opts = { ...DEFAULT_OPTIONS, ...options };
     const shouldRetry = opts.retryOn || isRetryableError;
 
@@ -127,7 +124,7 @@ export async function withRetry<T>(
 
 /**
  * Create a retryable version of an async function.
- * 
+ *
  * @param fn - Async function to wrap
  * @param options - Retry configuration options
  * @returns Wrapped function with retry behavior

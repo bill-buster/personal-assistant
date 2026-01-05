@@ -1,21 +1,24 @@
 /**
  * Git Tools
- * 
+ *
  * Safe git operations for version control within the CLI.
  * All operations are read-only for safety.
- * 
+ *
  * @module tools/git_tools
  */
 
 import { spawnSync } from 'node:child_process';
 import { ExecutorContext, ToolResult, GitStatusArgs, GitDiffArgs, GitLogArgs } from '../core/types';
-import { makeDebug, nowMs } from '../core/debug';
+import { makeDebug } from '../core/debug';
 import { makeError, ErrorCode } from '../core/tool_contract';
 
 /**
  * Execute a git command safely
  */
-function runGitCommand(args: string[], cwd: string): { ok: boolean; output?: string; error?: string } {
+function runGitCommand(
+    args: string[],
+    cwd: string
+): { ok: boolean; output?: string; error?: string } {
     const result = spawnSync('git', args, { cwd, encoding: 'utf8', timeout: 10000 });
 
     if (result.error) {
@@ -42,7 +45,13 @@ export function handleGitStatus(args: GitStatusArgs, context: ExecutorContext): 
         return {
             ok: false,
             error: makeError(ErrorCode.EXEC_ERROR, result.error || 'git status failed'),
-            _debug: makeDebug({ path: 'git_status', start, model: null, memory_read: false, memory_write: false })
+            _debug: makeDebug({
+                path: 'git_status',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
         };
     }
 
@@ -51,17 +60,21 @@ export function handleGitStatus(args: GitStatusArgs, context: ExecutorContext): 
         clean: lines.length === 0,
         files: lines.map(line => ({
             status: line.substring(0, 2).trim(),
-            path: line.substring(3)
+            path: line.substring(3),
         })),
-        summary: lines.length === 0
-            ? 'Working tree clean'
-            : `${lines.length} file(s) changed`
+        summary: lines.length === 0 ? 'Working tree clean' : `${lines.length} file(s) changed`,
     };
 
     return {
         ok: true,
         result: status,
-        _debug: makeDebug({ path: 'git_status', start, model: null, memory_read: false, memory_write: false })
+        _debug: makeDebug({
+            path: 'git_status',
+            start,
+            model: null,
+            memory_read: false,
+            memory_write: false,
+        }),
     };
 }
 
@@ -84,8 +97,17 @@ export function handleGitDiff(args: GitDiffArgs, context: ExecutorContext): Tool
         } catch {
             return {
                 ok: false,
-                error: makeError(ErrorCode.DENIED_PATH_ALLOWLIST, 'Path outside allowed directory or blocked'),
-                _debug: makeDebug({ path: 'git_diff', start, model: null, memory_read: false, memory_write: false })
+                error: makeError(
+                    ErrorCode.DENIED_PATH_ALLOWLIST,
+                    'Path outside allowed directory or blocked'
+                ),
+                _debug: makeDebug({
+                    path: 'git_diff',
+                    start,
+                    model: null,
+                    memory_read: false,
+                    memory_write: false,
+                }),
             };
         }
         gitArgs.push('--', args.path);
@@ -97,7 +119,13 @@ export function handleGitDiff(args: GitDiffArgs, context: ExecutorContext): Tool
         return {
             ok: false,
             error: makeError(ErrorCode.EXEC_ERROR, result.error || 'git diff failed'),
-            _debug: makeDebug({ path: 'git_diff', start, model: null, memory_read: false, memory_write: false })
+            _debug: makeDebug({
+                path: 'git_diff',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
         };
     }
 
@@ -106,9 +134,15 @@ export function handleGitDiff(args: GitDiffArgs, context: ExecutorContext): Tool
         result: {
             staged: args.staged || false,
             diff: result.output || '(no changes)',
-            empty: !result.output || result.output.trim() === ''
+            empty: !result.output || result.output.trim() === '',
         },
-        _debug: makeDebug({ path: 'git_diff', start, model: null, memory_read: false, memory_write: false })
+        _debug: makeDebug({
+            path: 'git_diff',
+            start,
+            model: null,
+            memory_read: false,
+            memory_write: false,
+        }),
     };
 }
 
@@ -128,7 +162,13 @@ export function handleGitLog(args: GitLogArgs, context: ExecutorContext): ToolRe
         return {
             ok: false,
             error: makeError(ErrorCode.EXEC_ERROR, result.error || 'git log failed'),
-            _debug: makeDebug({ path: 'git_log', start, model: null, memory_read: false, memory_write: false })
+            _debug: makeDebug({
+                path: 'git_log',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
         };
     }
 
@@ -142,8 +182,14 @@ export function handleGitLog(args: GitLogArgs, context: ExecutorContext): ToolRe
         ok: true,
         result: {
             count: commits.length,
-            commits
+            commits,
         },
-        _debug: makeDebug({ path: 'git_log', start, model: null, memory_read: false, memory_write: false })
+        _debug: makeDebug({
+            path: 'git_log',
+            start,
+            model: null,
+            memory_read: false,
+            memory_write: false,
+        }),
     };
 }

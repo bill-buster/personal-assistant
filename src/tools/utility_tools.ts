@@ -1,5 +1,10 @@
-
-import { ToolResult, CalculateArgs, GetTimeArgs, GetWeatherArgs, DelegateArgs } from '../core/types';
+import {
+    ToolResult,
+    CalculateArgs,
+    GetTimeArgs,
+    GetWeatherArgs,
+    DelegateArgs,
+} from '../core/types';
 import { makeError } from '../core/tool_contract';
 
 /**
@@ -10,25 +15,25 @@ import { makeError } from '../core/tool_contract';
 
 // Whitelisted Math functions (name -> arity)
 const MATH_FUNCTIONS: Record<string, { fn: (...args: number[]) => number; arity: number }> = {
-    'sqrt': { fn: Math.sqrt, arity: 1 },
-    'abs': { fn: Math.abs, arity: 1 },
-    'sin': { fn: Math.sin, arity: 1 },
-    'cos': { fn: Math.cos, arity: 1 },
-    'tan': { fn: Math.tan, arity: 1 },
-    'log': { fn: Math.log, arity: 1 },
-    'log10': { fn: Math.log10, arity: 1 },
-    'exp': { fn: Math.exp, arity: 1 },
-    'floor': { fn: Math.floor, arity: 1 },
-    'ceil': { fn: Math.ceil, arity: 1 },
-    'round': { fn: Math.round, arity: 1 },
-    'pow': { fn: Math.pow, arity: 2 },
-    'min': { fn: Math.min, arity: 2 },
-    'max': { fn: Math.max, arity: 2 },
+    sqrt: { fn: Math.sqrt, arity: 1 },
+    abs: { fn: Math.abs, arity: 1 },
+    sin: { fn: Math.sin, arity: 1 },
+    cos: { fn: Math.cos, arity: 1 },
+    tan: { fn: Math.tan, arity: 1 },
+    log: { fn: Math.log, arity: 1 },
+    log10: { fn: Math.log10, arity: 1 },
+    exp: { fn: Math.exp, arity: 1 },
+    floor: { fn: Math.floor, arity: 1 },
+    ceil: { fn: Math.ceil, arity: 1 },
+    round: { fn: Math.round, arity: 1 },
+    pow: { fn: Math.pow, arity: 2 },
+    min: { fn: Math.min, arity: 2 },
+    max: { fn: Math.max, arity: 2 },
 };
 
 const MATH_CONSTANTS: Record<string, number> = {
-    'PI': Math.PI,
-    'E': Math.E,
+    PI: Math.PI,
+    E: Math.E,
 };
 
 type Token =
@@ -170,8 +175,10 @@ class Parser {
     private parseTerm(): number {
         let left = this.parsePower();
 
-        while (this.peek()?.type === 'operator' &&
-            ['*', '/', '%'].includes((this.peek() as { type: 'operator'; value: string }).value)) {
+        while (
+            this.peek()?.type === 'operator' &&
+            ['*', '/', '%'].includes((this.peek() as { type: 'operator'; value: string }).value)
+        ) {
             const op = (this.consume() as { type: 'operator'; value: string }).value;
             const right = this.parsePower();
             if (op === '*') left *= right;
@@ -186,8 +193,10 @@ class Parser {
     private parsePower(): number {
         let left = this.parseUnary();
 
-        if (this.peek()?.type === 'operator' &&
-            (this.peek() as { type: 'operator'; value: string }).value === '^') {
+        if (
+            this.peek()?.type === 'operator' &&
+            (this.peek() as { type: 'operator'; value: string }).value === '^'
+        ) {
             this.consume();
             const right = this.parsePower(); // Right-associative
             left = Math.pow(left, right);
@@ -199,9 +208,11 @@ class Parser {
     // unary = ('-' | '+') unary | primary
     private parseUnary(): number {
         const tok = this.peek();
-        if (tok?.type === 'operator' &&
+        if (
+            tok?.type === 'operator' &&
             ((tok as { type: 'operator'; value: string }).value === '-' ||
-                (tok as { type: 'operator'; value: string }).value === '+')) {
+                (tok as { type: 'operator'; value: string }).value === '+')
+        ) {
             const op = (this.consume() as { type: 'operator'; value: string }).value;
             const val = this.parseUnary();
             return op === '-' ? -val : val;
@@ -253,7 +264,9 @@ class Parser {
             }
 
             if (args.length !== fnInfo.arity) {
-                throw new Error(`Function ${fnName} expects ${fnInfo.arity} argument(s), got ${args.length}`);
+                throw new Error(
+                    `Function ${fnName} expects ${fnInfo.arity} argument(s), got ${args.length}`
+                );
             }
 
             return fnInfo.fn(...args);
@@ -293,7 +306,10 @@ export function handleCalculate(args: CalculateArgs): ToolResult {
         const result = safeEvaluate(expression);
 
         if (typeof result !== 'number' || !Number.isFinite(result)) {
-            return { ok: false, error: makeError('EXEC_ERROR', 'Expression did not result in a valid number.') };
+            return {
+                ok: false,
+                error: makeError('EXEC_ERROR', 'Expression did not result in a valid number.'),
+            };
         }
 
         return { ok: true, result: { expression, value: result } };
@@ -359,7 +375,10 @@ export async function handleGetWeather(args: GetWeatherArgs): Promise<ToolResult
         const response = await fetchWithTimeout();
 
         if (!response.ok) {
-            return { ok: false, error: makeError('EXEC_ERROR', `Weather API error: ${response.status}`) };
+            return {
+                ok: false,
+                error: makeError('EXEC_ERROR', `Weather API error: ${response.status}`),
+            };
         }
 
         const data = await response.json();
@@ -385,7 +404,7 @@ export async function handleGetWeather(args: GetWeatherArgs): Promise<ToolResult
             wind_mph: current.windspeedMiles,
             wind_dir: current.winddir16Point,
             visibility_miles: current.visibilityMiles,
-            uv_index: current.uvIndex
+            uv_index: current.uvIndex,
         };
 
         return { ok: true, result };
@@ -402,7 +421,7 @@ function handleDelegate(target: string, args: DelegateArgs): ToolResult {
     // Task validation handled by Zod
     return {
         ok: true,
-        result: { delegated_to: target, task }
+        result: { delegated_to: target, task },
     };
 }
 

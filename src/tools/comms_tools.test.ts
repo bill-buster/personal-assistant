@@ -1,8 +1,7 @@
-
 import { strict as assert } from 'assert';
 import { handleMessageList, handleMessageSend } from './comms_tools';
 import * as child_process from 'child_process';
-import { ExecutorContext, ToolResult } from '../core/types';
+import { ExecutorContext } from '../core/types';
 
 // Simple mock context
 const mockContext: ExecutorContext = {
@@ -28,7 +27,7 @@ const originalPlatform = process.platform;
 let mockPlatform = 'darwin';
 
 Object.defineProperty(process, 'platform', {
-    get: () => mockPlatform
+    get: () => mockPlatform,
 });
 
 // Monkey patch spawnSync
@@ -36,7 +35,7 @@ Object.defineProperty(process, 'platform', {
     if (mockSpawnSync) {
         return mockSpawnSync(...args);
     }
-    return originalSpawnSync(...args as [string, string[], any]);
+    return originalSpawnSync(...(args as [string, string[], any]));
 };
 
 function runTests() {
@@ -73,10 +72,20 @@ function runTests() {
                 return {
                     status: 0,
                     stdout: JSON.stringify([
-                        { text: 'Hello', date: 725846400000000000, is_from_me: 1, id: '+1234567890' },
-                        { text: 'Hi back', date: 725846500000000000, is_from_me: 0, id: '+1234567890' }
+                        {
+                            text: 'Hello',
+                            date: 725846400000000000,
+                            is_from_me: 1,
+                            id: '+1234567890',
+                        },
+                        {
+                            text: 'Hi back',
+                            date: 725846500000000000,
+                            is_from_me: 0,
+                            id: '+1234567890',
+                        },
                     ]),
-                    stderr: ''
+                    stderr: '',
                 };
             }
             return { status: 1, error: new Error('Unknown command') };

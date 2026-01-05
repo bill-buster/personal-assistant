@@ -5,9 +5,20 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { makeError, makePermissionError, makeConfirmationError, ErrorCode } from '../core/tool_contract';
+import {
+    makeError,
+    makePermissionError,
+    makeConfirmationError,
+    ErrorCode,
+} from '../core/tool_contract';
 import { makeDebug } from '../core/debug';
-import { ExecutorContext, ToolResult, WriteFileArgs, ReadFileArgs, ListFilesArgs } from '../core/types';
+import {
+    ExecutorContext,
+    ToolResult,
+    WriteFileArgs,
+    ReadFileArgs,
+    ListFilesArgs,
+} from '../core/types';
 
 /**
  * Handle write_file tool.
@@ -25,20 +36,37 @@ export function handleWriteFile(args: WriteFileArgs, context: ExecutorContext): 
             ok: false,
             result: null,
             error: makeConfirmationError('write_file', permissionsPath),
-            _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
         };
     }
 
     let targetPath: string;
     try {
         targetPath = paths.resolveAllowed(args.path, 'write');
-    } catch (err: any) {
+    } catch {
         // Path resolution or permission check failed
         return {
             ok: false,
             result: null,
-            error: makePermissionError('write_file', args.path, permissionsPath, ErrorCode.DENIED_PATH_ALLOWLIST),
-            _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+            error: makePermissionError(
+                'write_file',
+                args.path,
+                permissionsPath,
+                ErrorCode.DENIED_PATH_ALLOWLIST
+            ),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
         };
     }
 
@@ -50,7 +78,13 @@ export function handleWriteFile(args: WriteFileArgs, context: ExecutorContext): 
             ok: false,
             result: null,
             error: makeError(ErrorCode.EXEC_ERROR, 'Internal error: limits not configured'),
-            _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
         };
     }
 
@@ -60,8 +94,17 @@ export function handleWriteFile(args: WriteFileArgs, context: ExecutorContext): 
         return {
             ok: false,
             result: null,
-            error: makeError(ErrorCode.VALIDATION_ERROR, `Content exceeds maximum size of ${maxWriteSize} bytes.`),
-            _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+            error: makeError(
+                ErrorCode.VALIDATION_ERROR,
+                `Content exceeds maximum size of ${maxWriteSize} bytes.`
+            ),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
         };
     }
 
@@ -73,7 +116,13 @@ export function handleWriteFile(args: WriteFileArgs, context: ExecutorContext): 
             ok: false,
             result: null,
             error: makeError(ErrorCode.EXEC_ERROR, `Failed to write file: ${err.message}`),
-            _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
         };
     }
 
@@ -81,7 +130,13 @@ export function handleWriteFile(args: WriteFileArgs, context: ExecutorContext): 
         ok: true,
         result: { bytes: content.length },
         error: null,
-        _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+        _debug: makeDebug({
+            path: 'tool_json',
+            start,
+            model: null,
+            memory_read: false,
+            memory_write: false,
+        }),
     };
 }
 
@@ -93,17 +148,28 @@ export function handleWriteFile(args: WriteFileArgs, context: ExecutorContext): 
  */
 export function handleReadFile(args: ReadFileArgs, context: ExecutorContext): ToolResult {
     const { paths, permissionsPath, start } = context;
-    
+
     let targetPath: string;
     try {
         targetPath = paths.resolveAllowed(args.path, 'read');
-    } catch (err: any) {
+    } catch {
         // Path resolution or permission check failed
         return {
             ok: false,
             result: null,
-            error: makePermissionError('read_file', args.path, permissionsPath, ErrorCode.DENIED_PATH_ALLOWLIST),
-            _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+            error: makePermissionError(
+                'read_file',
+                args.path,
+                permissionsPath,
+                ErrorCode.DENIED_PATH_ALLOWLIST
+            ),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
         };
     }
 
@@ -115,8 +181,17 @@ export function handleReadFile(args: ReadFileArgs, context: ExecutorContext): To
             return {
                 ok: false,
                 result: null,
-                error: makeError(ErrorCode.EXEC_ERROR, `Path '${args.path}' is a directory, not a file.`),
-                _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+                error: makeError(
+                    ErrorCode.EXEC_ERROR,
+                    `Path '${args.path}' is a directory, not a file.`
+                ),
+                _debug: makeDebug({
+                    path: 'tool_json',
+                    start,
+                    model: null,
+                    memory_read: false,
+                    memory_write: false,
+                }),
             };
         }
         fileSize = stats.size;
@@ -125,7 +200,13 @@ export function handleReadFile(args: ReadFileArgs, context: ExecutorContext): To
             ok: false,
             result: null,
             error: makeError(ErrorCode.EXEC_ERROR, `Failed to stat file: ${statErr.message}`),
-            _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
         };
     }
 
@@ -146,10 +227,16 @@ export function handleReadFile(args: ReadFileArgs, context: ExecutorContext): To
                 bytesRead: 0,
                 nextOffset: offset,
                 eof: true,
-                fileSize
+                fileSize,
             },
             error: null,
-            _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
         };
     }
 
@@ -170,7 +257,13 @@ export function handleReadFile(args: ReadFileArgs, context: ExecutorContext): To
             ok: false,
             result: null,
             error: makeError(ErrorCode.EXEC_ERROR, `Failed to read file: ${err.message}`),
-            _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
         };
     }
 
@@ -184,10 +277,16 @@ export function handleReadFile(args: ReadFileArgs, context: ExecutorContext): To
             bytesRead,
             nextOffset,
             eof,
-            fileSize
+            fileSize,
         },
         error: null,
-        _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+        _debug: makeDebug({
+            path: 'tool_json',
+            start,
+            model: null,
+            memory_read: false,
+            memory_write: false,
+        }),
     };
 }
 
@@ -206,13 +305,24 @@ export function handleListFiles(args: ListFilesArgs, context: ExecutorContext): 
         let resolved: string;
         try {
             resolved = paths.resolveAllowed(args.path, 'list');
-        } catch (err: any) {
+        } catch {
             // Path resolution or permission check failed
             return {
                 ok: false,
                 result: null,
-                error: makePermissionError('list_files', args.path, permissionsPath, ErrorCode.DENIED_PATH_ALLOWLIST),
-                _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+                error: makePermissionError(
+                    'list_files',
+                    args.path,
+                    permissionsPath,
+                    ErrorCode.DENIED_PATH_ALLOWLIST
+                ),
+                _debug: makeDebug({
+                    path: 'tool_json',
+                    start,
+                    model: null,
+                    memory_read: false,
+                    memory_write: false,
+                }),
             };
         }
         // Verify it's a directory
@@ -222,16 +332,34 @@ export function handleListFiles(args: ListFilesArgs, context: ExecutorContext): 
                 return {
                     ok: false,
                     result: null,
-                    error: makeError(ErrorCode.VALIDATION_ERROR, `Path '${args.path}' is not a directory.`),
-                    _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+                    error: makeError(
+                        ErrorCode.VALIDATION_ERROR,
+                        `Path '${args.path}' is not a directory.`
+                    ),
+                    _debug: makeDebug({
+                        path: 'tool_json',
+                        start,
+                        model: null,
+                        memory_read: false,
+                        memory_write: false,
+                    }),
                 };
             }
         } catch (err: any) {
             return {
                 ok: false,
                 result: null,
-                error: makeError(ErrorCode.EXEC_ERROR, `Failed to access path '${args.path}': ${err.message}`),
-                _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+                error: makeError(
+                    ErrorCode.EXEC_ERROR,
+                    `Failed to access path '${args.path}': ${err.message}`
+                ),
+                _debug: makeDebug({
+                    path: 'tool_json',
+                    start,
+                    model: null,
+                    memory_read: false,
+                    memory_write: false,
+                }),
             };
         }
         targetDir = resolved;
@@ -248,7 +376,13 @@ export function handleListFiles(args: ListFilesArgs, context: ExecutorContext): 
             ok: false,
             result: null,
             error: makeError(ErrorCode.EXEC_ERROR, `Failed to list files: ${err.message}`),
-            _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
         };
     }
 
@@ -271,7 +405,7 @@ export function handleListFiles(args: ListFilesArgs, context: ExecutorContext): 
         })
         .map(dirent => ({
             name: dirent.name,
-            type: dirent.isDirectory() ? 'directory' : 'file'
+            type: dirent.isDirectory() ? 'directory' : 'file',
         }))
         .sort((a, b) => a.name.localeCompare(b.name));
 
@@ -279,6 +413,12 @@ export function handleListFiles(args: ListFilesArgs, context: ExecutorContext): 
         ok: true,
         result: { entries },
         error: null,
-        _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+        _debug: makeDebug({
+            path: 'tool_json',
+            start,
+            model: null,
+            memory_read: false,
+            memory_write: false,
+        }),
     };
 }

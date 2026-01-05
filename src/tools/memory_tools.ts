@@ -5,7 +5,15 @@
 
 import { makeError } from '../core/tool_contract';
 import { makeDebug } from '../core/debug';
-import { ExecutorContext, ToolResult, RememberArgs, RecallArgs, MemoryAddArgs, MemorySearchArgs, MemoryEntry } from '../core/types';
+import {
+    ExecutorContext,
+    ToolResult,
+    RememberArgs,
+    RecallArgs,
+    MemoryAddArgs,
+    MemorySearchArgs,
+    MemoryEntry,
+} from '../core/types';
 
 /**
  * Handle remember tool.
@@ -32,7 +40,13 @@ export function handleRemember(args: RememberArgs, context: ExecutorContext): To
             ok: false,
             result: null,
             error: makeError('EXEC_ERROR', `Failed to update memory: ${err.message}`),
-            _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: true, memory_write: true }),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: true,
+                memory_write: true,
+            }),
         };
     }
 
@@ -40,7 +54,13 @@ export function handleRemember(args: RememberArgs, context: ExecutorContext): To
         ok: true,
         result: { count: memory.entries.length },
         error: null,
-        _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: true, memory_write: true }),
+        _debug: makeDebug({
+            path: 'tool_json',
+            start,
+            model: null,
+            memory_read: true,
+            memory_write: true,
+        }),
     };
 }
 
@@ -51,7 +71,8 @@ export function handleRemember(args: RememberArgs, context: ExecutorContext): To
  * @returns {Object} Result object with ok, result, error, debug.
  */
 export function handleRecall(args: RecallArgs, context: ExecutorContext): ToolResult {
-    const { readMemory, memoryPath, memoryLimit, scoreEntry, sortByScoreAndRecency, start } = context;
+    const { readMemory, memoryPath, memoryLimit, scoreEntry, sortByScoreAndRecency, start } =
+        context;
     const query = args.query.trim();
 
     let entries;
@@ -62,7 +83,13 @@ export function handleRecall(args: RecallArgs, context: ExecutorContext): ToolRe
             ok: false,
             result: null,
             error: makeError('EXEC_ERROR', `Failed to read memory: ${err.message}`),
-            _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: true, memory_write: false }),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: true,
+                memory_write: false,
+            }),
         };
     }
 
@@ -70,14 +97,20 @@ export function handleRecall(args: RecallArgs, context: ExecutorContext): ToolRe
     const terms = needle.split(/\s+/).filter(Boolean);
     const recallLimit = memoryLimit ? Math.min(5, memoryLimit) : 5;
     const matches = sortByScoreAndRecency(entries, needle, terms)
-        .filter((entry) => scoreEntry(entry, needle, terms) > 0)
+        .filter(entry => scoreEntry(entry, needle, terms) > 0)
         .slice(0, recallLimit);
 
     return {
         ok: true,
         result: { entries: matches },
         error: null,
-        _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: true, memory_write: false }),
+        _debug: makeDebug({
+            path: 'tool_json',
+            start,
+            model: null,
+            memory_read: true,
+            memory_write: false,
+        }),
     };
 }
 
@@ -99,7 +132,13 @@ export function handleMemoryAdd(args: MemoryAddArgs, context: ExecutorContext): 
             ok: false,
             result: null,
             error: makeError('EXEC_ERROR', `Failed to write memory: ${err.message}`),
-            _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
         };
     }
 
@@ -107,7 +146,13 @@ export function handleMemoryAdd(args: MemoryAddArgs, context: ExecutorContext): 
         ok: true,
         result: { entry },
         error: null,
-        _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+        _debug: makeDebug({
+            path: 'tool_json',
+            start,
+            model: null,
+            memory_read: false,
+            memory_write: false,
+        }),
     };
 }
 
@@ -130,7 +175,13 @@ export function handleMemorySearch(args: MemorySearchArgs, context: ExecutorCont
             ok: false,
             result: null,
             error: makeError('VALIDATION_ERROR', 'Invalid limit.'),
-            _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
         };
     }
 
@@ -139,17 +190,23 @@ export function handleMemorySearch(args: MemorySearchArgs, context: ExecutorCont
             ok: false,
             result: null,
             error: makeError('VALIDATION_ERROR', 'Invalid offset.'),
-            _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
         };
     }
 
     const entries = readJsonl<MemoryEntry>(
         memoryLogPath,
-        (entry) => entry && typeof entry.text === 'string' && typeof entry.ts === 'string'
+        entry => entry && typeof entry.text === 'string' && typeof entry.ts === 'string'
     );
 
     const needle = query.toLowerCase();
-    const matches = entries.filter((entry) => entry.text.toLowerCase().includes(needle));
+    const matches = entries.filter(entry => entry.text.toLowerCase().includes(needle));
     const ordered = sortByScoreAndRecency(matches, needle);
     const paged = ordered.slice(offset, offset + limit);
 
@@ -157,6 +214,12 @@ export function handleMemorySearch(args: MemorySearchArgs, context: ExecutorCont
         ok: true,
         result: { entries: paged },
         error: null,
-        _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+        _debug: makeDebug({
+            path: 'tool_json',
+            start,
+            model: null,
+            memory_read: false,
+            memory_write: false,
+        }),
     };
 }

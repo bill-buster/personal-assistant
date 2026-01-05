@@ -1,4 +1,12 @@
-import { ToolResult, ExecutorContext, EmailListArgs, EmailSendArgs, EmailGetDetailsArgs, MessageListArgs, MessageSendArgs } from '../core/types';
+import {
+    ToolResult,
+    ExecutorContext,
+    EmailListArgs,
+    EmailSendArgs,
+    EmailGetDetailsArgs,
+    MessageListArgs,
+    MessageSendArgs,
+} from '../core/types';
 import { makeError, ErrorCode } from '../core/tool_contract';
 import { spawnSync } from 'node:child_process';
 
@@ -11,7 +19,12 @@ export function handleEmailList(args: EmailListArgs, context: ExecutorContext): 
     // Use the pre-resolved path from ExecutorContext
     const emailsPath = context.emailsPath;
 
-    const emails = context.readJsonl<{ id: string, from: string, subject: string, snippet: string }>(emailsPath, (e) => !!e.id);
+    const emails = context.readJsonl<{
+        id: string;
+        from: string;
+        subject: string;
+        snippet: string;
+    }>(emailsPath, e => !!e.id);
     return { ok: true, result: emails.slice(-limit).reverse() };
 }
 
@@ -30,7 +43,7 @@ export function handleEmailSend(args: EmailSendArgs, context: ExecutorContext): 
         from: 'me@example.com',
         subject,
         body,
-        ts: new Date().toISOString()
+        ts: new Date().toISOString(),
     };
 
     context.appendJsonl(emailsPath, newEmail);
@@ -41,15 +54,22 @@ export function handleEmailSend(args: EmailSendArgs, context: ExecutorContext): 
  * Handle getting email details.
  * Uses context.emailsPath which is already resolved by the Executor.
  */
-export function handleEmailGetDetails(args: EmailGetDetailsArgs, context: ExecutorContext): ToolResult {
+export function handleEmailGetDetails(
+    args: EmailGetDetailsArgs,
+    context: ExecutorContext
+): ToolResult {
     const { id } = args;
     // Use the pre-resolved path from ExecutorContext
     const emailsPath = context.emailsPath;
 
-    const emails = context.readJsonl<any>(emailsPath, (e) => !!e.id);
+    const emails = context.readJsonl<any>(emailsPath, e => !!e.id);
     const email = emails.find(e => e.id === id);
 
-    if (!email) return { ok: false, error: makeError(ErrorCode.VALIDATION_ERROR, `Email with ID ${id} not found.`) };
+    if (!email)
+        return {
+            ok: false,
+            error: makeError(ErrorCode.VALIDATION_ERROR, `Email with ID ${id} not found.`),
+        };
     return { ok: true, result: email };
 }
 
@@ -62,7 +82,7 @@ export function handleMessageList(args: MessageListArgs, context: ExecutorContex
     // Use the pre-resolved path from ExecutorContext
     const messagesPath = context.messagesPath;
 
-    const messages = context.readJsonl<any>(messagesPath, (m) => !!m.ts);
+    const messages = context.readJsonl<any>(messagesPath, m => !!m.ts);
     return { ok: true, result: messages.slice(-limit).reverse() };
 }
 
@@ -75,7 +95,13 @@ export function handleMessageSend(args: MessageSendArgs, context: ExecutorContex
 
     const platform = process.env._TEST_PLATFORM_OVERRIDE || process.platform;
     if (platform !== 'darwin') {
-        return { ok: false, error: makeError(ErrorCode.EXEC_ERROR, 'iMessage integration is only available on macOS.') };
+        return {
+            ok: false,
+            error: makeError(
+                ErrorCode.EXEC_ERROR,
+                'iMessage integration is only available on macOS.'
+            ),
+        };
     }
 
     // AppleScript command to send iMessage safely using arguments
@@ -94,12 +120,21 @@ export function handleMessageSend(args: MessageSendArgs, context: ExecutorContex
     const result = spawnSync('osascript', ['-e', script, '--', to, body], { encoding: 'utf8' });
 
     if (result.error) {
-        return { ok: false, error: makeError(ErrorCode.EXEC_ERROR, `Failed to execute osascript: ${result.error.message}`) };
+        return {
+            ok: false,
+            error: makeError(
+                ErrorCode.EXEC_ERROR,
+                `Failed to execute osascript: ${result.error.message}`
+            ),
+        };
     }
 
     if (result.status !== 0) {
         const errorMsg = result.stderr?.trim() || 'Unknown error sending iMessage';
-        return { ok: false, error: makeError(ErrorCode.EXEC_ERROR, `iMessage failed: ${errorMsg}`) };
+        return {
+            ok: false,
+            error: makeError(ErrorCode.EXEC_ERROR, `iMessage failed: ${errorMsg}`),
+        };
     }
 
     // Use the pre-resolved path from ExecutorContext
@@ -109,7 +144,7 @@ export function handleMessageSend(args: MessageSendArgs, context: ExecutorContex
         to,
         body,
         ts: new Date().toISOString(),
-        sent_via: 'iMessage'
+        sent_via: 'iMessage',
     };
     context.appendJsonl(messagesPath, newMessage);
 

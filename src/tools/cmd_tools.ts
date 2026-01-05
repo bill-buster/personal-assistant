@@ -24,7 +24,13 @@ export function handleRunCmd(args: RunCmdArgs, context: ExecutorContext): ToolRe
             ok: false,
             result: null,
             error: makeError(ErrorCode.VALIDATION_ERROR, 'Command cannot be empty.'),
-            _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
         };
     }
 
@@ -33,7 +39,13 @@ export function handleRunCmd(args: RunCmdArgs, context: ExecutorContext): ToolRe
             ok: false,
             result: null,
             error: makeError(ErrorCode.VALIDATION_ERROR, 'Confirmation required.'),
-            _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
         };
     }
 
@@ -44,7 +56,13 @@ export function handleRunCmd(args: RunCmdArgs, context: ExecutorContext): ToolRe
             ok: false,
             result: null,
             error: makeError(ErrorCode.VALIDATION_ERROR, parseResult.error),
-            _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
         };
     }
     const parts = parseResult.args;
@@ -53,7 +71,13 @@ export function handleRunCmd(args: RunCmdArgs, context: ExecutorContext): ToolRe
             ok: false,
             result: null,
             error: makeError(ErrorCode.VALIDATION_ERROR, 'Command cannot be empty.'),
-            _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
         };
     }
     const cmd = parts[0];
@@ -62,15 +86,23 @@ export function handleRunCmd(args: RunCmdArgs, context: ExecutorContext): ToolRe
     const cmdResult = commands.runAllowed(cmd, cmdArgs, { confirm: args.confirm });
     // Preserve error code from runAllowed (DENIED_COMMAND_ALLOWLIST, DENIED_PATH_ALLOWLIST)
     // Only use EXEC_ERROR for allowed commands that fail to run
-    const error = cmdResult.ok ? null : makeError(
-        cmdResult.errorCode || ErrorCode.EXEC_ERROR,
-        cmdResult.error || 'Unknown error'
-    );
+    const error = cmdResult.ok
+        ? null
+        : makeError(
+              cmdResult.errorCode || ErrorCode.EXEC_ERROR,
+              cmdResult.error || 'Unknown error'
+          );
 
     return {
         ok: cmdResult.ok,
         result: cmdResult.result,
         error,
-        _debug: makeDebug({ path: 'tool_json', start, model: null, memory_read: false, memory_write: false }),
+        _debug: makeDebug({
+            path: 'tool_json',
+            start,
+            model: null,
+            memory_read: false,
+            memory_write: false,
+        }),
     };
 }

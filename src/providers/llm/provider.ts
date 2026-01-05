@@ -1,8 +1,8 @@
 /**
  * LLM Provider Interface
- * 
+ *
  * Defines the contract for LLM providers (Groq, OpenRouter, etc.)
- * 
+ *
  * @module llm/provider
  */
 
@@ -13,11 +13,11 @@ import { ToolSpec, ToolCall, Message, TokenUsage } from '../../core/types';
  */
 export interface CompletionResult {
     ok: boolean;
-    toolCall?: ToolCall | null;   // Structured tool call (if LLM chose a tool)
-    reply?: string | null;        // Conversational reply (if no tool)
+    toolCall?: ToolCall | null; // Structured tool call (if LLM chose a tool)
+    reply?: string | null; // Conversational reply (if no tool)
     error?: string;
-    usage?: TokenUsage | null;    // Token usage statistics
-    raw?: any;                    // Raw API response (for debugging)
+    usage?: TokenUsage | null; // Token usage statistics
+    raw?: any; // Raw API response (for debugging)
 }
 
 /**
@@ -53,4 +53,3 @@ export interface LLMProvider {
         systemPrompt?: string
     ): AsyncGenerator<StreamChunk, void, unknown>;
 }
-
