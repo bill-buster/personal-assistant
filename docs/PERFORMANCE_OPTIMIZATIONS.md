@@ -4,7 +4,7 @@ This document summarizes the performance optimizations applied to the codebase.
 
 ## Optimizations Implemented
 
-### 1. File Stat Caching (LRU) ✅ **NEW**
+### 1. File Stat Caching (LRU) ✅ **COMPLETED**
 **File**: `src/core/stat_cache.ts`, `src/tools/file_tools.ts`
 
 **Problem**: File stats were checked repeatedly using `fs.statSync()`, which can be expensive on slow filesystems or when checking the same file multiple times.
@@ -32,7 +32,7 @@ if (stats && stats.isDirectory()) {
 }
 ```
 
-### 2. Router Tool Filtering Cache ✅
+### 2. Router Tool Filtering Cache ✅ (Already implemented)
 **File**: `src/app/router.ts`
 
 **Problem**: The router was filtering tool schemas by agent permissions on every route call, creating a new object each time.
@@ -45,7 +45,7 @@ if (stats && stats.isDirectory()) {
 
 **Impact**: Eliminates redundant tool filtering operations, especially beneficial in REPL mode with repeated routing calls.
 
-### 3. Optimized Array Operations ✅
+### 3. Optimized Array Operations ✅ (Already implemented)
 **File**: `src/tools/file_tools.ts`
 
 **Problem**: `handleListFiles` was using a filter+map chain, creating intermediate arrays.
@@ -57,7 +57,7 @@ if (stats && stats.isDirectory()) {
 
 **Impact**: Faster directory listing, especially for directories with many files.
 
-### 4. JSONL Parsing Optimizations ✅
+### 4. JSONL Parsing Optimizations ✅ (Already implemented)
 **File**: `src/storage/jsonl.ts`
 
 **Problem**: 
@@ -74,7 +74,19 @@ if (stats && stats.isDirectory()) {
 - Cleaner console output
 - Reduced memory pressure during writes
 
-### 5. Performance Monitoring ✅
+### 5. Performance Monitoring ✅ (Already implemented)
+
+### 6. Cache Statistics Optimization ✅ **NEW**
+**File**: `src/core/cache.ts`
+
+**Problem**: Cache statistics used `fs.statSync()` which could be slow for many cache files.
+
+**Solution**:
+- Integrated stat cache into `stats()` method
+- Reduces redundant stat calls when checking cache file sizes
+- Maintains synchronous API for CLI compatibility
+
+**Impact**: Faster cache statistics, especially for large caches with many files.
 **File**: `src/core/debug.ts`
 
 **Problem**: No visibility into slow operations.

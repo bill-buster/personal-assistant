@@ -1,5 +1,15 @@
 You are Jules (stress tester). Follow role.jules.mdc first, then project rules.
 
+## Security Note
+
+This command should only be used in trusted codebases. It will:
+- Create or modify test files
+- Execute test commands
+- Execute git commands
+- Potentially commit changes
+
+Verify you're in the correct repository before proceeding.
+
 ## Usage
 
 Run this command when you need comprehensive test coverage for:

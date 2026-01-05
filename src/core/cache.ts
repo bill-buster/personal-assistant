@@ -9,6 +9,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as crypto from 'node:crypto';
 import * as os from 'node:os';
+import { getStatCache } from './stat_cache';
 
 export interface CacheEntry<T> {
     key: string;
@@ -190,9 +191,9 @@ export class FileCache<T> {
 
     /**
      * Get cache statistics.
-     * Optimized: Uses parallel stat operations for better performance.
+     * Optimized: Uses stat cache for better performance.
      */
-    async stats(): Promise<{ total: number; size: number }> {
+    stats(): { total: number; size: number } {
         if (!this.enabled || !fs.existsSync(this.cacheDir)) {
             return { total: 0, size: 0 };
         }
@@ -202,22 +203,22 @@ export class FileCache<T> {
 
         try {
             const files = fs.readdirSync(this.cacheDir);
-            const jsonFiles = files.filter(file => file.endsWith('.json'));
-            total = jsonFiles.length;
-
-            // Parallel stat operations for better performance
-            const statPromises = jsonFiles.map(async file => {
-                const filePath = path.join(this.cacheDir, file);
-                try {
-                    const stat = await fs.promises.stat(filePath);
-                    return stat.size;
-                } catch {
-                    return 0;
+            const statCache = getStatCache();
+            for (const file of files) {
+                if (file.endsWith('.json')) {
+                    total++;
+                    const filePath = path.join(this.cacheDir, file);
+                    try {
+                        // Use stat cache for better performance
+                        const stat = statCache.get(filePath);
+                        if (stat) {
+                            size += stat.size;
+                        }
+                    } catch {
+                        // Ignore stat errors
+                    }
                 }
-            });
-
-            const sizes = await Promise.all(statPromises);
-            size = sizes.reduce((sum, fileSize) => sum + fileSize, 0);
+            }
         } catch {
             // Ignore errors
         }

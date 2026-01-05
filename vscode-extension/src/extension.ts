@@ -6,6 +6,7 @@
 import * as vscode from 'vscode';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { CursorCommandLogger } from './cursor_command_log';
 
 const execAsync = promisify(exec);
 
@@ -53,6 +54,11 @@ async function runAssistant(command: string, args: string[]): Promise<string> {
 export function activate(context: vscode.ExtensionContext) {
     console.log('Personal Assistant extension is now active!');
 
+    // Initialize command logger
+    // Note: VS Code API doesn't provide onDidExecuteCommand in version 1.80.0
+    // We only track our own commands explicitly with success/failure
+    const commandLogger = new CursorCommandLogger();
+
     // Remember command
     const rememberCommand = vscode.commands.registerCommand(
         'personal-assistant.remember',
@@ -69,12 +75,34 @@ export function activate(context: vscode.ExtensionContext) {
                 return;
             }
 
+            const startTime = Date.now();
             try {
                 await runAssistant('remember', [selection]);
+                const duration = Date.now() - startTime;
+                commandLogger.logCommand('personal-assistant.remember', true, undefined, {
+                    commandTitle: 'Remember: Store selection in memory',
+                    category: 'assistant',
+                    durationMs: duration,
+                    context: {
+                        activeFile: editor?.document.fileName,
+                        selection: selection.substring(0, 100), // Truncate for logging
+                        workspaceFolder: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
+                    },
+                });
                 vscode.window.showInformationMessage(
                     `✓ Remembered: ${selection.substring(0, 50)}...`
                 );
             } catch (error: any) {
+                const duration = Date.now() - startTime;
+                commandLogger.logCommand('personal-assistant.remember', false, error.message, {
+                    commandTitle: 'Remember: Store selection in memory',
+                    category: 'assistant',
+                    durationMs: duration,
+                    context: {
+                        activeFile: editor?.document.fileName,
+                        workspaceFolder: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
+                    },
+                });
                 vscode.window.showErrorMessage(`Failed to remember: ${error.message}`);
             }
         }
@@ -91,10 +119,23 @@ export function activate(context: vscode.ExtensionContext) {
             return;
         }
 
+        const startTime = Date.now();
         try {
             const result = await runAssistant('recall', [query, '--human']);
+            const duration = Date.now() - startTime;
+            commandLogger.logCommand('personal-assistant.recall', true, undefined, {
+                commandTitle: 'Recall: Search memory',
+                category: 'assistant',
+                durationMs: duration,
+            });
             vscode.window.showInformationMessage(result || 'No results found');
         } catch (error: any) {
+            const duration = Date.now() - startTime;
+            commandLogger.logCommand('personal-assistant.recall', false, error.message, {
+                commandTitle: 'Recall: Search memory',
+                category: 'assistant',
+                durationMs: duration,
+            });
             vscode.window.showErrorMessage(`Failed to recall: ${error.message}`);
         }
     });
@@ -124,10 +165,32 @@ export function activate(context: vscode.ExtensionContext) {
                 text = input;
             }
 
+            const startTime = Date.now();
+            const activeEditor = vscode.window.activeTextEditor;
             try {
                 await runAssistant('task', ['add', text]);
+                const duration = Date.now() - startTime;
+                commandLogger.logCommand('personal-assistant.taskAdd', true, undefined, {
+                    commandTitle: 'Task: Add task from selection',
+                    category: 'assistant',
+                    durationMs: duration,
+                    context: {
+                        activeFile: activeEditor?.document.fileName,
+                        workspaceFolder: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
+                    },
+                });
                 vscode.window.showInformationMessage(`✓ Task added: ${text.substring(0, 50)}...`);
             } catch (error: any) {
+                const duration = Date.now() - startTime;
+                commandLogger.logCommand('personal-assistant.taskAdd', false, error.message, {
+                    commandTitle: 'Task: Add task from selection',
+                    category: 'assistant',
+                    durationMs: duration,
+                    context: {
+                        activeFile: activeEditor?.document.fileName,
+                        workspaceFolder: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
+                    },
+                });
                 vscode.window.showErrorMessage(`Failed to add task: ${error.message}`);
             }
         }
@@ -147,6 +210,8 @@ export function activate(context: vscode.ExtensionContext) {
                 return;
             }
 
+            const startTime = Date.now();
+            const activeEditor = vscode.window.activeTextEditor;
             try {
                 // Parse input - if it starts with "remember:", "task add:", etc., route accordingly
                 let command = 'spike';
@@ -164,13 +229,43 @@ export function activate(context: vscode.ExtensionContext) {
                 } else {
                     // Use router mode - pass through to assistant
                     const result = await runAssistant('', [input, '--human']);
+                    const duration = Date.now() - startTime;
+                    commandLogger.logCommand('personal-assistant.command', true, undefined, {
+                        commandTitle: 'Assistant: Run command',
+                        category: 'assistant',
+                        durationMs: duration,
+                        context: {
+                            activeFile: activeEditor?.document.fileName,
+                            workspaceFolder: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
+                        },
+                    });
                     vscode.window.showInformationMessage(result || 'Command completed');
                     return;
                 }
 
                 const result = await runAssistant(command, args);
+                const duration = Date.now() - startTime;
+                commandLogger.logCommand('personal-assistant.command', true, undefined, {
+                    commandTitle: 'Assistant: Run command',
+                    category: 'assistant',
+                    durationMs: duration,
+                    context: {
+                        activeFile: activeEditor?.document.fileName,
+                        workspaceFolder: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
+                    },
+                });
                 vscode.window.showInformationMessage(result || 'Command completed');
             } catch (error: any) {
+                const duration = Date.now() - startTime;
+                commandLogger.logCommand('personal-assistant.command', false, error.message, {
+                    commandTitle: 'Assistant: Run command',
+                    category: 'assistant',
+                    durationMs: duration,
+                    context: {
+                        activeFile: activeEditor?.document.fileName,
+                        workspaceFolder: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
+                    },
+                });
                 vscode.window.showErrorMessage(`Command failed: ${error.message}`);
             }
         }

@@ -1,5 +1,16 @@
 You are the Implementer. Follow role.impl.mdc and errors.mdc.
 
+## Security Note
+
+This command should only be used in trusted codebases. It will:
+- Modify source code files
+- Change error handling patterns
+- Execute git commands
+- Run npm scripts
+- Potentially commit changes
+
+Verify you're in the correct repository before proceeding.
+
 Find all throw statements in the selected code and convert them to structured errors:
 1. Replace `throw new Error(...)` with `return { ok: false, error: makeError('EXEC_ERROR', ...) }`
 2. Add try/catch blocks where needed

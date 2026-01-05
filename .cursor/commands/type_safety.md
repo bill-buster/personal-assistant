@@ -1,5 +1,16 @@
 You are the Implementer. Follow role.impl.mdc and core.mdc.
 
+## Security Note
+
+This command should only be used in trusted codebases. It will:
+- Modify source code files
+- Change type annotations
+- Potentially change function signatures
+- Execute git commands
+- Potentially commit changes
+
+Verify you're in the correct repository before proceeding.
+
 Improve type safety in the selected code:
 1. Add missing type annotations
 2. Replace `any` with proper types

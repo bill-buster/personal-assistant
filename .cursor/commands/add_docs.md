@@ -1,5 +1,16 @@
 You are the Implementer. Follow role.impl.mdc and documentation.mdc.
 
+## Security Note
+
+This command should only be used in trusted codebases. It will:
+- Modify source code files
+- Add documentation comments
+- Update README and documentation files
+- Execute git commands
+- Potentially commit changes
+
+Verify you're in the correct repository before proceeding.
+
 For all exported functions in the selected code:
 1. Add JSDoc comments following the pattern:
    /**

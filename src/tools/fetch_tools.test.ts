@@ -45,7 +45,7 @@ function logLine(msg: string, stream: NodeJS.WriteStream = process.stdout) {
 function parseOutput(output: string) {
     try {
         return JSON.parse(output);
-    } catch (err) {
+    } catch (err: unknown) {
         const lines = output.trim().split('\n');
         for (let i = lines.length - 1; i >= 0; i--) {
             try {
@@ -53,7 +53,7 @@ function parseOutput(output: string) {
                 if (json && typeof json.ok === 'boolean') {
                     return json;
                 }
-            } catch {
+            } catch (_err) {
                 continue;
             }
         }
@@ -91,7 +91,10 @@ try {
     }
 
     // T4: URL with query parameters
-    const result4 = handleReadUrl({ url: 'https://example.com?foo=bar&baz=qux' }, mockContextWithCurl);
+    const result4 = handleReadUrl(
+        { url: 'https://example.com?foo=bar&baz=qux' },
+        mockContextWithCurl
+    );
     if (!result4.ok) {
         failures += 1;
         logLine(
@@ -222,7 +225,10 @@ try {
     }
 
     // T16: URL with special characters (encoded)
-    const result16 = handleReadUrl({ url: 'https://example.com/path%20with%20spaces' }, mockContextWithCurl);
+    const result16 = handleReadUrl(
+        { url: 'https://example.com/path%20with%20spaces' },
+        mockContextWithCurl
+    );
     if (!result16.ok && result16.error?.code === 'VALIDATION_ERROR') {
         failures += 1;
         logLine(
@@ -460,7 +466,10 @@ try {
     }
 
     // T34: URL with query parameters containing special chars
-    const result34 = handleReadUrl({ url: 'https://example.com?foo=bar&baz=qux&test=hello+world' }, mockContextWithCurl);
+    const result34 = handleReadUrl(
+        { url: 'https://example.com?foo=bar&baz=qux&test=hello+world' },
+        mockContextWithCurl
+    );
     if (!result34.ok && result34.error?.code === 'VALIDATION_ERROR') {
         failures += 1;
         logLine(

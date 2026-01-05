@@ -1,5 +1,16 @@
 You are the Implementer. Follow role.impl.mdc.
 
+## Security Note
+
+This command should only be used in trusted codebases. It will:
+- Modify source code files
+- Potentially remove or change code comments
+- Execute git commands
+- Run npm scripts
+- Potentially commit changes
+
+Verify you're in the correct repository before proceeding.
+
 Find all TODO/FIXME/HACK comments in the selected code:
 1. For each TODO: Either implement it or remove the comment
 2. For each FIXME: Fix the issue or document why it's deferred

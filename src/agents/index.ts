@@ -25,6 +25,7 @@ const READY_TOOLS = [
     'git_diff',
     'git_log',
     'read_url',
+    'cursor_command_eval',
 ];
 
 // Experimental tools - partial functionality
@@ -98,6 +99,7 @@ You handle all file system operations, command execution, code edits, git operat
 Use 'list_files' to explore before editing.
 Use 'run_cmd' for shell commands.
 Use 'git_status', 'git_diff', 'git_log' for version control.
+Use 'cursor_command_eval' to evaluate Cursor custom commands (.cursor/commands/).
 Be concise and effective.
 Strictly adhere to the tool schemas for arguments.`,
     tools: [
@@ -116,6 +118,7 @@ Strictly adhere to the tool schemas for arguments.`,
         'git_log',
         'return_to_supervisor',
         'read_url',
+        'cursor_command_eval',
     ],
 };
 
