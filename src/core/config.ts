@@ -1,13 +1,13 @@
 /**
  * Application Configuration
- * 
+ *
  * Handles loading and saving of unified configuration.
  * Configuration is loaded from:
  *   1. Config file (~/.assistant/config.json)
  *   2. Environment variables (override file settings)
- * 
+ *
  * Supported providers: groq, openrouter
- * 
+ *
  * @module config
  */
 
@@ -29,7 +29,7 @@ export function loadPermissions(baseDir: string, customPath?: string): Permissio
         allow_paths: [],
         allow_commands: [],
         require_confirmation_for: [],
-        deny_tools: []
+        deny_tools: [],
     };
 
     const localPath = path.join(baseDir, 'permissions.json');
@@ -73,7 +73,9 @@ export function loadPermissions(baseDir: string, customPath?: string): Permissio
 
     if (!fileToLoad) {
         const checked = envPath ? 'env var, custom, local and global' : 'custom, local and global';
-        console.warn(`[Permissions] No permissions.json found (checked ${checked}). Defaulting to DENY ALL.`);
+        console.warn(
+            `[Permissions] No permissions.json found (checked ${checked}). Defaulting to DENY ALL.`
+        );
         return denyAll;
     }
 
@@ -84,10 +86,15 @@ export function loadPermissions(baseDir: string, customPath?: string): Permissio
 
         if (result.success) {
             const perms = result.data;
-            console.log(`[Permissions] Loaded from ${fileToLoad}: allow_paths=${perms.allow_paths.length}, allow_commands=${perms.allow_commands.length}, deny_tools=${perms.deny_tools.length}, require_confirmation_for=${perms.require_confirmation_for.length}`);
+            console.log(
+                `[Permissions] Loaded from ${fileToLoad}: allow_paths=${perms.allow_paths.length}, allow_commands=${perms.allow_commands.length}, deny_tools=${perms.deny_tools.length}, require_confirmation_for=${perms.require_confirmation_for.length}`
+            );
             return perms;
         } else {
-            console.error(`[Permissions] Schema validation failed for ${fileToLoad}:`, result.error.issues);
+            console.error(
+                `[Permissions] Schema validation failed for ${fileToLoad}:`,
+                result.error.issues
+            );
             return denyAll;
         }
     } catch (e) {
@@ -233,7 +240,7 @@ function getConfigPaths() {
     return {
         dir,
         file: path.join(dir, 'config.json'),
-        dataDir: path.join(dir, 'data')
+        dataDir: path.join(dir, 'data'),
     };
 }
 
@@ -254,12 +261,12 @@ function getDefaultStorage(): StorageConfig {
     if (process.env.ASSISTANT_DATA_DIR) {
         baseDir = expandHome(process.env.ASSISTANT_DATA_DIR);
         if (!path.isAbsolute(baseDir)) {
-             // If env var is relative, it should probably be relative to cwd or home?
-             // Standard convention: relative env vars are relative to CWD.
-             // But let's stick to previous behavior: absolute or home-relative.
-             if (!baseDir.startsWith(path.sep)) {
-                 baseDir = path.join(os.homedir(), baseDir);
-             }
+            // If env var is relative, it should probably be relative to cwd or home?
+            // Standard convention: relative env vars are relative to CWD.
+            // But let's stick to previous behavior: absolute or home-relative.
+            if (!baseDir.startsWith(path.sep)) {
+                baseDir = path.join(os.homedir(), baseDir);
+            }
         }
     } else {
         // Fallback: check if we are in a monorepo structure and try to find the right place?
@@ -271,7 +278,7 @@ function getDefaultStorage(): StorageConfig {
         memory: 'memory.json',
         tasks: 'tasks.jsonl',
         reminders: 'reminders.jsonl',
-        memoryLog: 'memory.jsonl'
+        memoryLog: 'memory.jsonl',
     };
 }
 
@@ -302,7 +309,7 @@ export function getStoragePaths(config?: AppConfig): {
         memory: path.resolve(baseDir, storage.memory),
         tasks: path.resolve(baseDir, storage.tasks),
         reminders: path.resolve(baseDir, storage.reminders),
-        memoryLog: path.resolve(baseDir, storage.memoryLog)
+        memoryLog: path.resolve(baseDir, storage.memoryLog),
     };
 }
 
@@ -320,9 +327,9 @@ export function ensureStorageExists(configOrPath: ResolvedConfig | AppConfig | s
         // ResolvedConfig has storage.baseDir as absolute path
         // AppConfig might need resolution
         if ('storage' in configOrPath && configOrPath.storage) {
-             baseDir = expandHome(configOrPath.storage.baseDir);
+            baseDir = expandHome(configOrPath.storage.baseDir);
         } else {
-             baseDir = getDefaultStorage().baseDir;
+            baseDir = getDefaultStorage().baseDir;
         }
     }
 
@@ -334,13 +341,15 @@ export function ensureStorageExists(configOrPath: ResolvedConfig | AppConfig | s
 /**
  * Zod schema for storage configuration validation
  */
-const StorageConfigSchema = z.object({
-    baseDir: z.string(),
-    memory: z.string(),
-    tasks: z.string(),
-    reminders: z.string(),
-    memoryLog: z.string()
-}).partial();
+const StorageConfigSchema = z
+    .object({
+        baseDir: z.string(),
+        memory: z.string(),
+        tasks: z.string(),
+        reminders: z.string(),
+        memoryLog: z.string(),
+    })
+    .partial();
 
 /**
  * Zod schema for full application configuration validation
@@ -348,29 +357,33 @@ const StorageConfigSchema = z.object({
 const AppConfigSchema = z.object({
     version: z.number().optional(),
     defaultProvider: z.enum(['groq', 'openrouter', 'mock']).optional(),
-    apiKeys: z.object({
-        groq: z.string().optional(),
-        openrouter: z.string().optional(),
-        mock: z.string().optional()
-    }).optional(),
-    models: z.object({
-        groq: z.string().optional(),
-        openrouter: z.string().optional(),
-        mock: z.string().optional()
-    }).optional(),
+    apiKeys: z
+        .object({
+            groq: z.string().optional(),
+            openrouter: z.string().optional(),
+            mock: z.string().optional(),
+        })
+        .optional(),
+    models: z
+        .object({
+            groq: z.string().optional(),
+            openrouter: z.string().optional(),
+            mock: z.string().optional(),
+        })
+        .optional(),
     storage: StorageConfigSchema.optional(),
     fileBaseDir: z.string().optional(),
     historyLimit: z.number().min(1).max(50).optional(),
     compactToolSchemas: z.boolean().optional(),
     maxReadSize: z.number().int().positive().optional(),
     maxWriteSize: z.number().int().positive().optional(),
-    maxRetries: z.number().min(1).max(10).optional()
+    maxRetries: z.number().min(1).max(10).optional(),
 });
 
 /**
  * Load application configuration.
  * Merges file config with environment variable overrides.
- * 
+ *
  * Environment variables:
  *   - GROQ_API_KEY: Groq API key
  *   - OPENROUTER_API_KEY: OpenRouter API key
@@ -382,14 +395,14 @@ export function loadConfig(): AppConfig {
     const { file: configFile } = getConfigPaths();
 
     // Default configuration
-    let config: AppConfig = {
+    const config: AppConfig = {
         version: 1,
         defaultProvider: 'groq',
         apiKeys: {},
         models: {},
         storage: getDefaultStorage(),
         maxReadSize: 1 * 1024 * 1024,
-        maxWriteSize: 10 * 1024 * 1024
+        maxWriteSize: 10 * 1024 * 1024,
     };
 
     // 1. Load from file if exists (with Zod validation)
@@ -403,20 +416,29 @@ export function loadConfig(): AppConfig {
                 // Merge validated config with defaults (keep defaults for missing fields)
                 if (fileConfig.version !== undefined) config.version = fileConfig.version;
                 if (fileConfig.defaultProvider) config.defaultProvider = fileConfig.defaultProvider;
-                if (fileConfig.apiKeys) config.apiKeys = { ...config.apiKeys, ...fileConfig.apiKeys };
+                if (fileConfig.apiKeys)
+                    config.apiKeys = { ...config.apiKeys, ...fileConfig.apiKeys };
                 if (fileConfig.models) config.models = { ...config.models, ...fileConfig.models };
-                if (fileConfig.storage) config.storage = { ...config.storage!, ...fileConfig.storage } as StorageConfig;
+                if (fileConfig.storage)
+                    config.storage = { ...config.storage!, ...fileConfig.storage } as StorageConfig;
                 if (fileConfig.fileBaseDir) config.fileBaseDir = fileConfig.fileBaseDir;
-                if (fileConfig.historyLimit !== undefined) config.historyLimit = fileConfig.historyLimit;
-                if (fileConfig.compactToolSchemas !== undefined) config.compactToolSchemas = fileConfig.compactToolSchemas;
-                if (fileConfig.maxReadSize !== undefined) config.maxReadSize = fileConfig.maxReadSize;
-                if (fileConfig.maxWriteSize !== undefined) config.maxWriteSize = fileConfig.maxWriteSize;
+                if (fileConfig.historyLimit !== undefined)
+                    config.historyLimit = fileConfig.historyLimit;
+                if (fileConfig.compactToolSchemas !== undefined)
+                    config.compactToolSchemas = fileConfig.compactToolSchemas;
+                if (fileConfig.maxReadSize !== undefined)
+                    config.maxReadSize = fileConfig.maxReadSize;
+                if (fileConfig.maxWriteSize !== undefined)
+                    config.maxWriteSize = fileConfig.maxWriteSize;
                 if (fileConfig.maxRetries !== undefined) config.maxRetries = fileConfig.maxRetries;
             } else {
                 // Validation failed - log warning but continue with defaults
-                console.warn('[WARN] Config validation failed, using defaults:', validated.error.issues.map((e: z.ZodIssue) => e.message).join(', '));
+                console.warn(
+                    '[WARN] Config validation failed, using defaults:',
+                    validated.error.issues.map((e: z.ZodIssue) => e.message).join(', ')
+                );
             }
-        } catch (e) {
+        } catch {
             // Ignore corrupted config, use defaults
         }
     }
@@ -505,12 +527,14 @@ export function resolveConfig(config: AppConfig): ResolvedConfig {
         throw new Error(`Invalid maxWriteSize: ${maxWriteSize} (must be > 0)`);
     }
     if (maxWriteSize < maxReadSize) {
-        throw new Error(`Invalid limits: maxWriteSize (${maxWriteSize}) must be >= maxReadSize (${maxReadSize})`);
+        throw new Error(
+            `Invalid limits: maxWriteSize (${maxWriteSize}) must be >= maxReadSize (${maxReadSize})`
+        );
     }
 
     const limits: Limits = {
         maxReadSize,
-        maxWriteSize
+        maxWriteSize,
     };
 
     return {

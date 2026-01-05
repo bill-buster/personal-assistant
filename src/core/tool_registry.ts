@@ -8,11 +8,8 @@
  */
 
 import { z } from 'zod';
-import {
-    ToolRegistry,
-    ToolHandler,
-    ToolSchemas,
-} from './types';
+import { ToolRegistry, ToolHandler, ToolSchemas } from './types';
+import { loadAllPlugins, mergePluginTools } from './plugin_loader';
 
 // Tool handlers - all concrete implementations imported here
 import {
@@ -53,11 +50,7 @@ import {
     handleCalendarEventAdd,
     handleCalendarEventUpdate,
 } from '../tools/productivity_tools';
-import {
-    handleGitStatus,
-    handleGitDiff,
-    handleGitLog,
-} from '../tools/git_tools';
+import { handleGitStatus, handleGitDiff, handleGitLog } from '../tools/git_tools';
 import { handleReadUrl } from '../tools/fetch_tools';
 
 /**
@@ -68,10 +61,7 @@ class NodeToolRegistry implements ToolRegistry {
     private handlers: Record<string, ToolHandler>;
     private schemas: Record<string, z.ZodTypeAny>;
 
-    constructor(
-        handlers: Record<string, ToolHandler>,
-        schemas: Record<string, z.ZodTypeAny>
-    ) {
+    constructor(handlers: Record<string, ToolHandler>, schemas: Record<string, z.ZodTypeAny>) {
         this.handlers = handlers;
         this.schemas = schemas;
     }
@@ -133,9 +123,81 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
 /**
  * Create a NodeToolRegistry with all registered tools.
  * This is the factory function used by entrypoints.
+ * Automatically loads plugins from ~/.assistant/plugins/ if they exist.
  */
 export function createNodeToolRegistry(): ToolRegistry {
-    return new NodeToolRegistry(TOOL_HANDLERS, ToolSchemas);
+    // Load plugins and merge with built-in tools
+    const plugins = loadAllPlugins();
+    const pluginTools = mergePluginTools(plugins);
+
+    // Merge built-in tools with plugin tools (built-in take precedence)
+    const allHandlers: Record<string, ToolHandler> = {
+        ...pluginTools.handlers, // Plugins first (lower priority)
+        ...TOOL_HANDLERS, // Built-in tools override plugins
+    };
+
+    // Merge schemas (convert ToolSpec to Zod schema)
+    const allSchemas: Record<string, z.ZodTypeAny> = {
+        ...ToolSchemas, // Built-in schemas
+    };
+
+    // Add plugin schemas (plugins use ToolSpec format, need conversion)
+    for (const [name, spec] of Object.entries(pluginTools.schemas)) {
+        // Convert ToolSpec to Zod schema
+        const zodSchema = convertToolSpecToZod(spec);
+        if (zodSchema) {
+            allSchemas[name] = zodSchema;
+        }
+    }
+
+    return new NodeToolRegistry(allHandlers, allSchemas);
+}
+
+/**
+ * Convert a ToolSpec to a Zod schema.
+ * This is a simplified conversion - full conversion would need more logic.
+ */
+function convertToolSpecToZod(spec: any): z.ZodTypeAny | null {
+    try {
+        const shape: Record<string, z.ZodTypeAny> = {};
+
+        if (spec.parameters) {
+            for (const [key, param] of Object.entries(spec.parameters as Record<string, any>)) {
+                let zodType: z.ZodTypeAny;
+
+                switch (param.type) {
+                    case 'string':
+                        zodType = z.string();
+                        break;
+                    case 'integer':
+                        zodType = z.number().int();
+                        break;
+                    case 'number':
+                        zodType = z.number();
+                        break;
+                    case 'boolean':
+                        zodType = z.boolean();
+                        break;
+                    default:
+                        zodType = z.any();
+                }
+
+                if (param.enum) {
+                    zodType = z.enum(param.enum as [string, ...string[]]);
+                }
+
+                if (!spec.required?.includes(key)) {
+                    zodType = zodType.optional();
+                }
+
+                shape[key] = zodType;
+            }
+        }
+
+        return z.object(shape);
+    } catch {
+        return null;
+    }
 }
 
 /**

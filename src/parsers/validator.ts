@@ -24,7 +24,18 @@ export function validateToolInput(input: string): string | null {
     }
 
     // Check for single-word commands that need more args
-    const singleWordInvalid = ['task', 'memory', 'run', 'read', 'write', 'create', 'save', 'cat', 'show', 'remind'];
+    const singleWordInvalid = [
+        'task',
+        'memory',
+        'run',
+        'read',
+        'write',
+        'create',
+        'save',
+        'cat',
+        'show',
+        'remind',
+    ];
     const trimmed = input.trim();
     if (singleWordInvalid.includes(trimmed.toLowerCase())) {
         return `Error: '${trimmed}' command requires additional arguments.`;

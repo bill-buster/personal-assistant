@@ -20,37 +20,37 @@ const testCases: TestCase[] = [
         input: 'list my tasks',
         expectedTool: 'task_list',
         expectedArgs: { status: 'all' },
-        description: 'list my tasks -> task_list'
+        description: 'list my tasks -> task_list',
     },
     {
         input: 'show my tasks',
         expectedTool: 'task_list',
         expectedArgs: { status: 'all' },
-        description: 'show my tasks -> task_list'
+        description: 'show my tasks -> task_list',
     },
     {
         input: 'add task buy milk',
         expectedTool: 'task_add',
         expectedArgs: { text: 'buy milk' },
-        description: 'add task -> task_add'
+        description: 'add task -> task_add',
     },
     {
         input: 'list open tasks',
         expectedTool: 'task_list',
         expectedArgs: { status: 'open' },
-        description: 'list open tasks -> task_list with status open'
+        description: 'list open tasks -> task_list with status open',
     },
     {
         input: 'complete task 5',
         expectedTool: 'task_done',
         expectedArgs: { id: 5 },
-        description: 'complete task N -> task_done'
+        description: 'complete task N -> task_done',
     },
     {
         input: 'done task 10',
         expectedTool: 'task_done',
         expectedArgs: { id: 10 },
-        description: 'done task N -> task_done'
+        description: 'done task N -> task_done',
     },
 
     // Read File Aliases
@@ -58,37 +58,37 @@ const testCases: TestCase[] = [
         input: 'read file notes.txt',
         expectedTool: 'read_file',
         expectedArgs: { path: 'notes.txt' },
-        description: 'read file X -> read_file'
+        description: 'read file X -> read_file',
     },
     {
         input: 'read notes.txt',
         expectedTool: 'read_file',
         expectedArgs: { path: 'notes.txt' },
-        description: 'read X -> read_file'
+        description: 'read X -> read_file',
     },
     {
         input: 'cat README.md',
         expectedTool: 'read_file',
         expectedArgs: { path: 'README.md' },
-        description: 'cat X -> read_file'
+        description: 'cat X -> read_file',
     },
     {
         input: 'show me config.json',
         expectedTool: 'read_file',
         expectedArgs: { path: 'config.json' },
-        description: 'show me X -> read_file'
+        description: 'show me X -> read_file',
     },
     {
         input: "what's in file notes.txt",
         expectedTool: 'read_file',
         expectedArgs: { path: 'notes.txt' },
-        description: "what's in file X -> read_file"
+        description: "what's in file X -> read_file",
     },
     {
         input: 'what is in document.md',
         expectedTool: 'read_file',
         expectedArgs: { path: 'document.md' },
-        description: 'what is in X -> read_file'
+        description: 'what is in X -> read_file',
     },
 
     // Write File Aliases
@@ -96,13 +96,13 @@ const testCases: TestCase[] = [
         input: 'write to notes.txt: hello world',
         expectedTool: 'write_file',
         expectedArgs: { path: 'notes.txt', content: 'hello world' },
-        description: 'write to X: Y -> write_file'
+        description: 'write to X: Y -> write_file',
     },
     {
         input: 'save important data to backup.txt',
         expectedTool: 'write_file',
         expectedArgs: { path: 'backup.txt', content: 'important data' },
-        description: 'save Y to X -> write_file'
+        description: 'save Y to X -> write_file',
     },
 
     // List Files
@@ -110,13 +110,13 @@ const testCases: TestCase[] = [
         input: 'list files',
         expectedTool: 'list_files',
         expectedArgs: {},
-        description: 'list files -> list_files'
+        description: 'list files -> list_files',
     },
     {
         input: 'list',
         expectedTool: 'list_files',
         expectedArgs: {},
-        description: 'list -> list_files'
+        description: 'list -> list_files',
     },
 
     // Memory / Remember
@@ -124,13 +124,13 @@ const testCases: TestCase[] = [
         input: 'save this: important meeting tomorrow',
         expectedTool: 'remember',
         expectedArgs: { text: 'important meeting tomorrow' },
-        description: 'save this: X -> remember'
+        description: 'save this: X -> remember',
     },
     {
         input: 'note: call mom later',
         expectedTool: 'remember',
         expectedArgs: { text: 'call mom later' },
-        description: 'note: X -> remember'
+        description: 'note: X -> remember',
     },
 
     // Memory Search
@@ -138,13 +138,13 @@ const testCases: TestCase[] = [
         input: 'find memory roadmap',
         expectedTool: 'memory_search',
         expectedArgs: { query: 'roadmap' },
-        description: 'find memory X -> memory_search'
+        description: 'find memory X -> memory_search',
     },
     {
         input: 'search memory project notes',
         expectedTool: 'memory_search',
         expectedArgs: { query: 'project notes' },
-        description: 'search memory X -> memory_search'
+        description: 'search memory X -> memory_search',
     },
 
     // Utility Tools
@@ -152,37 +152,37 @@ const testCases: TestCase[] = [
         input: 'what time is it',
         expectedTool: 'get_time',
         expectedArgs: {},
-        description: 'what time is it -> get_time'
+        description: 'what time is it -> get_time',
     },
     {
         input: 'current time',
         expectedTool: 'get_time',
         expectedArgs: {},
-        description: 'current time -> get_time'
+        description: 'current time -> get_time',
     },
     {
         input: 'time now',
         expectedTool: 'get_time',
         expectedArgs: {},
-        description: 'time now -> get_time'
+        description: 'time now -> get_time',
     },
     {
         input: 'calculate 15 * 8',
         expectedTool: 'calculate',
         expectedArgs: { expression: '15 * 8' },
-        description: 'calculate X -> calculate'
+        description: 'calculate X -> calculate',
     },
     {
         input: 'calc 100 / 4',
         expectedTool: 'calculate',
         expectedArgs: { expression: '100 / 4' },
-        description: 'calc X -> calculate'
+        description: 'calc X -> calculate',
     },
     {
         input: 'compute 2 + 2',
         expectedTool: 'calculate',
         expectedArgs: { expression: '2 + 2' },
-        description: 'compute X -> calculate'
+        description: 'compute X -> calculate',
     },
 
     // Calendar Aliases
@@ -190,13 +190,13 @@ const testCases: TestCase[] = [
         input: 'check my calendar',
         expectedTool: 'calendar_list',
         expectedArgs: {},
-        description: 'check my calendar -> calendar_list'
+        description: 'check my calendar -> calendar_list',
     },
     {
         input: "what's on my calendar",
         expectedTool: 'calendar_list',
         expectedArgs: {},
-        description: "what's on my calendar -> calendar_list"
+        description: "what's on my calendar -> calendar_list",
     },
 
     // Contact Aliases
@@ -204,31 +204,31 @@ const testCases: TestCase[] = [
         input: 'find contact John',
         expectedTool: 'contact_search',
         expectedArgs: { query: 'John' },
-        description: 'find contact X -> contact_search'
+        description: 'find contact X -> contact_search',
     },
     {
         input: 'lookup contact Alice Smith',
         expectedTool: 'contact_search',
         expectedArgs: { query: 'Alice Smith' },
-        description: 'lookup contact X -> contact_search'
+        description: 'lookup contact X -> contact_search',
     },
 
     // No Match Cases
     {
         input: 'hello world',
         expectedTool: null,
-        description: 'random text -> null'
+        description: 'random text -> null',
     },
     {
         input: 'please help me',
         expectedTool: null,
-        description: 'help request -> null'
+        description: 'help request -> null',
     },
     {
         input: 'explain how caching works',
         expectedTool: null,
-        description: 'explanation request -> null'
-    }
+        description: 'explanation request -> null',
+    },
 ];
 
 let failures = 0;
@@ -285,4 +285,4 @@ if (failures > 0) {
 }
 
 console.log('OK');
-export { };
+export {};

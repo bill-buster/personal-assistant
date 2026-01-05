@@ -1,9 +1,9 @@
 /**
  * Web Dashboard Server
- * 
+ *
  * A minimal Express-like HTTP server for the Assistant dashboard.
  * Uses Node.js built-in http module to avoid external dependencies.
- * 
+ *
  * @module web/server
  */
 
@@ -118,7 +118,7 @@ async function handleAPI(
 
             case '/api/memory':
                 if (req.method === 'GET') {
-                    const query = url.parse(req.url || '', true).query.q as string || '';
+                    const query = (url.parse(req.url || '', true).query.q as string) || '';
                     result = await executor.execute('recall', { query });
                 } else if (req.method === 'POST') {
                     result = await executor.execute('remember', body);
@@ -126,7 +126,10 @@ async function handleAPI(
                 break;
 
             case '/api/health':
-                result = { ok: true, result: { status: 'healthy', timestamp: new Date().toISOString() } };
+                result = {
+                    ok: true,
+                    result: { status: 'healthy', timestamp: new Date().toISOString() },
+                };
                 break;
 
             default:
@@ -144,9 +147,9 @@ async function handleAPI(
 }
 
 function parseBody(req: http.IncomingMessage): Promise<any> {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
         let data = '';
-        req.on('data', chunk => data += chunk);
+        req.on('data', chunk => (data += chunk));
         req.on('end', () => {
             try {
                 resolve(JSON.parse(data));

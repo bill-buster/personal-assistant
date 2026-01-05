@@ -9,12 +9,9 @@ interface ParserResult {
  * @returns {Object|null} Result object or null if no match.
  */
 export function parseTaskCommand(input: string): ParserResult | null {
-    // Regex for task/todo prefix
-    const TASK_PREFIX = /^(task|todo)\s+/i;
-
     // 1. "task add <text>" or "todo add <text>" or just "todo <text>" (implicit add)
     // We need to be careful not to conflict with "task list" or "task done" if "todo list" is used.
-    
+
     // Explicit add: "task add ..." or "todo add ..."
     const explicitAddMatch = input.match(/^(?:task|todo)\s+add\s+(.+)$/i);
     if (explicitAddMatch) {
@@ -27,10 +24,10 @@ export function parseTaskCommand(input: string): ParserResult | null {
         const potentialText = input.replace(/^todo\s+/i, '').trim();
         const firstWord = potentialText.split(' ')[0].toLowerCase();
         if (firstWord !== 'list' && firstWord !== 'done' && firstWord !== 'add') {
-             return parseTaskAdd(potentialText);
+            return parseTaskAdd(potentialText);
         }
     }
-    
+
     // 2. "task list [status]" or "todo list [status]"
     if (input.match(/^(?:task|todo)\s+list/i)) {
         let status = 'all';
@@ -96,8 +93,8 @@ function parseTaskAdd(text: string): ParserResult {
             args: {
                 text: cleanText,
                 due: dueMatch ? dueMatch[1] : undefined,
-                priority: priorityMatch ? priorityMatch[1] : undefined
-            }
-        }
+                priority: priorityMatch ? priorityMatch[1] : undefined,
+            },
+        },
     };
 }

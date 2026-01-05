@@ -1,11 +1,11 @@
 /**
  * Dispatcher - Routes requests to appropriate tools/agents with configurable behavior.
- * 
+ *
  * The dispatcher sits between the REPL/router and the executor, providing:
  * - Intent-based routing (what tool should handle this request?)
  * - Action enforcement (if LLM says "I will do X", ensure it actually calls a tool)
  * - Automatic tool selection based on keywords/patterns
- * 
+ *
  * @module dispatcher
  */
 
@@ -91,19 +91,19 @@ export const DEFAULT_INTENT_PATTERNS: IntentPattern[] = [
         pattern: /\b(what('s| is| are)?|show|list|get|check|see|view)\b.*(task|todo|to-?do|to do)/i,
         tool: 'task_list',
         defaultArgs: { status: 'open' },
-        priority: 100
+        priority: 100,
     },
     {
         pattern: /\b(my|the)\s*(task|todo)s?\b/i,
         tool: 'task_list',
         defaultArgs: { status: 'open' },
-        priority: 90
+        priority: 90,
     },
     {
         pattern: /\bwhat\s+(do\s+i\s+have\s+to|should\s+i|need\s+to)\b/i,
         tool: 'task_list',
         defaultArgs: { status: 'open' },
-        priority: 85
+        priority: 85,
     },
 
     // Time queries
@@ -111,33 +111,33 @@ export const DEFAULT_INTENT_PATTERNS: IntentPattern[] = [
         pattern: /\b(what|current|tell\s+me)\b.*\b(time|date)\b/i,
         tool: 'get_time',
         defaultArgs: {},
-        priority: 80
+        priority: 80,
     },
 
     // Memory recall queries
     {
         pattern: /\b(what|do\s+you)\s+(know|remember)\s+(about|regarding)\b/i,
         tool: 'recall',
-        priority: 70
+        priority: 70,
     },
     // "how old am I", "what is my age", "what's my X"
     {
         pattern: /\b(how\s+old\s+am\s+i|what('?s|\s+is)\s+my\s+\w+)\b/i,
         tool: 'recall',
-        priority: 75
+        priority: 75,
     },
     // "do you remember X", "when did I X" (exclude "remember to" for reminders)
     {
         pattern: /\b(do\s+you\s+remember(?!\s+to\b)|when\s+did\s+i)\b/i,
         tool: 'recall',
-        priority: 72
+        priority: 72,
     },
     // "my age", "my birthday", etc. (Strict end of string or question mark)
     {
         pattern: /^my\s+(age|birthday|name|address|phone|email)[?]?$/i,
         tool: 'recall',
-        priority: 68
-    }
+        priority: 68,
+    },
 ];
 
 /**
@@ -162,8 +162,16 @@ const INTENT_TO_TOOL_MAP: Array<{ pattern: RegExp; hints: string[]; tool: string
     { pattern: /weather/i, hints: ['weather'], tool: 'get_weather' },
     { pattern: /memory|remember/i, hints: ['remember', 'recall'], tool: 'recall' },
     { pattern: /delegate.*coder/i, hints: ['delegate', 'coder'], tool: 'delegate_to_coder' },
-    { pattern: /delegate.*organizer/i, hints: ['delegate', 'organizer'], tool: 'delegate_to_organizer' },
-    { pattern: /delegate.*assistant/i, hints: ['delegate', 'assistant'], tool: 'delegate_to_assistant' },
+    {
+        pattern: /delegate.*organizer/i,
+        hints: ['delegate', 'organizer'],
+        tool: 'delegate_to_organizer',
+    },
+    {
+        pattern: /delegate.*assistant/i,
+        hints: ['delegate', 'assistant'],
+        tool: 'delegate_to_assistant',
+    },
 ];
 
 /**
@@ -174,7 +182,7 @@ export const DEFAULT_DISPATCHER_OPTIONS: DispatcherOptions = {
     enforceActions: true,
     maxAutoRetries: 2,
     verbose: false,
-    intentPatterns: DEFAULT_INTENT_PATTERNS
+    intentPatterns: DEFAULT_INTENT_PATTERNS,
 };
 
 /**
@@ -194,13 +202,13 @@ export class Dispatcher {
 
     /**
      * Analyze user input and determine how to dispatch it.
-     * 
+     *
      * @param input - User's input text
      * @param currentAgent - Currently active agent
      * @param history - Conversation history (for context)
      * @returns DispatchResult with routing decision
      */
-    analyze(input: string, currentAgent: Agent, history: Message[] = []): DispatchResult {
+    analyze(input: string, currentAgent: Agent, _history: Message[] = []): DispatchResult {
         if (this.options.verbose) {
             console.log(`[Dispatcher] Analyzing: "${input.substring(0, 50)}..."`);
         }
@@ -217,20 +225,24 @@ export class Dispatcher {
         return {
             action: 'llm_route',
             agent: currentAgent,
-            debug: { skippedLLM: false }
+            debug: { skippedLLM: false },
         };
     }
 
     /**
      * Check if an LLM response should have included a tool call but didn't.
      * If so, attempt to determine the appropriate tool to call.
-     * 
+     *
      * @param llmResponse - The LLM's text response
      * @param originalInput - The user's original query
      * @param currentAgent - Currently active agent
      * @returns DispatchResult if a tool should be enforced, null otherwise
      */
-    enforceAction(llmResponse: string, originalInput: string, currentAgent: Agent): DispatchResult | null {
+    enforceAction(
+        llmResponse: string,
+        originalInput: string,
+        currentAgent: Agent
+    ): DispatchResult | null {
         if (!this.options.enforceActions) {
             return null;
         }
@@ -243,7 +255,9 @@ export class Dispatcher {
         }
 
         if (this.options.verbose) {
-            console.log(`[Dispatcher] Detected unfulfilled action intent in: "${llmResponse.substring(0, 50)}..."`);
+            console.log(
+                `[Dispatcher] Detected unfulfilled action intent in: "${llmResponse.substring(0, 50)}..."`
+            );
         }
 
         // Try to infer the intended tool from context
@@ -261,7 +275,9 @@ export class Dispatcher {
 
                     if (!toolCall) {
                         if (this.options.verbose) {
-                            console.log(`[Dispatcher] Skipping enforcement for ${mapping.tool}: missing/invalid args`);
+                            console.log(
+                                `[Dispatcher] Skipping enforcement for ${mapping.tool}: missing/invalid args`
+                            );
                         }
                         continue; // Try other mappings instead of bailing out
                     }
@@ -271,8 +287,8 @@ export class Dispatcher {
                         toolCall,
                         debug: {
                             enforceReason: `LLM said "${llmResponse.substring(0, 30)}..." without calling tool`,
-                            matchedPattern: mapping.pattern.source
-                        }
+                            matchedPattern: mapping.pattern.source,
+                        },
                     };
                 }
             }
@@ -291,16 +307,23 @@ export class Dispatcher {
             if (pattern.pattern.test(input)) {
                 // Check if the current agent has access to this tool
                 if (currentAgent.tools.includes(pattern.tool)) {
-                    const args = { ...pattern.defaultArgs, ...this.extractArgsFromText(input, pattern.tool) };
+                    const args = {
+                        ...pattern.defaultArgs,
+                        ...this.extractArgsFromText(input, pattern.tool),
+                    };
                     const toolCall = this.buildToolCall(pattern.tool, args);
 
                     if (this.options.verbose) {
-                        console.log(`[Dispatcher] Auto-dispatch: ${pattern.tool} (pattern: ${pattern.pattern.source})`);
+                        console.log(
+                            `[Dispatcher] Auto-dispatch: ${pattern.tool} (pattern: ${pattern.pattern.source})`
+                        );
                     }
 
                     if (!toolCall) {
                         if (this.options.verbose) {
-                            console.log(`[Dispatcher] Skipping auto-dispatch for ${pattern.tool}: missing/invalid args`);
+                            console.log(
+                                `[Dispatcher] Skipping auto-dispatch for ${pattern.tool}: missing/invalid args`
+                            );
                         }
                         continue;
                     }
@@ -310,8 +333,8 @@ export class Dispatcher {
                         toolCall,
                         debug: {
                             matchedPattern: pattern.pattern.source,
-                            skippedLLM: true
-                        }
+                            skippedLLM: true,
+                        },
                     };
                 }
             }
@@ -389,7 +412,8 @@ export class Dispatcher {
         else if (toolName.startsWith('delegate_to_')) {
             // "delegate the task of listing files to..."
             // "delegate listing files to..."
-            const match = text.match(/delegate.*(?:task of|task|job of)?\s+(.+?)\s+(?:to|with)/i) ||
+            const match =
+                text.match(/delegate.*(?:task of|task|job of)?\s+(.+?)\s+(?:to|with)/i) ||
                 text.match(/delegate\s+(.+?)\s+(?:to|with)/i);
             if (match) {
                 // Clean up common artifacts
@@ -414,7 +438,7 @@ export class Dispatcher {
             case 'get_time':
                 return {};
             case 'recall':
-                // Default to a query that likely yields 0 matches but satisfies schema, 
+                // Default to a query that likely yields 0 matches but satisfies schema,
                 // resulting in recency-based sort (showing latest memories).
                 return { query: 'recent items' };
             default:
@@ -429,7 +453,8 @@ export class Dispatcher {
         if (!value) return false;
         const lowered = value.toLowerCase();
         const blocked = /(\b)(you|me|us|them|here|there|today|now|tomorrow)(\b)/;
-        const verbs = /(\b)(check|get|look|tell|find|fetch|see|weather|will|going|moment|please|what|whats|how|where)(\b)/;
+        const verbs =
+            /(\b)(check|get|look|tell|find|fetch|see|weather|will|going|moment|please|what|whats|how|where)(\b)/;
         if (blocked.test(lowered)) return false;
         if (verbs.test(lowered)) return false;
         return true;
@@ -477,7 +502,9 @@ export class Dispatcher {
      */
     removePattern(toolName: string): void {
         if (this.options.intentPatterns) {
-            this.options.intentPatterns = this.options.intentPatterns.filter(p => p.tool !== toolName);
+            this.options.intentPatterns = this.options.intentPatterns.filter(
+                p => p.tool !== toolName
+            );
         }
     }
 }

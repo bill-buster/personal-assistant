@@ -1,9 +1,9 @@
 /**
  * Interactive REPL for the Prompt Router
- * 
+ *
  * Provides a command-line interface for interacting with agents.
  * Supports multi-turn conversations with tool execution.
- * 
+ *
  * @module repl
  */
 
@@ -43,7 +43,7 @@ interface SessionStats {
 
 /**
  * Start the interactive REPL.
- * 
+ *
  * Commands:
  *   /help     - Show available commands
  *   /config   - Set API keys
@@ -55,8 +55,8 @@ interface SessionStats {
  *   /reset    - Reset to Supervisor agent
  *   /exit     - Exit REPL
  */
-export async function startRepl(options: { verbose?: boolean } = {}) {
-    const { verbose } = options;
+export async function startRepl(options: { verbose?: boolean; stream?: boolean } = {}) {
+    const { verbose, stream = true } = options;
 
     // Build runtime via composition root
     const runtime = initializeRuntime();
@@ -65,7 +65,7 @@ export async function startRepl(options: { verbose?: boolean } = {}) {
     const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout,
-        prompt: '> '
+        prompt: '> ',
     });
     const HISTORY: Message[] = [];
     let currentAgent: Agent = AGENTS.supervisor;
@@ -86,7 +86,7 @@ export async function startRepl(options: { verbose?: boolean } = {}) {
         heuristicHits: 0,
         totalPromptTokens: 0,
         totalCompletionTokens: 0,
-        totalTokens: 0
+        totalTokens: 0,
     };
 
     console.log(`Prompt Router REPL (v1)${verbose ? ' [VERBOSE]' : ''}`);
@@ -94,7 +94,6 @@ export async function startRepl(options: { verbose?: boolean } = {}) {
     rl.prompt();
 
     const processInput = async (input: string) => {
-
         if (input === '/exit') {
             rl.close();
             return;
@@ -139,7 +138,9 @@ export async function startRepl(options: { verbose?: boolean } = {}) {
                     HISTORY.push(...result.session.history);
                     currentAgent = AGENTS[result.session.agent] || AGENTS.supervisor;
                     updatePrompt(); // Update prompt for loaded agent
-                    console.log(`[System] Loaded session '${name}' (${HISTORY.length} messages, agent: ${currentAgent.name})`);
+                    console.log(
+                        `[System] Loaded session '${name}' (${HISTORY.length} messages, agent: ${currentAgent.name})`
+                    );
                 } else {
                     console.error(`[Error] ${result.error}`);
                 }
@@ -195,17 +196,22 @@ export async function startRepl(options: { verbose?: boolean } = {}) {
             HISTORY.push({
                 role: 'assistant',
                 content: null,
-                tool_calls: [{
-                    id: toolCallId,
-                    type: 'function',
-                    function: { name: tool.tool_name, arguments: JSON.stringify(tool.args) }
-                }]
+                tool_calls: [
+                    {
+                        id: toolCallId,
+                        type: 'function',
+                        function: { name: tool.tool_name, arguments: JSON.stringify(tool.args) },
+                    },
+                ],
             });
 
             const execResult = await executor.execute(tool.tool_name, tool.args);
             if (execResult.ok) {
                 const output = JSON.stringify(execResult.result);
-                console.log('[Result]', output.substring(0, 200) + (output.length > 200 ? '...' : ''));
+                console.log(
+                    '[Result]',
+                    output.substring(0, 200) + (output.length > 200 ? '...' : '')
+                );
             } else {
                 console.error('[Error]', execResult.error);
             }
@@ -214,7 +220,7 @@ export async function startRepl(options: { verbose?: boolean } = {}) {
                 role: 'tool',
                 tool_call_id: toolCallId,
                 name: tool.tool_name,
-                content: JSON.stringify(execResult.ok ? execResult.result : execResult.error)
+                content: JSON.stringify(execResult.ok ? execResult.result : execResult.error),
             });
 
             // Handle delegation if applicable (Auto-dispatch path)
@@ -223,7 +229,12 @@ export async function startRepl(options: { verbose?: boolean } = {}) {
                 currentAgent = delegation.newAgent;
                 updatePrompt();
                 if (delegation.input) {
-                    HISTORY.push({ role: 'tool', tool_call_id: toolCallId, name: tool.tool_name, content: `Switched to ${currentAgent.name}.` });
+                    HISTORY.push({
+                        role: 'tool',
+                        tool_call_id: toolCallId,
+                        name: tool.tool_name,
+                        content: `Switched to ${currentAgent.name}.`,
+                    });
                     await processInput(delegation.input);
                     return;
                 }
@@ -249,7 +260,21 @@ export async function startRepl(options: { verbose?: boolean } = {}) {
 
                 let result;
                 try {
-                    result = await route(currentInput, 'spike', null, recentHistory, verbose, currentAgent, runtime.provider, { enableRegex: true, toolFormat: 'compact', toolSchemas: runtime.toolSchemas }, resolvedConfig);
+                    result = await route(
+                        currentInput,
+                        'spike',
+                        null,
+                        recentHistory,
+                        verbose,
+                        currentAgent,
+                        runtime.provider,
+                        {
+                            enableRegex: true,
+                            toolFormat: 'compact',
+                            toolSchemas: runtime.toolSchemas,
+                        },
+                        resolvedConfig
+                    );
                 } finally {
                     spinner.stop();
                 }
@@ -270,7 +295,9 @@ export async function startRepl(options: { verbose?: boolean } = {}) {
                         stats.totalTokens += result.usage.total_tokens;
 
                         // Show token usage for each LLM call
-                        console.log(`[Tokens] ${result.usage.prompt_tokens} in → ${result.usage.completion_tokens} out (${result.usage.total_tokens} total)`);
+                        console.log(
+                            `[Tokens] ${result.usage.prompt_tokens} in → ${result.usage.completion_tokens} out (${result.usage.total_tokens} total)`
+                        );
                     }
                 } else if (result._debug.path) {
                     stats.heuristicHits++;
@@ -285,11 +312,16 @@ export async function startRepl(options: { verbose?: boolean } = {}) {
                     HISTORY.push({
                         role: 'assistant',
                         content: null,
-                        tool_calls: [{
-                            id: toolCallId,
-                            type: 'function',
-                            function: { name: tool.tool_name, arguments: JSON.stringify(tool.args) }
-                        }]
+                        tool_calls: [
+                            {
+                                id: toolCallId,
+                                type: 'function',
+                                function: {
+                                    name: tool.tool_name,
+                                    arguments: JSON.stringify(tool.args),
+                                },
+                            },
+                        ],
                     });
 
                     // Handle agent delegation
@@ -299,8 +331,15 @@ export async function startRepl(options: { verbose?: boolean } = {}) {
                         updatePrompt(); // Update prompt on switch
 
                         // Log and history update
-                        const targetName = delegation.newAgent ? delegation.newAgent.name : 'Supervisor';
-                        HISTORY.push({ role: 'tool', tool_call_id: toolCallId, name: tool.tool_name, content: `Switched to ${targetName}.` });
+                        const targetName = delegation.newAgent
+                            ? delegation.newAgent.name
+                            : 'Supervisor';
+                        HISTORY.push({
+                            role: 'tool',
+                            tool_call_id: toolCallId,
+                            name: tool.tool_name,
+                            content: `Switched to ${targetName}.`,
+                        });
 
                         if (delegation.input) {
                             currentInput = delegation.input;
@@ -312,7 +351,10 @@ export async function startRepl(options: { verbose?: boolean } = {}) {
                     const execResult = await executor.execute(tool.tool_name, tool.args);
                     if (execResult.ok) {
                         const output = JSON.stringify(execResult.result);
-                        console.log('[Result]', output.substring(0, 100) + (output.length > 100 ? '...' : ''));
+                        console.log(
+                            '[Result]',
+                            output.substring(0, 100) + (output.length > 100 ? '...' : '')
+                        );
                     } else {
                         console.error('[Error]', execResult.error);
                     }
@@ -321,34 +363,91 @@ export async function startRepl(options: { verbose?: boolean } = {}) {
                         role: 'tool',
                         tool_call_id: toolCallId,
                         name: tool.tool_name,
-                        content: JSON.stringify(execResult.ok ? execResult.result : execResult.error)
+                        content: JSON.stringify(
+                            execResult.ok ? execResult.result : execResult.error
+                        ),
                     });
-
                 } else if (result.mode === 'reply') {
-                    console.log(`[${currentAgent.name}] ${result.reply.content}`);
-                    HISTORY.push({ role: 'assistant', content: result.reply.content });
+                    // Check if we should stream this reply
+                    const shouldStream =
+                        stream &&
+                        result._debug.path === 'llm_fallback' &&
+                        runtime.provider?.completeStream;
+
+                    if (shouldStream && runtime.provider?.completeStream) {
+                        // Stream the reply
+                        process.stdout.write(`[${currentAgent.name}] `);
+                        let fullContent = '';
+                        try {
+                            const recentHistory = getValidHistorySlice(
+                                HISTORY.slice(0, -1),
+                                historyLimit
+                            );
+                            for await (const chunk of runtime.provider.completeStream(
+                                currentInput || HISTORY[HISTORY.length - 1]?.content || '',
+                                recentHistory,
+                                verbose,
+                                currentAgent.systemPrompt
+                            )) {
+                                if (chunk.content) {
+                                    process.stdout.write(chunk.content);
+                                    fullContent += chunk.content;
+                                }
+                                if (chunk.done) break;
+                            }
+                            process.stdout.write('\n');
+                            HISTORY.push({ role: 'assistant', content: fullContent });
+                        } catch (err: any) {
+                            console.error(`\n[Stream Error] ${err.message}`);
+                            // Fallback to non-streamed reply
+                            console.log(`[${currentAgent.name}] ${result.reply.content}`);
+                            HISTORY.push({ role: 'assistant', content: result.reply.content });
+                        }
+                    } else {
+                        // Non-streamed reply (fallback or non-LLM reply)
+                        console.log(`[${currentAgent.name}] ${result.reply.content}`);
+                        HISTORY.push({ role: 'assistant', content: result.reply.content });
+                    }
 
                     // Check for unfulfilled action intent (e.g., "I will fetch...")
-                    const enforceResult = dispatcher.enforceAction(result.reply.content, currentInput, currentAgent);
-                    if (enforceResult && enforceResult.action === 'enforced_dispatch' && enforceResult.toolCall) {
+                    const enforceResult = dispatcher.enforceAction(
+                        result.reply.content,
+                        currentInput,
+                        currentAgent
+                    );
+                    if (
+                        enforceResult &&
+                        enforceResult.action === 'enforced_dispatch' &&
+                        enforceResult.toolCall
+                    ) {
                         const tool = enforceResult.toolCall;
-                        console.log(`[Dispatcher] Enforcing action: ${tool.tool_name} (Reason: ${enforceResult.debug?.enforceReason})`);
+                        console.log(
+                            `[Dispatcher] Enforcing action: ${tool.tool_name} (Reason: ${enforceResult.debug?.enforceReason})`
+                        );
 
                         const toolCallId = `enforce_${Date.now()}`;
                         HISTORY.push({
                             role: 'assistant',
                             content: null,
-                            tool_calls: [{
-                                id: toolCallId,
-                                type: 'function',
-                                function: { name: tool.tool_name, arguments: JSON.stringify(tool.args) }
-                            }]
+                            tool_calls: [
+                                {
+                                    id: toolCallId,
+                                    type: 'function',
+                                    function: {
+                                        name: tool.tool_name,
+                                        arguments: JSON.stringify(tool.args),
+                                    },
+                                },
+                            ],
                         });
 
                         const execResult = await executor.execute(tool.tool_name, tool.args);
                         if (execResult.ok) {
                             const output = JSON.stringify(execResult.result);
-                            console.log('[Result]', output.substring(0, 100) + (output.length > 100 ? '...' : ''));
+                            console.log(
+                                '[Result]',
+                                output.substring(0, 100) + (output.length > 100 ? '...' : '')
+                            );
                         } else {
                             console.error('[Error]', execResult.error);
                         }
@@ -357,7 +456,9 @@ export async function startRepl(options: { verbose?: boolean } = {}) {
                             role: 'tool',
                             tool_call_id: toolCallId,
                             name: tool.tool_name,
-                            content: JSON.stringify(execResult.ok ? execResult.result : execResult.error)
+                            content: JSON.stringify(
+                                execResult.ok ? execResult.result : execResult.error
+                            ),
                         });
 
                         // Continue loop to process the tool result
@@ -376,9 +477,8 @@ export async function startRepl(options: { verbose?: boolean } = {}) {
         if (!(rl as any).closed) rl.prompt();
     };
 
-    rl.on('line', (line) => processInput(line.trim()));
+    rl.on('line', line => processInput(line.trim()));
 }
-
 
 /**
  * Display session statistics.
@@ -388,44 +488,73 @@ function showStats(stats: SessionStats) {
     console.log('─'.repeat(40));
     console.log(`  LLM Calls:        ${stats.llmCalls}`);
     console.log(`  Heuristic Hits:   ${stats.heuristicHits}`);
-    console.log(`  Hit Rate:         ${stats.llmCalls + stats.heuristicHits > 0
-        ? ((stats.heuristicHits / (stats.llmCalls + stats.heuristicHits)) * 100).toFixed(1) + '%'
-        : 'N/A'}`);
+    console.log(
+        `  Hit Rate:         ${
+            stats.llmCalls + stats.heuristicHits > 0
+                ? ((stats.heuristicHits / (stats.llmCalls + stats.heuristicHits)) * 100).toFixed(
+                      1
+                  ) + '%'
+                : 'N/A'
+        }`
+    );
     console.log('');
     console.log(`  Prompt Tokens:    ${stats.totalPromptTokens.toLocaleString()}`);
     console.log(`  Completion Tokens: ${stats.totalCompletionTokens.toLocaleString()}`);
     console.log(`  Total Tokens:     ${stats.totalTokens.toLocaleString()}`);
-    console.log(`  Avg per LLM Call: ${stats.llmCalls > 0
-        ? Math.round(stats.totalTokens / stats.llmCalls).toLocaleString()
-        : 'N/A'}`);
+    console.log(
+        `  Avg per LLM Call: ${
+            stats.llmCalls > 0
+                ? Math.round(stats.totalTokens / stats.llmCalls).toLocaleString()
+                : 'N/A'
+        }`
+    );
     console.log('─'.repeat(40) + '\n');
 }
 
 /**
  * Handle delegation logic.
  */
-function handleDelegation(toolName: string, args: any): { switched: boolean; input: string | null; newAgent?: Agent } {
+function handleDelegation(
+    toolName: string,
+    args: any
+): { switched: boolean; input: string | null; newAgent?: Agent } {
     if (toolName === 'delegate_to_coder') {
         const task = args.task;
         console.log(`[System] Switching to Coder for: "${task}"`);
-        return { switched: true, input: `[System: Handoff to Coder] Task: ${task}`, newAgent: AGENTS.coder };
+        return {
+            switched: true,
+            input: `[System: Handoff to Coder] Task: ${task}`,
+            newAgent: AGENTS.coder,
+        };
     }
 
     if (toolName === 'delegate_to_organizer') {
         const task = args.task;
         console.log(`[System] Switching to Organizer for: "${task}"`);
-        return { switched: true, input: `[System: Handoff to Organizer] Task: ${task}`, newAgent: AGENTS.organizer };
+        return {
+            switched: true,
+            input: `[System: Handoff to Organizer] Task: ${task}`,
+            newAgent: AGENTS.organizer,
+        };
     }
 
     if (toolName === 'delegate_to_assistant') {
         const task = args.task;
         console.log(`[System] Switching to Assistant for: "${task}"`);
-        return { switched: true, input: `[System: Handoff to Assistant] Task: ${task}`, newAgent: AGENTS.assistant };
+        return {
+            switched: true,
+            input: `[System: Handoff to Assistant] Task: ${task}`,
+            newAgent: AGENTS.assistant,
+        };
     }
 
     if (toolName === 'return_to_supervisor') {
         console.log(`[System] Returning to Supervisor.`);
-        return { switched: true, input: `[System: Returned to Supervisor]`, newAgent: AGENTS.supervisor };
+        return {
+            switched: true,
+            input: `[System: Returned to Supervisor]`,
+            newAgent: AGENTS.supervisor,
+        };
     }
 
     return { switched: false, input: null };
@@ -458,7 +587,8 @@ function showTools(currentAgent: Agent) {
     if (readyTools.length > 0) {
         console.log('\n✅ Ready:');
         for (const [name, spec] of readyTools) {
-            const desc = spec.description.substring(0, 50) + (spec.description.length > 50 ? '...' : '');
+            const desc =
+                spec.description.substring(0, 50) + (spec.description.length > 50 ? '...' : '');
             console.log(`  ${name.padEnd(22)} ${desc}`);
         }
     }
@@ -478,7 +608,7 @@ function showTools(currentAgent: Agent) {
 /**
  * Get a valid slice of history that doesn't break tool call/result pairs.
  * This is important for token efficiency - we only send recent context.
- * 
+ *
  * Ensures:
  * 1. If slice starts with 'tool' message, include preceding 'assistant' with tool_calls
  * 2. If slice ends with 'assistant' that has tool_calls, include following 'tool' results
@@ -496,7 +626,7 @@ function getValidHistorySlice(history: Message[], limit: number): Message[] {
 
     // Get the slice
     const slice = history.slice(start, end);
-    
+
     // Check if the last message is an 'assistant' with tool_calls but no tool result follows in slice
     // This shouldn't happen in practice since tool results follow immediately, but handle it defensively
     if (slice.length > 0) {
@@ -591,7 +721,11 @@ function ensureSessionsDir(): void {
 /**
  * Save session to file.
  */
-function saveSession(name: string, agent: Agent, history: Message[]): { ok: boolean; error?: string } {
+function saveSession(
+    name: string,
+    agent: Agent,
+    history: Message[]
+): { ok: boolean; error?: string } {
     try {
         ensureSessionsDir();
         const filePath = path.join(getSessionsDir(), `${name}.json`);
@@ -605,7 +739,7 @@ function saveSession(name: string, agent: Agent, history: Message[]): { ok: bool
             created: existingCreated,
             updated: new Date().toISOString(),
             agent: agent.name.toLowerCase(),
-            history
+            history,
         };
 
         fs.writeFileSync(filePath, JSON.stringify(session, null, 2), 'utf8');
@@ -642,10 +776,12 @@ function listSessions(): Session[] {
         const dir = getSessionsDir();
         const files = fs.readdirSync(dir).filter(f => f.endsWith('.json'));
 
-        return files.map(file => {
-            const data = fs.readFileSync(path.join(dir, file), 'utf8');
-            return JSON.parse(data) as Session;
-        }).sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime());
+        return files
+            .map(file => {
+                const data = fs.readFileSync(path.join(dir, file), 'utf8');
+                return JSON.parse(data) as Session;
+            })
+            .sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime());
     } catch {
         return [];
     }
@@ -659,13 +795,13 @@ class Spinner {
     private timer: NodeJS.Timeout | null = null;
     private index = 0;
 
-    constructor(private text: string = '') { }
+    constructor(private text: string = '') {}
 
     start() {
         if (this.timer) return;
         process.stdout.write('\x1B[?25l'); // Hide cursor
         this.timer = setInterval(() => {
-            const frame = this.frames[this.index = (this.index + 1) % this.frames.length];
+            const frame = this.frames[(this.index = (this.index + 1) % this.frames.length)];
             process.stdout.write(`\r${frame} ${this.text}`);
         }, 80);
     }

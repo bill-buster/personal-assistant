@@ -2,7 +2,7 @@
 
 /**
  * Assistant CLI - Unified entry point
- * 
+ *
  * Subcommands:
  *   remember <text>     - Store in memory
  *   recall <query>      - Search memory
@@ -13,23 +13,27 @@
  *   run <command>       - Execute safe shell command
  *   repl                - Interactive mode
  *   demo                - Run demo flow
- * 
+ *
  * Flags:
  *   --human             - Human-readable output (default: JSON)
  *   --help              - Show help
  *   --version           - Show version
- * 
+ *
  * @module cli
  */
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import * as os from 'node:os';
 import {
     Executor,
     printResult,
     setHumanMode,
     parseArgs,
     getPackageVersion,
+    FileCache,
+    TestCache,
+    loadAllPlugins,
 } from '../core';
 import type { ToolResult, CLIResult, ResolvedConfig } from '../core';
 import { route } from './router';
@@ -45,7 +49,7 @@ function toCliResult(result: ToolResult): CLIResult {
         ok: result.ok,
         result: result.result,
         error: result.error ? result.error.message : undefined,
-        _debug: result._debug
+        _debug: result._debug,
     };
 }
 
@@ -68,6 +72,13 @@ Commands:
   git diff [--staged]          Show changes
   git log [--limit N]          Show recent commits
   audit [--limit N]            View audit trail
+  cache clear                   Clear LLM response cache
+  cache stats                   Show cache statistics
+  cache test-clear              Clear test result cache
+  generate tool <name> [--args] Generate new tool with boilerplate
+  generate tests <name>         Generate tests for existing tool
+  profile "<command>"            Profile command execution performance
+  plugins list                  List loaded plugins
   web [--port N]               Start web dashboard
   repl                         Start interactive mode
   demo                         Run demonstration flow
@@ -75,6 +86,9 @@ Commands:
 Options:
   --human                      Human-readable output (default: JSON)
   --verbose                    Verbose output
+  --mock                       Use mock provider (no API calls)
+  --stream                     Enable streaming responses (REPL only, default: true)
+  --no-stream                  Disable streaming responses (REPL only)
   --help                       Show this help
   --version                    Show version
 
@@ -101,15 +115,27 @@ interface ParsedArgs {
 function parseCliArgs(argv: string[]): ParsedArgs {
     const { flags, positionals } = parseArgs(argv, {
         valueFlags: ['in', 'status', 'limit', 'port'],
-        booleanFlags: ['human', 'verbose', 'help', 'version', 'staged', 'mock']
+        booleanFlags: [
+            'human',
+            'verbose',
+            'help',
+            'version',
+            'staged',
+            'mock',
+            'stream',
+            'no-stream',
+        ],
     });
 
     const command = positionals[0] || '';
     let subcommand: string | null = null;
     let args = positionals.slice(1);
 
-    // Handle compound commands like "task add", "git status"
-    if (['task', 'remind', 'git'].includes(command) && positionals.length > 1) {
+    // Handle compound commands like "task add", "git status", "generate tool", "cache clear"
+    if (
+        ['task', 'remind', 'git', 'generate', 'cache', 'plugins'].includes(command) &&
+        positionals.length > 1
+    ) {
         subcommand = positionals[1];
         args = positionals.slice(2);
     }
@@ -178,6 +204,18 @@ async function main() {
             result = handleAudit(flags, resolvedConfig); // Audit is synchronous (reads file directly)
             break;
 
+        case 'cache':
+            result = handleCache(subcommand, flags);
+            break;
+
+        case 'generate':
+            result = handleGenerate(subcommand, args, flags);
+            break;
+
+        case 'profile':
+            result = await handleProfile(runtime, args, flags, verbose);
+            break;
+
         case 'web': {
             const webPort = flags['port'] ? parseInt(flags['port'] as string, 10) : 3000;
             const { startWebServer } = require('./web/server');
@@ -188,7 +226,8 @@ async function main() {
         case 'repl': {
             // Lazy import to avoid circular dependencies
             const { startRepl } = require('./repl');
-            startRepl({ verbose });
+            const enableStream = flags['stream'] !== false; // Default: enabled
+            startRepl({ verbose, stream: enableStream });
             return; // REPL keeps process alive
         }
 
@@ -205,16 +244,33 @@ async function main() {
 }
 
 // Helper: Route CLI command through Router and execute
-async function routeAndExecute(input: string, runtime: Runtime, verbose: boolean = false): Promise<CLIResult> {
+async function routeAndExecute(
+    input: string,
+    runtime: Runtime,
+    verbose: boolean = false
+): Promise<CLIResult> {
     try {
-        const routed = await route(input, 'spike', null, [], verbose, runtime.defaultAgent, runtime.provider, { enableRegex: true, toolFormat: 'compact', toolSchemas: runtime.toolSchemas }, runtime.config);
+        const routed = await route(
+            input,
+            'spike',
+            null,
+            [],
+            verbose,
+            runtime.defaultAgent,
+            runtime.provider,
+            { enableRegex: true, toolFormat: 'compact', toolSchemas: runtime.toolSchemas },
+            runtime.config
+        );
 
         if (isRouteError(routed)) {
             return { ok: false, error: routed.error };
         }
 
         if (isRouteToolCall(routed)) {
-            const execResult = await runtime.executor.execute(routed.tool_call.tool_name, routed.tool_call.args);
+            const execResult = await runtime.executor.execute(
+                routed.tool_call.tool_name,
+                routed.tool_call.args
+            );
             return toCliResult(execResult);
         } else if (isRouteReply(routed)) {
             // Router returned a reply instead of a tool call
@@ -229,7 +285,11 @@ async function routeAndExecute(input: string, runtime: Runtime, verbose: boolean
 
 // Command Handlers
 
-async function handleRemember(runtime: Runtime, args: string[], verbose: boolean): Promise<CLIResult> {
+async function handleRemember(
+    runtime: Runtime,
+    args: string[],
+    verbose: boolean
+): Promise<CLIResult> {
     const text = args.join(' ').trim();
     if (!text) {
         return { ok: false, error: 'Usage: assistant remember <text>' };
@@ -237,7 +297,11 @@ async function handleRemember(runtime: Runtime, args: string[], verbose: boolean
     return await routeAndExecute(`remember: ${text}`, runtime, verbose);
 }
 
-async function handleRecall(runtime: Runtime, args: string[], verbose: boolean): Promise<CLIResult> {
+async function handleRecall(
+    runtime: Runtime,
+    args: string[],
+    verbose: boolean
+): Promise<CLIResult> {
     const query = args.join(' ').trim();
     if (!query) {
         return { ok: false, error: 'Usage: assistant recall <query>' };
@@ -357,22 +421,254 @@ function handleAudit(flags: Record<string, string | boolean>, config: ResolvedCo
     }
 
     try {
-        const lines = fs.readFileSync(auditPath, 'utf8')
-            .split('\n')
-            .filter(Boolean)
-            .slice(-limit);
+        const lines = fs.readFileSync(auditPath, 'utf8').split('\n').filter(Boolean).slice(-limit);
 
-        const entries = lines.map(line => {
-            try {
-                return JSON.parse(line);
-            } catch {
-                return null;
-            }
-        }).filter(Boolean);
+        const entries = lines
+            .map(line => {
+                try {
+                    return JSON.parse(line);
+                } catch {
+                    return null;
+                }
+            })
+            .filter(Boolean);
 
         return { ok: true, result: { count: entries.length, entries } };
     } catch (e: any) {
         return { ok: false, error: `Failed to read audit log: ${e.message}` };
+    }
+}
+
+function handleCache(
+    subcommand: string | null,
+    flags: Record<string, string | boolean>
+): CLIResult {
+    switch (subcommand) {
+        case 'clear': {
+            const cache = new FileCache();
+            cache.clear();
+            const pruned = cache.prune();
+            return {
+                ok: true,
+                result: { message: `Cleared LLM cache (${pruned} entries removed)` },
+            };
+        }
+
+        case 'stats': {
+            const cache = new FileCache();
+            const stats = cache.stats();
+            return {
+                ok: true,
+                result: {
+                    entries: stats.total,
+                    size_bytes: stats.size,
+                    size_mb: (stats.size / 1024 / 1024).toFixed(2),
+                },
+            };
+        }
+
+        case 'test-clear': {
+            const testCache = new TestCache();
+            testCache.clear();
+            return { ok: true, result: { message: 'Cleared test result cache' } };
+        }
+
+        default:
+            return { ok: false, error: 'Usage: assistant cache <clear|stats|test-clear>' };
+    }
+}
+
+function handleGenerate(
+    subcommand: string | null,
+    args: string[],
+    flags: Record<string, string | boolean>
+): CLIResult {
+    const { spawnSync } = require('node:child_process');
+
+    switch (subcommand) {
+        case 'tool': {
+            if (args.length === 0) {
+                return {
+                    ok: false,
+                    error: 'Usage: assistant generate tool <tool_name> [--args <args>]',
+                };
+            }
+
+            const toolName = args[0];
+            const argsIndex = args.indexOf('--args');
+            const argsStr =
+                argsIndex >= 0 && argsIndex < args.length - 1 ? args[argsIndex + 1] : '';
+
+            const scriptPath = path.join(__dirname, '..', 'scripts', 'generate_tool.js');
+            const result = spawnSync(
+                process.execPath,
+                [scriptPath, toolName, ...(argsStr ? ['--args', argsStr] : [])],
+                {
+                    stdio: 'inherit',
+                    cwd: path.join(__dirname, '..', '..'),
+                }
+            );
+
+            return {
+                ok: result.status === 0,
+                result:
+                    result.status === 0
+                        ? { message: `Tool ${toolName} generated successfully` }
+                        : undefined,
+                error:
+                    result.status !== 0
+                        ? `Generation failed with exit code ${result.status}`
+                        : undefined,
+            };
+        }
+
+        case 'tests': {
+            if (args.length === 0) {
+                return { ok: false, error: 'Usage: assistant generate tests <tool_name>' };
+            }
+
+            const toolName = args[0];
+            const scriptPath = path.join(__dirname, '..', 'scripts', 'generate_tests.js');
+            const result = spawnSync(process.execPath, [scriptPath, toolName], {
+                stdio: 'inherit',
+                cwd: path.join(__dirname, '..', '..'),
+            });
+
+            return {
+                ok: result.status === 0,
+                result:
+                    result.status === 0
+                        ? { message: `Tests for ${toolName} generated successfully` }
+                        : undefined,
+                error:
+                    result.status !== 0
+                        ? `Test generation failed with exit code ${result.status}`
+                        : undefined,
+            };
+        }
+
+        default:
+            return {
+                ok: false,
+                error: 'Usage: assistant generate <tool|tests> [args]\n  tool <name> [--args <args>]  - Generate new tool\n  tests <name>                  - Generate tests for tool',
+            };
+    }
+}
+
+async function handleProfile(
+    runtime: Runtime,
+    args: string[],
+    flags: Record<string, string | boolean>,
+    verbose: boolean
+): Promise<CLIResult> {
+    const input = args.join(' ');
+    if (!input) {
+        return { ok: false, error: 'Usage: assistant profile "<command>"' };
+    }
+
+    const startTime = Date.now();
+    const memBefore = process.memoryUsage();
+
+    // Route and execute
+    const routed = await route(
+        input,
+        'spike',
+        null,
+        [],
+        verbose,
+        runtime.defaultAgent,
+        runtime.provider,
+        { enableRegex: true, toolFormat: 'compact', toolSchemas: runtime.toolSchemas },
+        runtime.config
+    );
+
+    let executionTime = 0;
+    let toolName: string | null = null;
+    let cacheHit = false;
+
+    if (isRouteToolCall(routed)) {
+        const execStart = Date.now();
+        const execResult = await runtime.executor.execute(
+            routed.tool_call.tool_name,
+            routed.tool_call.args
+        );
+        executionTime = Date.now() - execStart;
+        toolName = routed.tool_call.tool_name;
+
+        // Check if LLM was used (cache hit if model is null)
+        if (isRouteToolCall(routed) || isRouteReply(routed)) {
+            if (routed._debug?.model) {
+                cacheHit = false; // LLM was called
+            } else if (
+                routed._debug?.path === 'regex_fast_path' ||
+                routed._debug?.path === 'heuristic_parse'
+            ) {
+                cacheHit = true; // No LLM call needed
+            }
+        }
+    }
+
+    const totalTime = Date.now() - startTime;
+    const memAfter = process.memoryUsage();
+
+    const profile = {
+        command: input,
+        total_time_ms: totalTime,
+        routing_time_ms: totalTime - executionTime,
+        execution_time_ms: executionTime,
+        tool_name: toolName,
+        routing_path:
+            isRouteToolCall(routed) || isRouteReply(routed) ? routed._debug?.path : 'error',
+        cache_hit: cacheHit,
+        llm_used: isRouteToolCall(routed) || isRouteReply(routed) ? !!routed._debug?.model : false,
+        token_usage: isRouteToolCall(routed) || isRouteReply(routed) ? routed.usage || null : null,
+        memory_delta_mb: ((memAfter.heapUsed - memBefore.heapUsed) / 1024 / 1024).toFixed(2),
+        memory_used_mb: (memAfter.heapUsed / 1024 / 1024).toFixed(2),
+    };
+
+    return {
+        ok: true,
+        result: profile,
+    };
+}
+
+function handlePlugins(
+    subcommand: string | null,
+    flags: Record<string, string | boolean>
+): CLIResult {
+    switch (subcommand) {
+        case 'list': {
+            const plugins = loadAllPlugins();
+            if (plugins.length === 0) {
+                return {
+                    ok: true,
+                    result: {
+                        message: 'No plugins found',
+                        plugins: [],
+                        plugins_dir: path.join(os.homedir(), '.assistant', 'plugins'),
+                    },
+                };
+            }
+
+            const pluginList = plugins.map(p => ({
+                name: p.name,
+                version: p.version,
+                description: p.description,
+                tools: Array.from(p.tools.keys()),
+            }));
+
+            return {
+                ok: true,
+                result: {
+                    plugins: pluginList,
+                    total: plugins.length,
+                    plugins_dir: path.join(os.homedir(), '.assistant', 'plugins'),
+                },
+            };
+        }
+
+        default:
+            return { ok: false, error: 'Usage: assistant plugins <list>' };
     }
 }
 
@@ -381,11 +677,19 @@ async function handleDemo(executor: Executor, human: boolean): Promise<void> {
 
     const steps = [
         { label: 'Creating task', tool: 'task_add', args: { text: 'Buy groceries' } },
-        { label: 'Storing note', tool: 'remember', args: { text: 'Shopping list: eggs, milk, bread' } },
+        {
+            label: 'Storing note',
+            tool: 'remember',
+            args: { text: 'Shopping list: eggs, milk, bread' },
+        },
         { label: 'Recalling note', tool: 'recall', args: { query: 'shopping list' } },
         { label: 'Listing tasks', tool: 'task_list', args: {} },
         { label: 'Completing task', tool: 'task_done', args: { id: 1 } },
-        { label: 'Setting reminder', tool: 'reminder_add', args: { text: 'Check groceries delivered', in_seconds: 3600 } },
+        {
+            label: 'Setting reminder',
+            tool: 'reminder_add',
+            args: { text: 'Check groceries delivered', in_seconds: 3600 },
+        },
     ];
 
     for (const step of steps) {
@@ -410,14 +714,14 @@ async function handleDemo(executor: Executor, human: boolean): Promise<void> {
 }
 
 // Run CLI
-main().catch((err) => {
+main().catch(err => {
     const verbose = process.argv.includes('--verbose');
-    
+
     if (verbose && err.stack) {
         // Print stack trace to stderr when --verbose is set
         console.error(err.stack);
     }
-    
+
     // Always print the error message (current behavior)
     console.error(JSON.stringify({ ok: false, error: err.message }));
     process.exit(1);

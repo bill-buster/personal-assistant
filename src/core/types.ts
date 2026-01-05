@@ -20,9 +20,9 @@ export interface ToolCall {
  * Used for monitoring costs and optimizing prompts.
  */
 export interface TokenUsage {
-    prompt_tokens: number;      // Tokens in the request (system + history + tools)
-    completion_tokens: number;  // Tokens in the response
-    total_tokens: number;       // Sum of above
+    prompt_tokens: number; // Tokens in the request (system + history + tools)
+    completion_tokens: number; // Tokens in the response
+    total_tokens: number; // Sum of above
 }
 
 export interface DebugInfo {
@@ -39,12 +39,15 @@ export interface ToolSpec {
     /** Tool status: ready (works), stub (not implemented), experimental */
     status?: 'ready' | 'stub' | 'experimental';
     description?: string;
-    required: string[];  // Array of required parameter names
-    parameters: Record<string, {
-        type: 'string' | 'integer' | 'boolean' | 'number';
-        description: string;
-        enum?: string[];
-    }>;
+    required: string[]; // Array of required parameter names
+    parameters: Record<
+        string,
+        {
+            type: 'string' | 'integer' | 'boolean' | 'number';
+            description: string;
+            enum?: string[];
+        }
+    >;
 }
 
 export interface ToolResult {
@@ -53,7 +56,8 @@ export interface ToolResult {
     result?: any;
     error?: ToolError | null;
     _debug?: DebugInfo | null;
-    value?: {  // Used in internal validation
+    value?: {
+        // Used in internal validation
         tool_name: string;
         args: any;
         _debug?: DebugInfo | null;
@@ -95,7 +99,7 @@ export const PermissionsSchema = z.object({
     allow_paths: z.array(z.string()).default([]),
     allow_commands: z.array(z.string()).default([]),
     require_confirmation_for: z.array(z.string()).default([]),
-    deny_tools: z.array(z.string()).default([])
+    deny_tools: z.array(z.string()).default([]),
 });
 
 export type Permissions = z.infer<typeof PermissionsSchema>;
@@ -138,7 +142,11 @@ export interface CommandCapabilities {
      * Throws if command is not allowed.
      * Returns execution result on success.
      */
-    runAllowed(cmd: string, args?: string[], opts?: { confirm?: boolean }): { ok: boolean; result?: string; error?: string; errorCode?: string };
+    runAllowed(
+        cmd: string,
+        args?: string[],
+        opts?: { confirm?: boolean }
+    ): { ok: boolean; result?: string; error?: string; errorCode?: string };
 }
 
 export interface ExecutorContext {
@@ -174,7 +182,11 @@ export interface ExecutorContext {
     writeJsonl: <T>(path: string, entries: T[]) => void;
     appendJsonl: <T>(path: string, entry: T) => void;
     scoreEntry: (entry: MemoryEntry, needle: string, terms: string[]) => number;
-    sortByScoreAndRecency: (entries: MemoryEntry[], needle: string, terms?: string[]) => MemoryEntry[];
+    sortByScoreAndRecency: (
+        entries: MemoryEntry[],
+        needle: string,
+        terms?: string[]
+    ) => MemoryEntry[];
 }
 
 export interface Agent {
@@ -188,7 +200,10 @@ export interface Agent {
  * Tool handler function type.
  * Each handler receives validated args and executor context.
  */
-export type ToolHandler<T = any> = (args: T, context: ExecutorContext) => ToolResult | Promise<ToolResult>;
+export type ToolHandler<T = any> = (
+    args: T,
+    context: ExecutorContext
+) => ToolResult | Promise<ToolResult>;
 
 /**
  * Tool Registry interface for dependency injection.
@@ -232,10 +247,7 @@ export interface Message {
  * Discriminated union for route function return values.
  * Provides type safety for different routing outcomes.
  */
-export type RouteResult =
-    | RouteError
-    | RouteToolCall
-    | RouteReply;
+export type RouteResult = RouteError | RouteToolCall | RouteReply;
 
 /**
  * Error result from route function.

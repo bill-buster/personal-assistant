@@ -1,9 +1,9 @@
 /**
  * Output Formatter
- * 
+ *
  * Provides consistent JSON and human-readable output formatting.
  * All CLI commands use this for their output.
- * 
+ *
  * @module output
  */
 
@@ -109,4 +109,6 @@ export function printError(message: string, code: number = 1): never {
 
 // Track human mode globally for printError
 let human = false;
-export function setHumanMode(value: boolean) { human = value; }
+export function setHumanMode(value: boolean) {
+    human = value;
+}

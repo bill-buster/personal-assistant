@@ -1,9 +1,9 @@
 /**
  * Core module exports
- * 
+ *
  * This is the public API for core functionality.
  * Import from here instead of deep paths.
- * 
+ *
  * @module core
  */
 
@@ -83,3 +83,18 @@ export { logger, createChildLogger, generateCorrelationId, LogLevel, setLogLevel
 // Tool registry
 export { createNodeToolRegistry } from './tool_registry';
 
+// Cache utilities
+export { FileCache, createCacheKey } from './cache';
+export type { CacheEntry, CacheOptions } from './cache';
+
+// Test cache
+export { TestCache } from './test_cache';
+export type { TestResult, TestSummary } from './test_cache';
+
+// Parallel test execution
+export { runTestsInParallel, runTestAsync } from './test_worker';
+export type { TestResult as ParallelTestResult } from './test_worker';
+
+// Plugin loader
+export { discoverPlugins, loadPlugin, loadAllPlugins, mergePluginTools } from './plugin_loader';
+export type { PluginManifest, LoadedPlugin } from './plugin_loader';

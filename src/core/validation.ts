@@ -1,9 +1,9 @@
 /**
  * Centralized Input Validation Layer
- * 
+ *
  * Provides consistent validation and error formatting across the CLI.
  * All validation functions return a standardized result object.
- * 
+ *
  * @module validation
  */
 
@@ -27,9 +27,9 @@ const MAX_INPUT_LENGTH = 10000;
  * Dangerous shell patterns that should be blocked.
  */
 const DANGEROUS_PATTERNS = [
-    /[;&|`$]/,        // Shell metacharacters
-    /\.\./,           // Path traversal
-    /\s-[a-zA-Z]*r/,  // Recursive flags like -rf
+    /[;&|`$]/, // Shell metacharacters
+    /\.\./, // Path traversal
+    /\s-[a-zA-Z]*r/, // Recursive flags like -rf
 ];
 
 /**

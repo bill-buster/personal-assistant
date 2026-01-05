@@ -8,7 +8,7 @@ export enum LogLevel {
     DEBUG = 0,
     INFO = 1,
     WARN = 2,
-    ERROR = 3
+    ERROR = 3,
 }
 
 export interface LogEntry {
@@ -60,7 +60,7 @@ export function log(level: LogLevel, msg: string, data?: Record<string, any>): v
         ts: new Date().toISOString(),
         level: LogLevel[level],
         msg,
-        ...data
+        ...data,
     };
 
     if (process.env.LOG_FORMAT === 'json') {
@@ -125,4 +125,3 @@ export function initLogger(): void {
         setLogLevel(LogLevel[levelStr as keyof typeof LogLevel]);
     }
 }
-

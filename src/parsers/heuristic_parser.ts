@@ -6,7 +6,7 @@ interface ParserResult {
 /**
  * Heuristic parsing of natural language to tool calls.
  * Handles common aliases and descriptive commands.
- * 
+ *
  * @param {string} input - Input text.
  * @returns {Object|null} Result object or null if no match.
  */
@@ -34,19 +34,30 @@ export function parseHeuristicCommand(input: string): ParserResult | null {
     // 2. Write File Aliases
     const writeToMatch = trimmed.match(/^write\s+to\s+(\S+):\s*(.*)/is);
     if (writeToMatch) {
-        return { tool: { name: 'write_file', args: { path: writeToMatch[1], content: writeToMatch[2] } } };
+        return {
+            tool: { name: 'write_file', args: { path: writeToMatch[1], content: writeToMatch[2] } },
+        };
     }
 
-    const createMatch = trimmed.match(/^create\s+(?:file\s+)?(\S+)\s+(?:with\s+)?(?:content\s+)?(.*)/is);
+    const createMatch = trimmed.match(
+        /^create\s+(?:file\s+)?(\S+)\s+(?:with\s+)?(?:content\s+)?(.*)/is
+    );
     if (createMatch && createMatch[1] && createMatch[2]) {
         if (trimmed.toLowerCase().includes('content') || trimmed.toLowerCase().includes('with')) {
-            return { tool: { name: 'write_file', args: { path: createMatch[1], content: createMatch[2] } } };
+            return {
+                tool: {
+                    name: 'write_file',
+                    args: { path: createMatch[1], content: createMatch[2] },
+                },
+            };
         }
     }
 
     const saveToMatch = trimmed.match(/^save\s+(.*)\s+to\s+(\S+)$/is);
     if (saveToMatch) {
-        return { tool: { name: 'write_file', args: { path: saveToMatch[2], content: saveToMatch[1] } } };
+        return {
+            tool: { name: 'write_file', args: { path: saveToMatch[2], content: saveToMatch[1] } },
+        };
     }
 
     // 3. List Files Aliases
@@ -90,14 +101,30 @@ export function parseHeuristicCommand(input: string): ParserResult | null {
     }
 
     // 6. Communication Aliases
-    const emailMatch = trimmed.match(/^(?:email\s+send|send\s+email)\s+to\s+([^:]+):\s*([^|]+)\s*\|\s*(.*)$/i);
+    const emailMatch = trimmed.match(
+        /^(?:email\s+send|send\s+email)\s+to\s+([^:]+):\s*([^|]+)\s*\|\s*(.*)$/i
+    );
     if (emailMatch) {
-        return { tool: { name: 'email_send', args: { to: emailMatch[1].trim(), subject: emailMatch[2].trim(), body: emailMatch[3].trim() } } };
+        return {
+            tool: {
+                name: 'email_send',
+                args: {
+                    to: emailMatch[1].trim(),
+                    subject: emailMatch[2].trim(),
+                    body: emailMatch[3].trim(),
+                },
+            },
+        };
     }
 
     const messageMatch = trimmed.match(/^(?:text|message|msg)\s+([^:]+):\s*(.*)$/i);
     if (messageMatch) {
-        return { tool: { name: 'message_send', args: { to: messageMatch[1].trim(), body: messageMatch[2].trim() } } };
+        return {
+            tool: {
+                name: 'message_send',
+                args: { to: messageMatch[1].trim(), body: messageMatch[2].trim() },
+            },
+        };
     }
 
     // 7. Contact Aliases
@@ -125,4 +152,3 @@ export function parseHeuristicCommand(input: string): ParserResult | null {
 
     return null;
 }
-
