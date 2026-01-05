@@ -1,17 +1,19 @@
-
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 import { spawnSync } from 'node:child_process';
 
-// When running from dist/, __dirname is dist/ but we need src/
+// When running from dist/, use the compiled JS files directly
 const isDist = __dirname.includes('/dist') || __dirname.includes('\\dist');
-const spikeDir = isDist 
-    ? path.resolve(__dirname, '..', 'src')
+const spikeDir = isDist
+    ? path.resolve(__dirname) // Use dist/ directory in dist mode
     : path.resolve(__dirname);
-const executorPath = path.join(spikeDir, 'app', 'executor.ts');
-const tsNodeRegister = require.resolve('ts-node/register');
-const baseArgs = ['-r', tsNodeRegister, executorPath];
+const executorPath = isDist
+    ? path.join(spikeDir, 'app', 'executor.js')
+    : path.join(spikeDir, 'app', 'executor.ts');
+const baseArgs = isDist
+    ? [executorPath]
+    : ['-r', require.resolve('ts-node/register'), executorPath];
 const logPath = path.join(spikeDir, 'calendar.test.output.txt');
 
 // Create isolated temp directory for this test run
@@ -42,16 +44,16 @@ function runExecutor(payload: any) {
 function parseOutput(output: string) {
     try {
         return JSON.parse(output);
-    } catch (err) {
+    } catch {
         // Try to find the last valid JSON line
         const lines = output.trim().split('\n');
         for (let i = lines.length - 1; i >= 0; i--) {
             try {
                 const json = JSON.parse(lines[i]);
-                if (json && (typeof json.ok === 'boolean')) {
+                if (json && typeof json.ok === 'boolean') {
                     return json;
                 }
-            } catch (e) {
+            } catch {
                 // continue
             }
         }
@@ -84,9 +86,9 @@ try {
             args: {
                 title: 'Test Meeting',
                 start_time: new Date(Date.now() + 86400000).toISOString(),
-                duration_minutes: 60
-            }
-        }
+                duration_minutes: 60,
+            },
+        },
     };
 
     const addResult = runExecutor(addPayload);
@@ -94,7 +96,10 @@ try {
 
     if (!addJson || addJson.ok !== true || !addJson.result.event.id) {
         failures += 1;
-        logLine('FAIL\ncase: calendar_event_add\nexpected: ok true with event id\n\n', process.stderr);
+        logLine(
+            'FAIL\ncase: calendar_event_add\nexpected: ok true with event id\n\n',
+            process.stderr
+        );
         console.error('Actual stdout:', addResult.stdout);
     }
 
@@ -105,14 +110,19 @@ try {
         mode: 'tool_call',
         tool_call: {
             tool_name: 'calendar_list',
-            args: { days: 7 }
-        }
+            args: { days: 7 },
+        },
     };
 
     const listResult = runExecutor(listPayload);
     const listJson = parseOutput(listResult.stdout);
 
-    if (!listJson || listJson.ok !== true || !Array.isArray(listJson.result) || listJson.result.length !== 1) {
+    if (
+        !listJson ||
+        listJson.ok !== true ||
+        !Array.isArray(listJson.result) ||
+        listJson.result.length !== 1
+    ) {
         failures += 1;
         logLine('FAIL\ncase: calendar_list\nexpected: array with 1 event\n\n', process.stderr);
     } else if (listJson.result[0].title !== 'Test Meeting') {
@@ -128,9 +138,9 @@ try {
                 tool_name: 'calendar_event_update',
                 args: {
                     id: eventId,
-                    title: 'Updated Meeting'
-                }
-            }
+                    title: 'Updated Meeting',
+                },
+            },
         };
 
         const updateResult = runExecutor(updatePayload);
@@ -157,25 +167,31 @@ try {
             tool_name: 'calendar_event_update',
             args: {
                 id: 'non_existent_id',
-                title: 'Should Fail'
-            }
-        }
+                title: 'Should Fail',
+            },
+        },
     };
 
     const invalidUpdateResult = runExecutor(invalidUpdatePayload);
     const invalidUpdateJson = parseOutput(invalidUpdateResult.stdout);
 
-    if (!invalidUpdateJson || invalidUpdateJson.ok !== false || invalidUpdateJson.error.code !== 'NOT_FOUND') {
+    if (
+        !invalidUpdateJson ||
+        invalidUpdateJson.ok !== false ||
+        invalidUpdateJson.error.code !== 'NOT_FOUND'
+    ) {
         failures += 1;
-        logLine('FAIL\ncase: calendar_event_update not found\nexpected: NOT_FOUND error\n\n', process.stderr);
+        logLine(
+            'FAIL\ncase: calendar_event_update not found\nexpected: NOT_FOUND error\n\n',
+            process.stderr
+        );
     }
-
 } finally {
     // Cleanup temp dir
     try {
         fs.rmSync(testTmpDir, { recursive: true, force: true });
-    } catch (e) {
-        console.error('Failed to clean up temp dir:', e);
+    } catch {
+        // Ignore cleanup error
     }
 }
 
@@ -185,4 +201,4 @@ if (failures > 0) {
 }
 
 logLine('RESULT\nstatus: OK\n', process.stdout);
-export { };
+export {};

@@ -24,144 +24,185 @@ fs.mkdirSync(testConfigDir, { recursive: true });
 
 // Create minimal config
 const configFile = path.join(testConfigDir, 'config.json');
-fs.writeFileSync(configFile, JSON.stringify({
-  version: 1,
-  fileBaseDir: testDataDir,
-}, null, 2), 'utf8');
+fs.writeFileSync(
+    configFile,
+    JSON.stringify(
+        {
+            version: 1,
+            fileBaseDir: testDataDir,
+        },
+        null,
+        2
+    ),
+    'utf8'
+);
 
 // Set up environment
 const testEnv: NodeJS.ProcessEnv = {
-  ...process.env,
-  ASSISTANT_CONFIG_DIR: testConfigDir,
-  ASSISTANT_DATA_DIR: testDataDir,
+    ...process.env,
+    ASSISTANT_CONFIG_DIR: testConfigDir,
+    ASSISTANT_DATA_DIR: testDataDir,
 };
 delete testEnv.ASSISTANT_PERMISSIONS_PATH;
 
 // Create permissions file with restrictive allowlist
 const permissionsFile = path.join(testDataDir, 'permissions.json');
-fs.writeFileSync(permissionsFile, JSON.stringify({
-  allow_paths: ['allowed.txt'],
-  allow_commands: ['ls', 'pwd'],
-  require_confirmation_for: [],
-  deny_tools: [],
-}, null, 2), 'utf8');
+fs.writeFileSync(
+    permissionsFile,
+    JSON.stringify(
+        {
+            allow_paths: ['allowed.txt'],
+            allow_commands: ['ls', 'pwd'],
+            require_confirmation_for: [],
+            deny_tools: [],
+        },
+        null,
+        2
+    ),
+    'utf8'
+);
 
 // Minimal test tool that exercises capability API
 const testCapabilityAPI: ToolHandler = (args: any, context: ExecutorContext): ToolResult => {
-  const testName = args.test;
-  
-  if (testName === 'resolve_allowed_escape') {
-    // Test 1: paths.resolveAllowed("../..", "read") throws (sandbox escape)
-    try {
-      context.paths.resolveAllowed('../..', 'read');
-      return { ok: false, error: { code: 'TEST_FAIL', message: 'Expected throw for ../..' } };
-    } catch (err: any) {
-      if (err.code === ErrorCode.DENIED_PATH_ALLOWLIST) {
-        return { ok: true, result: { test: 'resolve_allowed_escape', passed: true } };
-      }
-      return { ok: false, error: { code: 'TEST_FAIL', message: `Expected DENIED_PATH_ALLOWLIST, got ${err.code}` } };
+    const testName = args.test;
+
+    if (testName === 'resolve_allowed_escape') {
+        // Test 1: paths.resolveAllowed("../..", "read") throws (sandbox escape)
+        try {
+            context.paths.resolveAllowed('../..', 'read');
+            return { ok: false, error: { code: 'TEST_FAIL', message: 'Expected throw for ../..' } };
+        } catch (err: any) {
+            if (err.code === ErrorCode.DENIED_PATH_ALLOWLIST) {
+                return { ok: true, result: { test: 'resolve_allowed_escape', passed: true } };
+            }
+            return {
+                ok: false,
+                error: {
+                    code: 'TEST_FAIL',
+                    message: `Expected DENIED_PATH_ALLOWLIST, got ${err.code}`,
+                },
+            };
+        }
     }
-  }
-  
-  if (testName === 'assert_allowed_denied') {
-    // Test 2: paths.assertAllowed(abs, "write") throws when permissions deny
-    const deniedPath = path.join(context.baseDir, 'denied.txt');
-    try {
-      context.paths.assertAllowed(deniedPath, 'write');
-      return { ok: false, error: { code: 'TEST_FAIL', message: 'Expected throw for denied path' } };
-    } catch (err: any) {
-      if (err.code === ErrorCode.DENIED_PATH_ALLOWLIST) {
-        return { ok: true, result: { test: 'assert_allowed_denied', passed: true } };
-      }
-      return { ok: false, error: { code: 'TEST_FAIL', message: `Expected DENIED_PATH_ALLOWLIST, got ${err.code}` } };
+
+    if (testName === 'assert_allowed_denied') {
+        // Test 2: paths.assertAllowed(abs, "write") throws when permissions deny
+        const deniedPath = path.join(context.baseDir, 'denied.txt');
+        try {
+            context.paths.assertAllowed(deniedPath, 'write');
+            return {
+                ok: false,
+                error: { code: 'TEST_FAIL', message: 'Expected throw for denied path' },
+            };
+        } catch (err: any) {
+            if (err.code === ErrorCode.DENIED_PATH_ALLOWLIST) {
+                return { ok: true, result: { test: 'assert_allowed_denied', passed: true } };
+            }
+            return {
+                ok: false,
+                error: {
+                    code: 'TEST_FAIL',
+                    message: `Expected DENIED_PATH_ALLOWLIST, got ${err.code}`,
+                },
+            };
+        }
     }
-  }
-  
-  if (testName === 'run_allowed_denied') {
-    // Test 3: commands.runAllowed("rm", ...) throws with existing deny code
-    const result = context.commands.runAllowed('rm', ['file.txt']);
-    if (!result.ok && result.errorCode === ErrorCode.DENIED_COMMAND_ALLOWLIST) {
-      return { ok: true, result: { test: 'run_allowed_denied', passed: true } };
+
+    if (testName === 'run_allowed_denied') {
+        // Test 3: commands.runAllowed("rm", ...) throws with existing deny code
+        const result = context.commands.runAllowed('rm', ['file.txt']);
+        if (!result.ok && result.errorCode === ErrorCode.DENIED_COMMAND_ALLOWLIST) {
+            return { ok: true, result: { test: 'run_allowed_denied', passed: true } };
+        }
+        return {
+            ok: false,
+            error: {
+                code: 'TEST_FAIL',
+                message: `Expected DENIED_COMMAND_ALLOWLIST, got ${result.errorCode || 'ok'}`,
+            },
+        };
     }
-    return { ok: false, error: { code: 'TEST_FAIL', message: `Expected DENIED_COMMAND_ALLOWLIST, got ${result.errorCode || 'ok'}` } };
-  }
-  
-  return { ok: false, error: { code: 'TEST_FAIL', message: `Unknown test: ${testName}` } };
+
+    return { ok: false, error: { code: 'TEST_FAIL', message: `Unknown test: ${testName}` } };
 };
 
 // Create test registry
 const createTestRegistry = (): ToolRegistry => {
-  const handlers = new Map<string, ToolHandler>();
-  const schemas = new Map<string, any>();
-  
-  handlers.set('test_capability_api', testCapabilityAPI);
-  schemas.set('test_capability_api', null);
-  
-  return {
-    getHandler: (name: string) => handlers.get(name),
-    getSchema: (name: string) => schemas.get(name),
-    listTools: () => Array.from(handlers.keys()),
-  };
+    const handlers = new Map<string, ToolHandler>();
+    const schemas = new Map<string, any>();
+
+    handlers.set('test_capability_api', testCapabilityAPI);
+    schemas.set('test_capability_api', null);
+
+    return {
+        getHandler: (name: string) => handlers.get(name),
+        getSchema: (name: string) => schemas.get(name),
+        listTools: () => Array.from(handlers.keys()),
+    };
 };
 
 async function runTests() {
-  console.log('Running capability API micro-tests...');
-  let failures = 0;
+    console.log('Running capability API micro-tests...');
+    let failures = 0;
 
-  try {
-    const executor = new Executor({
-      baseDir: testDataDir,
-      limits: { maxReadSize: 1024 * 1024, maxWriteSize: 1024 * 1024 },
-      permissionsPath: permissionsFile,
-      registry: createTestRegistry(),
-      agent: SYSTEM,
-    });
+    try {
+        const executor = new Executor({
+            baseDir: testDataDir,
+            limits: { maxReadSize: 1024 * 1024, maxWriteSize: 1024 * 1024 },
+            permissionsPath: permissionsFile,
+            registry: createTestRegistry(),
+            agent: SYSTEM,
+        });
 
-    // Test 1: paths.resolveAllowed("../..", "read") throws (sandbox escape)
-    const result1 = await executor.execute('test_capability_api', { test: 'resolve_allowed_escape' });
-    if (result1.ok && result1.result?.passed) {
-      console.log('PASS: paths.resolveAllowed("../..") throws DENIED_PATH_ALLOWLIST');
-    } else {
-      console.error('FAIL: paths.resolveAllowed("../..") test:', result1.error?.message);
-      failures++;
+        // Test 1: paths.resolveAllowed("../..", "read") throws (sandbox escape)
+        const result1 = await executor.execute('test_capability_api', {
+            test: 'resolve_allowed_escape',
+        });
+        if (result1.ok && result1.result?.passed) {
+            console.log('PASS: paths.resolveAllowed("../..") throws DENIED_PATH_ALLOWLIST');
+        } else {
+            console.error('FAIL: paths.resolveAllowed("../..") test:', result1.error?.message);
+            failures++;
+        }
+
+        // Test 2: paths.assertAllowed(abs, "write") throws when permissions deny
+        const result2 = await executor.execute('test_capability_api', {
+            test: 'assert_allowed_denied',
+        });
+        if (result2.ok && result2.result?.passed) {
+            console.log('PASS: paths.assertAllowed(deniedPath) throws DENIED_PATH_ALLOWLIST');
+        } else {
+            console.error('FAIL: paths.assertAllowed(deniedPath) test:', result2.error?.message);
+            failures++;
+        }
+
+        // Test 3: commands.runAllowed("rm", ...) throws with existing deny code
+        const result3 = await executor.execute('test_capability_api', {
+            test: 'run_allowed_denied',
+        });
+        if (result3.ok && result3.result?.passed) {
+            console.log('PASS: commands.runAllowed("rm") returns DENIED_COMMAND_ALLOWLIST');
+        } else {
+            console.error('FAIL: commands.runAllowed("rm") test:', result3.error?.message);
+            failures++;
+        }
+    } catch (e: any) {
+        console.error('FAIL: Test setup error:', e.message);
+        failures++;
     }
 
-    // Test 2: paths.assertAllowed(abs, "write") throws when permissions deny
-    const result2 = await executor.execute('test_capability_api', { test: 'assert_allowed_denied' });
-    if (result2.ok && result2.result?.passed) {
-      console.log('PASS: paths.assertAllowed(deniedPath) throws DENIED_PATH_ALLOWLIST');
+    // Cleanup
+    fs.rmSync(testRoot, { recursive: true, force: true });
+
+    if (failures > 0) {
+        console.error(`\n${failures} test(s) failed.`);
+        process.exit(1);
     } else {
-      console.error('FAIL: paths.assertAllowed(deniedPath) test:', result2.error?.message);
-      failures++;
+        console.log('\nAll capability API tests passed.');
     }
-
-    // Test 3: commands.runAllowed("rm", ...) throws with existing deny code
-    const result3 = await executor.execute('test_capability_api', { test: 'run_allowed_denied' });
-    if (result3.ok && result3.result?.passed) {
-      console.log('PASS: commands.runAllowed("rm") returns DENIED_COMMAND_ALLOWLIST');
-    } else {
-      console.error('FAIL: commands.runAllowed("rm") test:', result3.error?.message);
-      failures++;
-    }
-
-  } catch (e: any) {
-    console.error('FAIL: Test setup error:', e.message);
-    failures++;
-  }
-
-  // Cleanup
-  fs.rmSync(testRoot, { recursive: true, force: true });
-
-  if (failures > 0) {
-    console.error(`\n${failures} test(s) failed.`);
-    process.exit(1);
-  } else {
-    console.log('\nAll capability API tests passed.');
-  }
 }
 
 runTests().catch(err => {
-  console.error('Test execution error:', err);
-  process.exit(1);
+    console.error('Test execution error:', err);
+    process.exit(1);
 });
-

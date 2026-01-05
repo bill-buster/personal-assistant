@@ -6,12 +6,15 @@ import { spawnSync } from 'node:child_process';
 
 // When running from dist/, __dirname is dist/ but we need src/
 const isDist = __dirname.includes('/dist') || __dirname.includes('\\dist');
-const spikeDir = isDist 
-    ? path.resolve(__dirname, '..', 'src')
+const spikeDir = isDist
+    ? path.resolve(__dirname) // Use dist/ directory in dist mode
     : path.resolve(__dirname);
-const executorPath = path.join(spikeDir, 'app', 'executor.ts');
-const tsNodeRegister = require.resolve('ts-node/register');
-const baseArgs = ['-r', tsNodeRegister, executorPath];
+const executorPath = isDist
+    ? path.join(spikeDir, 'app', 'executor.js')
+    : path.join(spikeDir, 'app', 'executor.ts');
+const baseArgs = isDist
+    ? [executorPath]
+    : ['-r', require.resolve('ts-node/register'), executorPath];
 
 // Create temp directory for test data (executor baseDir)
 const testDataDir = path.join(spikeDir, `tmp_comms_test_${Date.now()}`);
@@ -31,10 +34,18 @@ fs.mkdirSync(testConfigDir, { recursive: true });
 
 // Create config file with fileBaseDir pointing to test data directory
 const configFile = path.join(testConfigDir, 'config.json');
-fs.writeFileSync(configFile, JSON.stringify({
-    version: 1,
-    fileBaseDir: testDataDir,
-}, null, 2), 'utf8');
+fs.writeFileSync(
+    configFile,
+    JSON.stringify(
+        {
+            version: 1,
+            fileBaseDir: testDataDir,
+        },
+        null,
+        2
+    ),
+    'utf8'
+);
 
 // Create fake osascript
 // It writes its args to a log file
@@ -56,13 +67,13 @@ function runExecutor(payload: any, envOverrides: any = {}) {
         input: JSON.stringify(payload),
         cwd: testDir, // run in test dir
         encoding: 'utf8',
-        env
+        env,
     });
 
     return {
         status: result.status,
         stdout: (result.stdout || '').trim(),
-        stderr: (result.stderr || '').trim()
+        stderr: (result.stderr || '').trim(),
     };
 }
 
@@ -83,34 +94,41 @@ const payloadFail = {
     mode: 'tool_call',
     tool_call: {
         tool_name: 'message_send',
-        args: { to: 'bob', body: 'test' }
-    }
+        args: { to: 'bob', body: 'test' },
+    },
 };
 
 const resultFail = runExecutor(payloadFail, { _TEST_PLATFORM_OVERRIDE: 'linux' });
 const jsonFail = JSON.parse(resultFail.stdout || '{}');
 
 assert(jsonFail.ok === false, 'Should fail on linux', jsonFail);
-assert(jsonFail.error?.message?.includes('available on macOS'), 'Error message should mention macOS', jsonFail.error);
-
+assert(
+    jsonFail.error?.message?.includes('available on macOS'),
+    'Error message should mention macOS',
+    jsonFail.error
+);
 
 // === Test 2: Should succeed with override and use secure args ===
 const payloadOk = {
     mode: 'tool_call',
     tool_call: {
         tool_name: 'message_send',
-        args: { to: 'alice', body: 'hello "world"' }
-    }
+        args: { to: 'alice', body: 'hello "world"' },
+    },
 };
 
-    const realMessagesPath = path.join(testDataDir, 'messages.jsonl');
+const realMessagesPath = path.join(testDataDir, 'messages.jsonl');
 
 try {
     const resultOk = runExecutor(payloadOk, { _TEST_PLATFORM_OVERRIDE: 'darwin' });
 
     const jsonOk = JSON.parse(resultOk.stdout || '{}');
     assert(jsonOk.ok === true, 'Should succeed with override', jsonOk);
-    assert(jsonOk.result?.message?.includes('via iMessage'), 'Result message should confirm iMessage', jsonOk);
+    assert(
+        jsonOk.result?.message?.includes('via iMessage'),
+        'Result message should confirm iMessage',
+        jsonOk
+    );
 
     // Check osascript log
     if (fs.existsSync(osascriptLogPath)) {
@@ -118,8 +136,16 @@ try {
         // The args should be passed after '--'
         // Format of echo "$@" depends on shell, but usually space separated.
         // We passed: -e script -- to body
-        assert(logContent.includes('-- alice hello "world"'), 'Arguments should be passed safely after --', logContent);
-        assert(!logContent.includes('tell application "Messages" to send "hello \\"world\\""'), 'Should NOT use interpolation', logContent);
+        assert(
+            logContent.includes('-- alice hello "world"'),
+            'Arguments should be passed safely after --',
+            logContent
+        );
+        assert(
+            !logContent.includes('tell application "Messages" to send "hello \\"world\\""'),
+            'Should NOT use interpolation',
+            logContent
+        );
     } else {
         assert(false, 'osascript was not called (log missing)');
     }
@@ -138,7 +164,6 @@ try {
     } else {
         assert(false, 'messages.jsonl was not created');
     }
-
 } finally {
     // Cleanup
     if (fs.existsSync(testDir)) {

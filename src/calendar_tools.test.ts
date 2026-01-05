@@ -1,42 +1,44 @@
-
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 // When running from dist/, __dirname is dist/ but we need src/
 const isDist = __dirname.includes('/dist') || __dirname.includes('\\dist');
-const spikeDir = isDist 
-    ? path.resolve(__dirname, '..', 'src')
+const spikeDir = isDist
+    ? path.resolve(__dirname) // Use dist/ directory in dist mode
     : path.resolve(__dirname);
-const executorPath = path.join(spikeDir, 'app', 'executor.ts');
-const tsNodeRegister = require.resolve('ts-node/register');
-const baseArgs = ['-r', tsNodeRegister, executorPath];
+const executorPath = isDist
+    ? path.join(spikeDir, 'app', 'executor.js')
+    : path.join(spikeDir, 'app', 'executor.ts');
+const baseArgs = isDist
+    ? [executorPath]
+    : ['-r', require.resolve('ts-node/register'), executorPath];
 
 function runExecutor(payload: any) {
-  const result = spawnSync(process.execPath, baseArgs, {
-    input: JSON.stringify(payload),
-    cwd: spikeDir,
-    encoding: 'utf8',
-  });
-  return {
-    status: result.status,
-    stdout: (result.stdout || '').trim(),
-    stderr: (result.stderr || '').trim(),
-  };
+    const result = spawnSync(process.execPath, baseArgs, {
+        input: JSON.stringify(payload),
+        cwd: spikeDir,
+        encoding: 'utf8',
+    });
+    return {
+        status: result.status,
+        stdout: (result.stdout || '').trim(),
+        stderr: (result.stderr || '').trim(),
+    };
 }
 
 function parseOutput(output: string) {
-  try {
-    return JSON.parse(output);
-  } catch (err) {
-    return null;
-  }
+    try {
+        return JSON.parse(output);
+    } catch {
+        return null;
+    }
 }
 
 // Setup
 const calendarPath = path.join(spikeDir, 'calendar.jsonl');
 if (fs.existsSync(calendarPath)) {
-  fs.unlinkSync(calendarPath);
+    fs.unlinkSync(calendarPath);
 }
 
 let failures = 0;
@@ -50,15 +52,15 @@ console.log('Starting Calendar Tool Verification...');
 // 1. Test calendar_event_add
 console.log('Testing calendar_event_add...');
 const addPayload = {
-  mode: 'tool_call',
-  tool_call: {
-    tool_name: 'calendar_event_add',
-    args: {
-        title: 'Meeting with Team',
-        start_time: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
-        duration_minutes: 60
+    mode: 'tool_call',
+    tool_call: {
+        tool_name: 'calendar_event_add',
+        args: {
+            title: 'Meeting with Team',
+            start_time: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
+            duration_minutes: 60,
+        },
     },
-  },
 };
 const addResult = runExecutor(addPayload);
 const addJson = parseOutput(addResult.stdout);
@@ -112,7 +114,7 @@ if (eventId) {
             args: {
                 id: eventId,
                 title: 'Updated Meeting Title',
-                start_time: new Date(Date.now() + 172800000).toISOString() // Day after tomorrow
+                start_time: new Date(Date.now() + 172800000).toISOString(), // Day after tomorrow
             },
         },
     };
@@ -123,7 +125,7 @@ if (eventId) {
         logFailure('calendar_event_update failed');
         console.error(updateResult.stdout);
     } else {
-         // Verify update via list
+        // Verify update via list
         const listPayload = {
             mode: 'tool_call',
             tool_call: {
@@ -146,7 +148,7 @@ if (eventId) {
 
 // Cleanup
 if (fs.existsSync(calendarPath)) {
-  fs.unlinkSync(calendarPath);
+    fs.unlinkSync(calendarPath);
 }
 
 if (failures > 0) {

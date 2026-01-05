@@ -32,7 +32,7 @@ try {
     // Test 3: Save and Load with OpenRouter
     saveConfig({
         defaultProvider: 'openrouter',
-        apiKeys: { openrouter: 'test-openrouter-key' }
+        apiKeys: { openrouter: 'test-openrouter-key' },
     });
 
     config = loadConfig();
@@ -40,7 +40,10 @@ try {
     assert.strictEqual(config.apiKeys.openrouter, 'test-openrouter-key');
 
     // Verify file persistence
-    const fileContent = fs.readFileSync(path.join(process.env.ASSISTANT_CONFIG_DIR!, 'config.json'), 'utf8');
+    const fileContent = fs.readFileSync(
+        path.join(process.env.ASSISTANT_CONFIG_DIR!, 'config.json'),
+        'utf8'
+    );
     assert.ok(fileContent.includes('test-openrouter-key'));
 
     // Cleanup previous tests
@@ -54,10 +57,10 @@ try {
 
     // We expect config path to be relative to homedir
     const expectedConfigPath = path.join(os.homedir(), relativeConfigDir);
-    
+
     // The original test checked getStoragePaths().baseDir.
     // Now getStoragePaths() defaults to package dir, NOT config dir.
-    
+
     const paths = getStoragePaths();
     // Verify it is NOT the config dir (decoupling check)
     assert.notStrictEqual(paths.baseDir, path.join(expectedConfigPath, 'data'));
@@ -82,12 +85,12 @@ try {
 
     // Test 6: maxRetries configuration
     console.log('Testing maxRetries configuration...');
-    
+
     // 6a. Default value
     // Reset config dir to temp
     process.env.ASSISTANT_CONFIG_DIR = path.join(tmpDir, '.prompt-router-retries');
     fs.mkdirSync(process.env.ASSISTANT_CONFIG_DIR, { recursive: true });
-    
+
     // Clear config file if exists
     const configFile = path.join(process.env.ASSISTANT_CONFIG_DIR, 'config.json');
     if (fs.existsSync(configFile)) fs.unlinkSync(configFile);
@@ -109,28 +112,36 @@ try {
     // So we can use saveConfig to write invalid value (types permitting? TS might complain if I pass invalid type but here it is number so 20 is number)
     // Actually saveConfig takes Partial<AppConfig>, and AppConfig defines maxRetries as number.
     // The schema validation happens on LOAD.
-    
+
     // Write directly to file to avoid TS issues if I want to bypass type checking (though 20 is number)
     // But AppConfig type doesn't constrain range, only Zod schema does.
     fs.writeFileSync(configFile, JSON.stringify({ maxRetries: 20 }));
-    
+
     // Redirect console.warn to suppress expected warning
     const originalWarn = console.warn;
     let warningCalled = false;
     console.warn = (...args) => {
-        if (args[0] && typeof args[0] === 'string' && args[0].includes('Config validation failed')) {
+        if (
+            args[0] &&
+            typeof args[0] === 'string' &&
+            args[0].includes('Config validation failed')
+        ) {
             warningCalled = true;
         }
     };
-    
+
     const invalidConfig = loadConfig();
     console.warn = originalWarn;
-    
+
     // Should have reverted to defaults because validation failed
     assert.ok(warningCalled, 'Should warn about validation failure');
     const resolvedInvalid = resolveConfig(invalidConfig);
-    assert.strictEqual(resolvedInvalid.maxRetries, 3, 'Should fallback to default 3 when validation fails');
-    
+    assert.strictEqual(
+        resolvedInvalid.maxRetries,
+        3,
+        'Should fallback to default 3 when validation fails'
+    );
+
     delete process.env.ASSISTANT_CONFIG_DIR;
 
     console.log('Config tests passed!');
@@ -141,8 +152,11 @@ try {
     // Cleanup in case of failure
     if (process.env.ASSISTANT_CONFIG_DIR) {
         // If it was absolute temp dir
-        if (path.isAbsolute(process.env.ASSISTANT_CONFIG_DIR) && process.env.ASSISTANT_CONFIG_DIR.includes('tmp')) {
-             fs.rmSync(process.env.ASSISTANT_CONFIG_DIR, { recursive: true, force: true });
+        if (
+            path.isAbsolute(process.env.ASSISTANT_CONFIG_DIR) &&
+            process.env.ASSISTANT_CONFIG_DIR.includes('tmp')
+        ) {
+            fs.rmSync(process.env.ASSISTANT_CONFIG_DIR, { recursive: true, force: true });
         }
     }
     // We don't want to delete random relative dirs in home if they weren't created.

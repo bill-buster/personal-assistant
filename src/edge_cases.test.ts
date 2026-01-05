@@ -1,6 +1,5 @@
-
 import assert from 'node:assert';
-import { Dispatcher, createDispatcher } from './dispatcher';
+import { createDispatcher } from './dispatcher';
 import { withRetry, isRetryableError } from './providers/llm/retry';
 
 async function runTests() {
@@ -14,35 +13,42 @@ async function runTests() {
         console.log('Test: captures multi-word properties');
         const result1 = d.extractArgsFromText('what is my favorite color', 'recall');
         assert.strictEqual(result1.query, 'favorite color', 'Should capture "favorite color"');
-        
+
         // Test 2: Possessives
         console.log('Test: handles possessives');
         const result2 = d.extractArgsFromText("what is my cat's name", 'recall');
         // The regex (\w+\s*)+ matches "cat". 's stops it.
-        // Unless I update regex to include apostrophes. 
+        // Unless I update regex to include apostrophes.
         // Current: ((?:\w+\s*)+)
         // "cat's" -> "cat" matches. "'s" is not \w.
         // So it captures "cat".
-        assert.strictEqual(result2.query, 'cat', 'Should capture "cat" (apostrophe breaks word boundary)');
+        assert.strictEqual(
+            result2.query,
+            'cat',
+            'Should capture "cat" (apostrophe breaks word boundary)'
+        );
 
         // Test 3: Greedy capture
         console.log('Test: handles greedy capture');
-        const input = "Do you remember the time we went to the beach? Also, did I lock the door?";
+        const input = 'Do you remember the time we went to the beach? Also, did I lock the door?';
         const result3 = d.extractArgsFromText(input, 'recall');
-        assert.strictEqual(result3.query, "the time we went to the beach? Also, did I lock the door", 'Should capture full greedy string');
+        assert.strictEqual(
+            result3.query,
+            'the time we went to the beach? Also, did I lock the door',
+            'Should capture full greedy string'
+        );
 
         // Test 4: Anchor checks
         console.log('Test: handles "my X" pattern anchoring');
-        const result4 = d.extractArgsFromText("my name", 'recall');
-        assert.strictEqual(result4.query, "name", 'Should match start anchored');
+        const result4 = d.extractArgsFromText('my name', 'recall');
+        assert.strictEqual(result4.query, 'name', 'Should match start anchored');
 
-        const result5 = d.extractArgsFromText("oh, my name", 'recall');
+        const result5 = d.extractArgsFromText('oh, my name', 'recall');
         assert.strictEqual(result5.query, undefined, 'Should not match mid-sentence');
 
         // Test 4b: Multi-word "my X"
-        const result4b = d.extractArgsFromText("my favorite food", 'recall');
-        assert.strictEqual(result4b.query, "favorite food", 'Should capture "favorite food"');
-
+        const result4b = d.extractArgsFromText('my favorite food', 'recall');
+        assert.strictEqual(result4b.query, 'favorite food', 'Should capture "favorite food"');
     } catch (e: any) {
         console.error('Dispatcher Tests Failed:', e.message);
         console.error(e.stack);
@@ -92,7 +98,7 @@ async function runTests() {
             attempts++;
             if (attempts < 2) {
                 const e: any = new Error('Server Error');
-                e.status = "503"; 
+                e.status = '503';
                 throw e;
             }
             return 'success';
@@ -103,11 +109,26 @@ async function runTests() {
 
         // Test 8: isRetryableError Logic (UPDATED)
         console.log('Test: isRetryableError logic');
-        assert.strictEqual(isRetryableError({ status: "500" }), true, 'String "500" should be retryable');
-        assert.strictEqual(isRetryableError({ status: "400" }), false, 'String "400" should not be retryable');
-        assert.strictEqual(isRetryableError({ status: "429" }), true, 'String "429" SHOULD be retryable now'); 
-        assert.strictEqual(isRetryableError({ status: 429 }), true, 'Number 429 should be retryable');
-
+        assert.strictEqual(
+            isRetryableError({ status: '500' }),
+            true,
+            'String "500" should be retryable'
+        );
+        assert.strictEqual(
+            isRetryableError({ status: '400' }),
+            false,
+            'String "400" should not be retryable'
+        );
+        assert.strictEqual(
+            isRetryableError({ status: '429' }),
+            true,
+            'String "429" SHOULD be retryable now'
+        );
+        assert.strictEqual(
+            isRetryableError({ status: 429 }),
+            true,
+            'Number 429 should be retryable'
+        );
     } catch (e: any) {
         console.error('Retry Tests Failed:', e.message);
         console.error(e.stack);

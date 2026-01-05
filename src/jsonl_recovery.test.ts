@@ -1,4 +1,3 @@
-
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as assert from 'node:assert';
@@ -26,13 +25,13 @@ try {
         '{"id": 2, "text": "valid2"}',
         '{ BROKEN JSON }',
         '', // Empty line
-        '{"id": 3, "text": "valid3"}'
+        '{"id": 3, "text": "valid3"}',
     ].join('\n');
     fs.writeFileSync(tmpJsonl, content, 'utf8');
 
-    const results = readJsonlSafely<{id: number, text: string}>({
+    const results = readJsonlSafely<{ id: number; text: string }>({
         filePath: tmpJsonl,
-        isValid: (entry: any) => typeof entry.id === 'number'
+        isValid: (entry: any) => typeof entry.id === 'number',
     });
 
     assert.strictEqual(results.length, 3, 'Should have 3 valid entries');
@@ -62,7 +61,6 @@ try {
     readJsonlSafely({ filePath: tmpJsonl });
     assert.strictEqual(fs.existsSync(tmpCorrupt), false, 'Corrupt file should not exist');
     console.log('PASS');
-
 } catch (err: any) {
     console.error('FAIL:', err.message);
     failures++;

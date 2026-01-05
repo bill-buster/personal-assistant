@@ -7,12 +7,15 @@ import { spawnSync } from 'node:child_process';
 
 // When running from dist/, __dirname is dist/ but we need src/
 const isDist = __dirname.includes('/dist') || __dirname.includes('\\dist');
-const spikeDir = isDist 
-    ? path.resolve(__dirname, '..', 'src')
+const spikeDir = isDist
+    ? path.resolve(__dirname) // Use dist/ directory in dist mode
     : path.resolve(__dirname);
-const executorPath = path.join(spikeDir, 'app', 'executor.ts');
-const tsNodeRegister = require.resolve('ts-node/register');
-const baseArgs = ['-r', tsNodeRegister, executorPath];
+const executorPath = isDist
+    ? path.join(spikeDir, 'app', 'executor.js')
+    : path.join(spikeDir, 'app', 'executor.ts');
+const baseArgs = isDist
+    ? [executorPath]
+    : ['-r', require.resolve('ts-node/register'), executorPath];
 
 // Create isolated temp directory for this test run
 const rawTestTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'contacts-test-'));
@@ -41,16 +44,16 @@ function runExecutor(payload: any) {
 function parseOutput(output: string) {
     try {
         return JSON.parse(output);
-    } catch (err) {
+    } catch {
         // Try to find the last valid JSON line
         const lines = output.trim().split('\n');
         for (let i = lines.length - 1; i >= 0; i--) {
             try {
                 const json = JSON.parse(lines[i]);
-                if (json && (typeof json.ok === 'boolean')) {
+                if (json && typeof json.ok === 'boolean') {
                     return json;
                 }
-            } catch (e) {
+            } catch {
                 // continue
             }
         }
@@ -95,7 +98,12 @@ try {
     const searchResult = runExecutor(searchPayload);
     const searchJson = parseOutput(searchResult.stdout);
 
-    if (!searchJson || searchJson.ok !== true || !searchJson.result || searchJson.result.length !== 1) {
+    if (
+        !searchJson ||
+        searchJson.ok !== true ||
+        !searchJson.result ||
+        searchJson.result.length !== 1
+    ) {
         failures++;
         logLine('FAIL: contact_search failed or found incorrect number of results\n');
         console.error(searchResult.stdout);
@@ -153,7 +161,6 @@ try {
     } else {
         logLine('PASS: contact_update verification\n');
     }
-
 } catch (err) {
     console.error('Test script error:', err);
     failures++;
@@ -161,8 +168,8 @@ try {
     // Cleanup temp dir
     try {
         fs.rmSync(testTmpDir, { recursive: true, force: true });
-    } catch (e) {
-        console.error('Failed to clean up temp dir:', e);
+    } catch {
+        // Ignore cleanup error
     }
 }
 

@@ -1,4 +1,3 @@
-
 import * as assert from 'node:assert';
 import { parseTaskCommand } from './parsers/task_parser';
 
@@ -40,7 +39,6 @@ try {
     assert.deepStrictEqual(res5?.tool?.name, 'task_add');
     assert.deepStrictEqual(res5?.tool?.args?.text, 'clean room');
     console.log('PASS');
-
 } catch (err: any) {
     console.error('FAIL:', err.message);
     failures++;

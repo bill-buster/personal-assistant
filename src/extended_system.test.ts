@@ -8,13 +8,14 @@ import { Dispatcher } from './dispatcher';
 import { AGENTS } from './agents';
 import { route } from './app/router';
 
-// When running from dist/, __dirname is dist/ but we need src/
+// When running from dist/, use the compiled JS files directly
 const isDist = __dirname.includes('/dist') || __dirname.includes('\\dist');
-const spikeDir = isDist 
-    ? path.resolve(__dirname, '..', 'src')
+const spikeDir = isDist
+    ? path.resolve(__dirname) // Use dist/ directory in dist mode
     : path.resolve(__dirname);
-const cliPath = path.join(spikeDir, 'app', 'cli.ts');
-const tsNodeRegister = require.resolve('ts-node/register');
+const cliPath = isDist
+    ? path.join(spikeDir, 'app', 'cli.js')
+    : path.join(spikeDir, 'app', 'cli.ts');
 
 // Create isolated temp directory
 const tmpRootRaw = fs.mkdtempSync(path.join(os.tmpdir(), 'extended-system-test-'));
@@ -29,13 +30,17 @@ fs.mkdirSync(configDir, { recursive: true });
 fs.mkdirSync(configDataDir, { recursive: true });
 
 // Create permissions.json
-fs.writeFileSync(path.join(dataDir, 'permissions.json'), JSON.stringify({
-    version: 1,
-    allow_paths: ['.'],
-    allow_commands: ['pwd'], // Allowed for 'run pwd' test
-    require_confirmation_for: [],
-    deny_tools: []
-}), 'utf8');
+fs.writeFileSync(
+    path.join(dataDir, 'permissions.json'),
+    JSON.stringify({
+        version: 1,
+        allow_paths: ['.'],
+        allow_commands: ['pwd'], // Allowed for 'run pwd' test
+        require_confirmation_for: [],
+        deny_tools: [],
+    }),
+    'utf8'
+);
 
 const baseEnv: NodeJS.ProcessEnv = {
     ...process.env,
@@ -46,7 +51,10 @@ const baseEnv: NodeJS.ProcessEnv = {
 delete baseEnv.ASSISTANT_PERMISSIONS_PATH;
 
 function runCli(args: string[], input?: string) {
-    return spawnSync(process.execPath, ['-r', tsNodeRegister, cliPath, ...args], {
+    const execArgs = isDist
+        ? [cliPath, ...args]
+        : ['-r', require.resolve('ts-node/register'), cliPath, ...args];
+    return spawnSync(process.execPath, execArgs, {
         cwd: spikeDir,
         encoding: 'utf8',
         env: baseEnv,
@@ -77,10 +85,7 @@ async function run() {
         assert.strictEqual(recallResult.status, 0, recallResult.stderr);
         const recallJson = parseLastJson(recallResult.stdout);
         assert.strictEqual(recallJson.ok, true);
-        assert.ok(
-            Array.isArray(recallJson.result.entries),
-            'recall should return entries array'
-        );
+        assert.ok(Array.isArray(recallJson.result.entries), 'recall should return entries array');
         assert.ok(
             recallJson.result.entries.some((entry: any) => entry.text.includes('Meeting at 3pm')),
             'recall should include remembered text'
@@ -117,7 +122,10 @@ async function run() {
 
         const taskListHuman = runCli(['task', 'list', '--human']);
         assert.strictEqual(taskListHuman.status, 0, taskListHuman.stderr);
-        assert.ok(taskListHuman.stdout.includes('Review PR #123'), 'human task list should include task text');
+        assert.ok(
+            taskListHuman.stdout.includes('Review PR #123'),
+            'human task list should include task text'
+        );
 
         // CLI: reminder add
         const remindAdd = runCli(['remind', 'add', 'Check groceries', '--in', '5']);
@@ -135,10 +143,21 @@ async function run() {
         const demo = runCli(['demo']);
         assert.strictEqual(demo.status, 0, demo.stderr);
         assert.ok(demo.stdout.includes('{"demo": "starting"}'), 'demo should emit start marker');
-        assert.ok(demo.stdout.includes('{"demo": "complete"}'), 'demo should emit completion marker');
+        assert.ok(
+            demo.stdout.includes('{"demo": "complete"}'),
+            'demo should emit completion marker'
+        );
 
         // Router surface
-        const routerResult = await route('remember: test note', 'spike', null, [], false, undefined, undefined);
+        const routerResult = await route(
+            'remember: test note',
+            'spike',
+            null,
+            [],
+            false,
+            undefined,
+            undefined
+        );
         if ('mode' in routerResult && routerResult.mode === 'tool_call') {
             assert.strictEqual(routerResult.tool_call.tool_name, 'remember');
         } else {
@@ -146,39 +165,74 @@ async function run() {
         }
 
         // Dispatcher surface: auto-dispatch + enforcement
-        const dispatcher = new Dispatcher({ verbose: false, autoDispatch: true, enforceActions: true });
+        const dispatcher = new Dispatcher({
+            verbose: false,
+            autoDispatch: true,
+            enforceActions: true,
+        });
         const autoDispatch = dispatcher.analyze('what time is it', AGENTS.supervisor, []);
         assert.strictEqual(autoDispatch.action, 'auto_dispatch');
         assert.strictEqual(autoDispatch.toolCall?.tool_name, 'get_time');
 
         // Memory query auto-dispatch: "how old am I"
         const ageDispatch = dispatcher.analyze('how old am I', AGENTS.supervisor, []);
-        assert.strictEqual(ageDispatch.action, 'auto_dispatch', '"how old am I" should auto-dispatch');
-        assert.strictEqual(ageDispatch.toolCall?.tool_name, 'recall', 'should dispatch to recall tool');
+        assert.strictEqual(
+            ageDispatch.action,
+            'auto_dispatch',
+            '"how old am I" should auto-dispatch'
+        );
+        assert.strictEqual(
+            ageDispatch.toolCall?.tool_name,
+            'recall',
+            'should dispatch to recall tool'
+        );
         assert.strictEqual(ageDispatch.toolCall?.args.query, 'age', 'query should be "age"');
 
-        // Memory query auto-dispatch: "what's my birthday"  
+        // Memory query auto-dispatch: "what's my birthday"
         const birthdayDispatch = dispatcher.analyze("what's my birthday", AGENTS.supervisor, []);
-        assert.strictEqual(birthdayDispatch.action, 'auto_dispatch', '"what\'s my birthday" should auto-dispatch');
+        assert.strictEqual(
+            birthdayDispatch.action,
+            'auto_dispatch',
+            '"what\'s my birthday" should auto-dispatch'
+        );
         assert.strictEqual(birthdayDispatch.toolCall?.tool_name, 'recall');
         assert.strictEqual(birthdayDispatch.toolCall?.args.query, 'birthday');
 
         // Memory query auto-dispatch: "do you remember my doctor's name"
-        const doYouRememberDispatch = dispatcher.analyze("do you remember my doctor's name", AGENTS.supervisor, []);
+        const doYouRememberDispatch = dispatcher.analyze(
+            "do you remember my doctor's name",
+            AGENTS.supervisor,
+            []
+        );
         assert.strictEqual(doYouRememberDispatch.action, 'auto_dispatch');
         assert.strictEqual(doYouRememberDispatch.toolCall?.tool_name, 'recall');
-        assert.ok(doYouRememberDispatch.toolCall?.args.query.includes('doctor'), 'query should include doctor');
+        assert.ok(
+            doYouRememberDispatch.toolCall?.args.query.includes('doctor'),
+            'query should include doctor'
+        );
 
-        const enforceWeather = dispatcher.enforceAction('I will check the weather in Paris.', 'whats the weather', AGENTS.supervisor);
+        const enforceWeather = dispatcher.enforceAction(
+            'I will check the weather in Paris.',
+            'whats the weather',
+            AGENTS.supervisor
+        );
         assert.strictEqual(enforceWeather?.action, 'enforced_dispatch');
         assert.strictEqual(enforceWeather?.toolCall?.tool_name, 'get_weather');
         assert.strictEqual(enforceWeather?.toolCall?.args.location, 'Paris');
 
-        const enforceRecall = dispatcher.enforceAction('I will check what I remember.', 'what do you remember', AGENTS.supervisor);
+        const enforceRecall = dispatcher.enforceAction(
+            'I will check what I remember.',
+            'what do you remember',
+            AGENTS.supervisor
+        );
         assert.strictEqual(enforceRecall?.toolCall?.tool_name, 'recall');
         assert.strictEqual(enforceRecall?.toolCall?.args.query, 'recent items');
 
-        const enforceWeatherMissing = dispatcher.enforceAction('I will check the weather.', 'whats the weather', AGENTS.supervisor);
+        const enforceWeatherMissing = dispatcher.enforceAction(
+            'I will check the weather.',
+            'whats the weather',
+            AGENTS.supervisor
+        );
         assert.strictEqual(enforceWeatherMissing, null);
 
         // REPL surface: auto-dispatch without LLM
@@ -190,10 +244,19 @@ async function run() {
         ].join('\n');
         const repl = runCli(['repl', '--mock'], replInput);
         assert.strictEqual(repl.status, 0, repl.stderr);
-        assert.ok(repl.stdout.includes('Auto-dispatch: get_time'), 'REPL should auto-dispatch time');
-        assert.ok(repl.stdout.includes('Auto-dispatch: recall'), 'REPL should auto-dispatch recall');
+        assert.ok(
+            repl.stdout.includes('Auto-dispatch: get_time'),
+            'REPL should auto-dispatch time'
+        );
+        assert.ok(
+            repl.stdout.includes('Auto-dispatch: recall'),
+            'REPL should auto-dispatch recall'
+        );
         assert.ok(repl.stdout.includes('Available Tools'), 'REPL /tools should list tools');
-        assert.ok(repl.stdout.includes('remember') || repl.stdout.includes('recall'), 'REPL /tools should show memory tools');
+        assert.ok(
+            repl.stdout.includes('remember') || repl.stdout.includes('recall'),
+            'REPL /tools should show memory tools'
+        );
 
         // Test: Retry Utility
         const { withRetry, isRetryableError } = await import('./providers/llm/retry');
@@ -213,16 +276,37 @@ async function run() {
             { maxRetries: 3, baseDelayMs: 10 } // Fast delays for testing
         );
         assert.strictEqual(retriedResult, 'success', 'withRetry should eventually succeed');
-        assert.strictEqual(retryAttempts, 3, 'withRetry should have retried twice before succeeding');
+        assert.strictEqual(
+            retryAttempts,
+            3,
+            'withRetry should have retried twice before succeeding'
+        );
 
         // Test isRetryableError
-        assert.strictEqual(isRetryableError({ status: 429 } as any), true, '429 should be retryable');
-        assert.strictEqual(isRetryableError({ status: 500 } as any), true, '500 should be retryable');
-        assert.strictEqual(isRetryableError({ status: 400 } as any), false, '400 should not be retryable');
-        assert.strictEqual(isRetryableError({ message: 'ECONNRESET' } as any), true, 'network errors should be retryable');
+        assert.strictEqual(
+            isRetryableError({ status: 429 } as any),
+            true,
+            '429 should be retryable'
+        );
+        assert.strictEqual(
+            isRetryableError({ status: 500 } as any),
+            true,
+            '500 should be retryable'
+        );
+        assert.strictEqual(
+            isRetryableError({ status: 400 } as any),
+            false,
+            '400 should not be retryable'
+        );
+        assert.strictEqual(
+            isRetryableError({ message: 'ECONNRESET' } as any),
+            true,
+            'network errors should be retryable'
+        );
 
         // Test: Validation Module
-        const { validateInput, validatePath, validateCommand, formatValidationError } = await import('./core/validation');
+        const { validateInput, validatePath, validateCommand, formatValidationError } =
+            await import('./core/validation');
 
         const emptyInputResult = validateInput('');
         assert.strictEqual(emptyInputResult.ok, false, 'Empty input should fail validation');
@@ -242,7 +326,8 @@ async function run() {
         assert.strictEqual(dangerousCommandResult.ok, false, 'Dangerous command should fail');
 
         // Test: Structured Logger
-        const { generateCorrelationId, createChildLogger, logger, LogLevel, setLogLevel } = await import('./core/logger');
+        const { generateCorrelationId, createChildLogger, logger, LogLevel, setLogLevel } =
+            await import('./core/logger');
 
         const corrId = generateCorrelationId();
         assert.ok(corrId.includes('-'), 'Correlation ID should contain a separator');
@@ -253,7 +338,11 @@ async function run() {
 
         // Test: Delegation enforcement continues on buildToolCall failure
         // (This tests the fix we made to dispatcher.ts)
-        const enforceNull = dispatcher.enforceAction('I will delegate.', 'delegate task', AGENTS.supervisor);
+        const enforceNull = dispatcher.enforceAction(
+            'I will delegate.',
+            'delegate task',
+            AGENTS.supervisor
+        );
         // Should be null because no valid delegation target was specified, but should NOT throw
         // The fix ensures we continue to try other mappings instead of early return null
 
@@ -263,7 +352,7 @@ async function run() {
     }
 }
 
-run().catch((err) => {
+run().catch(err => {
     console.error('FAIL', err);
     process.exit(1);
 });

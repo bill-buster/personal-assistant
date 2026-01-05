@@ -1,4 +1,3 @@
-
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as assert from 'node:assert';
@@ -27,7 +26,7 @@ try {
     console.log('Test 1: Atomic Write...');
     const data = [{ id: 1 }, { id: 2 }];
     writeJsonlAtomic(tmpJsonl, data);
-    
+
     const content = fs.readFileSync(tmpJsonl, 'utf8');
     const expected = '{"id":1}\n{"id":2}\n';
     assert.strictEqual(content, expected, 'File content should match expected JSONL');
@@ -40,7 +39,6 @@ try {
     const expected2 = '{"id":1}\n{"id":2}\n{"id":3}\n';
     assert.strictEqual(content2, expected2, 'File content should include appended item');
     console.log('PASS');
-
 } catch (err: any) {
     console.error('FAIL:', err.message);
     failures++;
