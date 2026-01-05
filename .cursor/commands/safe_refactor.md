@@ -8,3 +8,7 @@ Use Plan Mode to create a step-by-step plan for this refactor:
 
 Execute in phases with tests after each phase. Each step should be independently reviewable.
 
+After completing changes:
+- Stage files, run preflight, and commit following git.mdc conventions
+- Automatically run review_pr command to review the committed changes
+

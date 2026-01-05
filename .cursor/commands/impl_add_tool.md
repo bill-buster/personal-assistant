@@ -75,6 +75,10 @@ Implement the selected tool end-to-end, then automatically review and test:
     - If passed, commit: `git commit -m "feat(tools): add [tool_name] tool"`
     - Log: "Committed: [commit_hash]"
 
+13. **[STEP 13/13]** Log: "Running automatic code review..."
+    - Automatically trigger review_pr command to review the committed changes
+    - Log: "Review complete: [approved/rejected] with [N] issues found"
+
 Follow patterns in tools.mdc, errors.mdc, and testing.mdc.
 
 ## Example

@@ -8,3 +8,7 @@ Find all TODO/FIXME/HACK comments in the selected code:
 
 If keeping a comment, convert to proper documentation explaining why.
 
+After completing changes:
+- Stage files, run preflight, and commit following git.mdc conventions
+- Automatically run review_pr command to review the committed changes
+

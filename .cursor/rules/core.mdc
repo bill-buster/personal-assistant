@@ -335,6 +335,7 @@ import {
 2. Run preflight: `npm run preflight`
 3. Commit if checks pass: `git commit -m "<type>(<scope>): <subject>"`
 4. Report what was committed
+5. Automatically run review_pr command to review the committed changes
 
 **Do NOT wait for user to ask.** This is REQUIRED, not optional.
 

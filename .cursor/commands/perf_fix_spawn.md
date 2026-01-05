@@ -6,3 +6,7 @@ Follow performance.mdc patterns:
 - Verify tests still pass after conversion
 - Update test documentation if needed
 
+After completing changes:
+- Stage files, run preflight, and commit following git.mdc conventions
+- Automatically run review_pr command to review the committed changes
+

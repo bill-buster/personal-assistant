@@ -19,6 +19,7 @@ alwaysApply: true
 2. Run preflight checks automatically
 3. Commit automatically if checks pass
 4. Report what was committed
+5. Automatically run review_pr command to review the committed changes
 
 **The agent MUST NOT commit** when:
 - ❌ User explicitly asks not to commit
@@ -41,9 +42,12 @@ npm run preflight
 git commit -m "<type>(<scope>): <subject>"
 
 # Step 4: Report what was committed
+
+# Step 5: Run automatic code review (automatic)
+# Automatically trigger review_pr command to review the committed changes
 ```
 
-**Do NOT wait for user to ask.** Commit automatically as part of completing the task.
+**Do NOT wait for user to ask.** Commit and review automatically as part of completing the task.
 
 ### Examples of Correct Behavior
 
@@ -56,6 +60,7 @@ Agent:
   3. Runs preflight: npm run preflight
   4. Commits: git commit -m "refactor: convert TODO comments to documentation"
   5. Reports: "Fixed all TODOs and committed changes"
+  6. Automatically runs review_pr to review the committed changes
 ```
 
 **❌ WRONG:**
@@ -74,6 +79,7 @@ Before completing any task that modifies code:
 - [ ] Preflight checks run automatically
 - [ ] Commit created automatically (if checks pass)
 - [ ] Commit hash and message reported to user
+- [ ] Automatic code review runs after commit (review_pr command)
 
 ## Automatic Git Hooks
 

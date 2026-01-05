@@ -8,3 +8,7 @@ Find all throw statements in the selected code and convert them to structured er
 
 Never use throw - always return structured errors.
 
+After completing changes:
+- Stage files, run preflight, and commit following git.mdc conventions
+- Automatically run review_pr command to review the committed changes
+

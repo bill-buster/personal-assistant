@@ -12,3 +12,7 @@ For all exported functions in the selected code:
 3. Update docs/COMMANDS.md if new CLI command
 4. Ensure all public APIs are documented
 
+After completing changes:
+- Stage files, run preflight, and commit following git.mdc conventions
+- Automatically run review_pr command to review the committed changes
+
