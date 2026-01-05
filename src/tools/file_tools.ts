@@ -12,6 +12,7 @@ import {
     ErrorCode,
 } from '../core/tool_contract';
 import { makeDebug } from '../core/debug';
+import { getStatCache } from '../core/stat_cache';
 import {
     ExecutorContext,
     ToolResult,
@@ -116,6 +117,9 @@ export function handleWriteFile(args: WriteFileArgs, context: ExecutorContext): 
     try {
         fs.mkdirSync(path.dirname(targetPath), { recursive: true });
         fs.writeFileSync(targetPath, content, 'utf8');
+        // Invalidate stat cache for this file (it may have changed)
+        const statCache = getStatCache();
+        statCache.invalidate(targetPath);
     } catch (err: any) {
         return {
             ok: false,
@@ -178,10 +182,25 @@ export function handleReadFile(args: ReadFileArgs, context: ExecutorContext): To
         };
     }
 
-    // Get file stats
+    // Get file stats (with caching)
     let fileSize: number;
     try {
-        const stats = fs.statSync(targetPath);
+        const statCache = getStatCache();
+        const stats = statCache.get(targetPath);
+        if (!stats) {
+            return {
+                ok: false,
+                result: null,
+                error: makeError(ErrorCode.EXEC_ERROR, `File not found: ${args.path}`),
+                _debug: makeDebug({
+                    path: 'tool_json',
+                    start,
+                    model: null,
+                    memory_read: false,
+                    memory_write: false,
+                }),
+            };
+        }
         if (stats.isDirectory()) {
             return {
                 ok: false,
@@ -330,10 +349,11 @@ export function handleListFiles(args: ListFilesArgs, context: ExecutorContext): 
                 }),
             };
         }
-        // Verify it's a directory
+        // Verify it's a directory (with caching)
         try {
-            const stats = fs.statSync(resolved);
-            if (!stats.isDirectory()) {
+            const statCache = getStatCache();
+            const stats = statCache.get(resolved);
+            if (!stats || !stats.isDirectory()) {
                 return {
                     ok: false,
                     result: null,
@@ -477,9 +497,24 @@ export function handleDeleteFile(args: DeleteFileArgs, context: ExecutorContext)
         };
     }
 
-    // Check if file exists and is not a directory
+    // Check if file exists and is not a directory (with caching)
     try {
-        const stats = fs.statSync(targetPath);
+        const statCache = getStatCache();
+        const stats = statCache.get(targetPath);
+        if (!stats) {
+            return {
+                ok: false,
+                result: null,
+                error: makeError(ErrorCode.EXEC_ERROR, `File not found: ${args.path}`),
+                _debug: makeDebug({
+                    path: 'tool_json',
+                    start,
+                    model: null,
+                    memory_read: false,
+                    memory_write: false,
+                }),
+            };
+        }
         if (stats.isDirectory()) {
             return {
                 ok: false,
@@ -515,6 +550,9 @@ export function handleDeleteFile(args: DeleteFileArgs, context: ExecutorContext)
     // Delete the file
     try {
         fs.unlinkSync(targetPath);
+        // Invalidate stat cache for deleted file
+        const statCache = getStatCache();
+        statCache.invalidate(targetPath);
     } catch (err: any) {
         return {
             ok: false,
@@ -617,31 +655,31 @@ export function handleMoveFile(args: MoveFileArgs, context: ExecutorContext): To
         };
     }
 
-    // Check if source file exists and is not a directory
-    try {
-        const stats = fs.statSync(sourcePath);
-        if (stats.isDirectory()) {
-            return {
-                ok: false,
-                result: null,
-                error: makeError(
-                    ErrorCode.EXEC_ERROR,
-                    `Source path '${args.source}' is a directory, not a file.`
-                ),
-                _debug: makeDebug({
-                    path: 'tool_json',
-                    start,
-                    model: null,
-                    memory_read: false,
-                    memory_write: false,
-                }),
-            };
-        }
-    } catch (err: any) {
+    // Check if source file exists and is not a directory (with caching)
+    const statCache = getStatCache();
+    const stats = statCache.get(sourcePath);
+    if (!stats) {
         return {
             ok: false,
             result: null,
-            error: makeError(ErrorCode.EXEC_ERROR, `Source file not found: ${err.message}`),
+            error: makeError(ErrorCode.EXEC_ERROR, `Source file not found: ${args.source}`),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
+    }
+    if (stats.isDirectory()) {
+        return {
+            ok: false,
+            result: null,
+            error: makeError(
+                ErrorCode.EXEC_ERROR,
+                `Source path '${args.source}' is a directory, not a file.`
+            ),
             _debug: makeDebug({
                 path: 'tool_json',
                 start,
@@ -652,30 +690,28 @@ export function handleMoveFile(args: MoveFileArgs, context: ExecutorContext): To
         };
     }
 
-    // Check if destination already exists
-    try {
-        const destStats = fs.statSync(destinationPath);
-        if (destStats.isDirectory()) {
-            return {
-                ok: false,
-                result: null,
-                error: makeError(
-                    ErrorCode.EXEC_ERROR,
-                    `Destination path '${args.destination}' is a directory, not a file.`
-                ),
-                _debug: makeDebug({
-                    path: 'tool_json',
-                    start,
-                    model: null,
-                    memory_read: false,
-                    memory_write: false,
-                }),
-            };
-        }
-        // If destination is a file, it will be overwritten (Node.js fs.renameSync behavior)
-    } catch {
-        // Destination doesn't exist, which is fine - we'll create it
+    // Check if destination already exists (with caching)
+    const statCache = getStatCache();
+    const destStats = statCache.get(destinationPath);
+    if (destStats && destStats.isDirectory()) {
+        return {
+            ok: false,
+            result: null,
+            error: makeError(
+                ErrorCode.EXEC_ERROR,
+                `Destination path '${args.destination}' is a directory, not a file.`
+            ),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
     }
+    // If destStats is null, destination doesn't exist, which is fine - we'll create it
+    // If destStats exists and is a file, it will be overwritten (Node.js fs.renameSync behavior)
 
     // Ensure destination directory exists
     try {
@@ -702,6 +738,10 @@ export function handleMoveFile(args: MoveFileArgs, context: ExecutorContext): To
     // Move the file
     try {
         fs.renameSync(sourcePath, destinationPath);
+        // Invalidate stat cache for both source and destination
+        const statCache = getStatCache();
+        statCache.invalidate(sourcePath);
+        statCache.invalidate(destinationPath);
     } catch (err: any) {
         return {
             ok: false,
@@ -804,31 +844,31 @@ export function handleCopyFile(args: CopyFileArgs, context: ExecutorContext): To
         };
     }
 
-    // Check if source file exists and is not a directory
-    try {
-        const stats = fs.statSync(sourcePath);
-        if (stats.isDirectory()) {
-            return {
-                ok: false,
-                result: null,
-                error: makeError(
-                    ErrorCode.EXEC_ERROR,
-                    `Source path '${args.source}' is a directory, not a file.`
-                ),
-                _debug: makeDebug({
-                    path: 'tool_json',
-                    start,
-                    model: null,
-                    memory_read: false,
-                    memory_write: false,
-                }),
-            };
-        }
-    } catch (err: any) {
+    // Check if source file exists and is not a directory (with caching)
+    const statCache = getStatCache();
+    const stats = statCache.get(sourcePath);
+    if (!stats) {
         return {
             ok: false,
             result: null,
-            error: makeError(ErrorCode.EXEC_ERROR, `Source file not found: ${err.message}`),
+            error: makeError(ErrorCode.EXEC_ERROR, `Source file not found: ${args.source}`),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
+    }
+    if (stats.isDirectory()) {
+        return {
+            ok: false,
+            result: null,
+            error: makeError(
+                ErrorCode.EXEC_ERROR,
+                `Source path '${args.source}' is a directory, not a file.`
+            ),
             _debug: makeDebug({
                 path: 'tool_json',
                 start,
@@ -889,6 +929,9 @@ export function handleCopyFile(args: CopyFileArgs, context: ExecutorContext): To
     // Copy the file
     try {
         fs.copyFileSync(sourcePath, destinationPath);
+        // Invalidate stat cache for destination (source unchanged)
+        const statCache = getStatCache();
+        statCache.invalidate(destinationPath);
     } catch (err: any) {
         return {
             ok: false,
@@ -951,15 +994,14 @@ export function handleFileInfo(args: FileInfoArgs, context: ExecutorContext): To
         };
     }
 
-    // Get file stats
-    let stats: fs.Stats;
-    try {
-        stats = fs.statSync(targetPath);
-    } catch (err: any) {
+    // Get file stats (with caching)
+    const statCache = getStatCache();
+    const stats = statCache.get(targetPath);
+    if (!stats) {
         return {
             ok: false,
             result: null,
-            error: makeError(ErrorCode.EXEC_ERROR, `Failed to stat file: ${err.message}`),
+            error: makeError(ErrorCode.EXEC_ERROR, `File not found: ${args.path}`),
             _debug: makeDebug({
                 path: 'tool_json',
                 start,
