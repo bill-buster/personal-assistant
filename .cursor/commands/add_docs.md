@@ -12,6 +12,20 @@ For all exported functions in the selected code:
 3. Update docs/COMMANDS.md if new CLI command
 4. Ensure all public APIs are documented
 
+## Edge Cases
+
+1. **No exported functions**: Log "No exported functions found" and exit successfully
+2. **Private functions with complex logic**: Consider adding comments even if not exported
+3. **Generated code**: May skip if code is auto-generated (document in generator)
+4. **Legacy code**: Document incrementally, prioritize public APIs first
+
+## Error Handling
+
+If documentation fails:
+- **Missing context**: Review function usage to understand purpose
+- **Complex functions**: Break down into smaller documented functions
+- **Ambiguous parameters**: Clarify with examples in JSDoc
+
 After completing changes:
 - Stage files, run preflight, and commit following git.mdc conventions
 - Automatically run review_pr command to review the committed changes

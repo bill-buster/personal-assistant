@@ -10,6 +10,21 @@ Improve type safety in the selected code:
 
 Follow TypeScript strict mode patterns.
 
+## Edge Cases
+
+1. **Complex generic types**: May require helper types or type utilities
+2. **Third-party library types**: May need to create wrapper types or use `@types/*` packages
+3. **Dynamic properties**: Use `Record<string, unknown>` or indexed types appropriately
+4. **Legacy code with `any`**: Replace incrementally, document why `any` remains if necessary
+
+## Error Handling
+
+If type errors occur:
+- **Type inference failures**: Add explicit types or type assertions (prefer explicit types)
+- **Complex type errors**: Break down into smaller types or use type utilities
+- **Breaking changes**: Document type changes that affect public APIs
+- **Type check failures**: Fix all type errors before committing
+
 After completing changes:
 - Stage files, run preflight, and commit following git.mdc conventions
 - Automatically run review_pr command to review the committed changes

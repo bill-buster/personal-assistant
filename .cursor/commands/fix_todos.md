@@ -8,6 +8,22 @@ Find all TODO/FIXME/HACK comments in the selected code:
 
 If keeping a comment, convert to proper documentation explaining why.
 
+## Edge Cases
+
+1. **No TODOs found**: Log "No TODOs found" and exit successfully
+2. **TODOs in documentation**: Convert to proper documentation format (not code comments)
+3. **TODOs referencing external deps**: Document dependency requirement clearly
+4. **TODOs in test files**: May indicate missing test cases - evaluate carefully before removing
+5. **TODOs with dates/deadlines**: Check if deadline passed - implement or remove
+6. **TODOs in comments that should be preserved**: Convert to proper documentation
+
+## Error Handling
+
+If errors occur:
+- **File read errors**: Log error and skip file, continue with others
+- **Implementation failures**: Log error with context, mark TODO as deferred with explanation
+- **Test failures after changes**: Revert changes, log error, mark TODO as needs investigation
+
 After completing changes:
 - Stage files, run preflight, and commit following git.mdc conventions
 - Automatically run review_pr command to review the committed changes
