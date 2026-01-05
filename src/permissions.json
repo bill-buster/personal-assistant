@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "allow_paths": ["./", "~/"],
+  "allow_commands": ["ls", "pwd", "cat", "du"],
+  "require_confirmation_for": [],
+  "deny_tools": []
+}

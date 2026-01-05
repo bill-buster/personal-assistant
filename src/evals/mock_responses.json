@@ -1,0 +1,87 @@
+{
+    "Analyze the git logs and tell me who contributed the most.": {
+        "toolCall": {
+            "tool_name": "git_log",
+            "args": {}
+        }
+    },
+    "I need to calculate the factorial of 100": {
+        "toolCall": {
+            "tool_name": "calculate",
+            "args": {
+                "expression": "100!"
+            }
+        }
+    },
+    "Find the file that contains the string 'API_KEY' and delete it.": {
+        "toolCall": {
+            "tool_name": "run_cmd",
+            "args": {
+                "command": "grep -l 'API_KEY' *"
+            }
+        }
+    },
+    "Summarize the last 5 tasks I completed.": {
+        "toolCall": {
+            "tool_name": "task_list",
+            "args": {
+                "status": "done",
+                "limit": 5
+            }
+        }
+    },
+    "Who is the president of the United States?": {
+        "reply": "I am an AI assistant and I don't track real-time political events."
+    },
+    "show my tasks": {
+        "toolCall": {
+            "tool_name": "task_list",
+            "args": {
+                "status": "all"
+            }
+        }
+    },
+    "what time is it": {
+        "toolCall": {
+            "tool_name": "get_time",
+            "args": {}
+        }
+    },
+    "{\"status\":\"ok\",\"result\":{\"tasks\":[]}}": {
+        "reply": "You have no tasks at the moment."
+    },
+    "delegate to coder": {
+        "toolCall": {
+            "tool_name": "delegate_to_coder",
+            "args": {
+                "task": "coding task"
+            }
+        }
+    },
+    "delegate to organizer": {
+        "toolCall": {
+            "tool_name": "delegate_to_organizer",
+            "args": {
+                "task": "organizing task"
+            }
+        }
+    },
+    "return to supervisor": {
+        "toolCall": {
+            "tool_name": "return_to_supervisor",
+            "args": {}
+        }
+    },
+    "i am done": {
+        "toolCall": {
+            "tool_name": "return_to_supervisor",
+            "args": {}
+        }
+    },
+    "git status": {
+        "toolCall": {
+            "tool_name": "git_status",
+            "args": {}
+        }
+    }
+}

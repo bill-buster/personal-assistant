@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Data files (runtime-generated, never in repo)
+.assistant-data/
+data/
+*.jsonl
+memory.json
+
+# Test artifacts
+*.test.output.txt
+.tmp/
+coverage/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# Logs
+*.log
+npm-debug.log*

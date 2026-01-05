@@ -1,0 +1,485 @@
+#!/usr/bin/env node
+
+/**
+ * Intent router - parses input and routes to tool calls or prompts.
+ * @module router
+ */
+
+// All imports consolidated at the top of the file
+import { makeToolCall, makeDebug, nowMs, parseArgs, getPackageVersion, loadConfig, resolveConfig } from '../core';
+import type { ResolvedConfig, ToolSpec, Message, Agent } from '../core';
+import type { RouteResult, RouteToolCall, RouteReply } from '../core/types';
+import {
+  parseTaskCommand,
+  parseMemoryCommand,
+  parseHeuristicCommand,
+  validateToolInput
+} from '../parsers';
+import type { LLMProvider } from '../runtime';
+import { TOOL_SCHEMAS, SYSTEM as DEFAULT_SYSTEM_AGENT, buildRuntime } from '../runtime';
+
+const VERSION = getPackageVersion();
+
+const args = process.argv.slice(2);
+
+const INTENTS: Record<string, string> = {
+  fix: 'You are fixing a bug. Be concise. Output only the fix.',
+  explain: 'Explain step by step in simple terms.',
+  spike: 'Implement the simplest viable solution.',
+};
+
+const USAGE = [
+  'Usage: node dist/router.js [--intent <fix|explain|spike>] [--json] "<input>"',
+  '       node dist/router.js --repl',
+  '       node dist/router.js --help | --version',
+  '',
+  'Examples:',
+  '  node dist/router.js "fix: the login button is broken"',
+  '  node dist/router.js "explain: how does caching work?"',
+  '  node dist/router.js --json "spike: a tiny router"',
+  '  node dist/router.js --tool-json "read notes.txt"',
+].join('\n');
+
+/**
+ * Parse and map command line arguments for router.
+ * @param {string[]} argv - Command line arguments.
+ * @returns {Object} Parsed arguments.
+ */
+function runParseArgs(argv: string[]) {
+  const { flags, rawInput, error } = parseArgs(argv, {
+    valueFlags: ['intent'],
+    booleanFlags: ['json', 'tool-json', 'help', 'version', 'repl', 'execute', 'verbose']
+  });
+
+  let forcedIntent: string | null = null;
+  if (flags.intent && typeof flags.intent === 'string') {
+    forcedIntent = flags.intent.toLowerCase();
+  }
+
+  let finalError = error;
+  if (error && error.includes('--intent requires a value')) {
+    finalError = 'Error: --intent requires a value (fix|explain|spike).';
+  }
+
+  return {
+    forcedIntent,
+    jsonOutput: !!(flags['json']),
+    toolJsonOutput: !!(flags['tool-json']),
+    execute: !!(flags['execute']),
+    help: !!(flags['help']),
+    version: !!(flags['version']),
+    repl: !!(flags['repl']),
+    error: finalError,
+    rawInput,
+    flags // Expose flags for verbose check
+  };
+}
+
+/**
+ * Parse input to extract intent and content.
+ * @param {string} input - Raw input.
+ * @param {string|null} forcedIntent - Forced intent from flags.
+ * @returns {Object} Object with intent and content.
+ */
+function parseInput(input: string, forcedIntent: string | null): { intent: string; content: string } {
+  if (forcedIntent && INTENTS[forcedIntent]) {
+    return { intent: forcedIntent, content: input };
+  }
+
+  const match = input.match(/^([a-zA-Z]+):\s*(.*)$/);
+  if (!match) {
+    return { intent: 'spike', content: input };
+  }
+
+  const intent = match[1].toLowerCase();
+  if (!INTENTS[intent]) {
+    return { intent: 'spike', content: input };
+  }
+
+  return { intent, content: match[2] };
+}
+
+// Pre-compiled regex patterns for fast-path matching (V8 optimization)
+const RE_REMEMBER = /^remember:\s+([\s\S]+)$/i;
+const RE_RECALL = /^recall:\s+([\s\S]+)$/i;
+const RE_WRITE = /^write\s+(\S+)\s+([\s\S]+)$/i;
+const RE_READ_URL = /^(?:read\s+url\s+(\S+)|read\s+(https?:\/\/\S+))$/i;
+const RE_READ = /^read\s+((?!https?:\/\/)\S+)\s*$/i; // Exclude http/https
+const RE_LIST = /^list(\s+files)?$/i;
+const RE_RUN_CMD = /^(?:run\s+)?(ls|pwd|cat|du)\s*([\s\S]*)$/i;
+const RE_TIME = /^(?:what time is it|current time|time now|what's the time|time|date)$/i;
+const RE_CALC = /^(?:calculate|calc|compute|eval|math)[:\s]+(.+)$/i;
+const RE_GIT = /^git\s+(status|diff|log)(?:\s+(.*))?$/i;
+
+
+/**
+ * Route input to intent or tool call.
+ */
+export interface RouterConfig {
+  enableRegex?: boolean; // Default: true
+  toolFormat?: 'standard' | 'compact'; // Default: 'compact'
+  strategy?: 'single_step' | 'two_step'; // Default: 'single_step' (Two-step not yet implemented in logic but planned)
+  /** Injected tool schemas (optional - uses default TOOL_SCHEMAS if not provided) */
+  toolSchemas?: Record<string, ToolSpec>;
+}
+
+/**
+ * Route input to intent or tool call.
+ */
+export async function route(
+  input: string,
+  intent: string = 'spike',
+  forcedInstruction: string | null = null,
+  history: Message[] = [],
+  verbose: boolean = false,
+  agent: Agent | undefined, // Required parameter (can be undefined, but must be explicitly passed)
+  injectedProvider: LLMProvider | undefined, // Required parameter (can be undefined, but must be explicitly passed)
+  routerConfig: RouterConfig = { enableRegex: true, toolFormat: 'compact' },
+  config?: ResolvedConfig // Optional for backward compat; callers should pass this
+): Promise<RouteResult> {
+  const start = nowMs();
+  const body = input.trim();
+
+  // 1. Validation
+  // If we have history (agent loop), empty body is allowed (continuation)
+  if (!body && history.length > 0) {
+    if (verbose) console.log(`[Verbose] Agent: ${agent?.name || 'N/A'} (Continuing loop)`);
+  } else {
+    const validationError = validateToolInput(body);
+    if (validationError) {
+      return { error: validationError, code: 2 };
+    }
+  }
+
+  // 2. Heuristic Strategies
+
+  // Helper to check if tool is allowed for current agent
+  const isToolAllowed = (toolName: string): boolean => {
+    // If agent is not provided (e.g., direct CLI call without agent context), allow all tools.
+    // Otherwise, check agent's tool permissions.
+    return !agent || agent.tools.includes(toolName);
+  };
+
+  // A. Regex Fast Paths (with agent permission checks)
+  if (routerConfig.enableRegex !== false) {
+    // Pre-compiled regex patterns for fast-path matching (V8 optimization)
+    // Note: defined at file level
+
+    const rememberMatch = body.match(RE_REMEMBER);
+    const recallMatch = body.match(RE_RECALL);
+    const writeMatch = body.match(RE_WRITE);
+    const readUrlMatch = body.match(RE_READ_URL);
+    const readMatch = body.match(RE_READ);
+    const listMatch = body.match(RE_LIST);
+    const timeMatch = body.match(RE_TIME);
+    const calcMatch = body.match(RE_CALC);
+
+    if (rememberMatch && isToolAllowed('remember')) return success(intent, 'remember', { text: rememberMatch[1] }, 'regex_fast_path', start);
+    if (recallMatch && isToolAllowed('recall')) return success(intent, 'recall', { query: recallMatch[1] }, 'regex_fast_path', start);
+    if (writeMatch && isToolAllowed('write_file')) return success(intent, 'write_file', { path: writeMatch[1], content: writeMatch[2] }, 'regex_fast_path', start);
+    if (readUrlMatch && isToolAllowed('read_url')) return success(intent, 'read_url', { url: readUrlMatch[1] || readUrlMatch[2] }, 'regex_fast_path', start);
+    if (readMatch && isToolAllowed('read_file')) return success(intent, 'read_file', { path: readMatch[1] }, 'regex_fast_path', start);
+    if (listMatch && isToolAllowed('list_files')) return success(intent, 'list_files', {}, 'regex_fast_path', start);
+    if (timeMatch && isToolAllowed('get_time')) return success(intent, 'get_time', {}, 'regex_fast_path', start);
+    if (calcMatch && isToolAllowed('calculate')) return success(intent, 'calculate', { expression: calcMatch[1] }, 'regex_fast_path', start);
+  }
+
+  // Git Fast Path
+  if (routerConfig.enableRegex !== false) {
+    const gitMatch = body.match(RE_GIT);
+    if (gitMatch) {
+      const sub = gitMatch[1].toLowerCase();
+      const args = gitMatch[2] || '';
+      if (sub === 'status' && isToolAllowed('git_status')) return success(intent, 'git_status', {}, 'regex_fast_path', start);
+      if (sub === 'diff' && isToolAllowed('git_diff')) {
+        const staged = args.includes('--staged');
+        return success(intent, 'git_diff', { staged }, 'regex_fast_path', start);
+      }
+      if (sub === 'log' && isToolAllowed('git_log')) {
+        // Simple parse for limit, default to 10 if not found or complex
+        const limitMatch = args.match(/-n\s+(\d+)/) || args.match(/--limit\s+(\d+)/);
+        const limit = limitMatch ? parseInt(limitMatch[1], 10) : 10;
+        return success(intent, 'git_log', { limit }, 'regex_fast_path', start);
+      }
+    }
+
+    // Run Command Fast Path
+    const runMatch = body.match(RE_RUN_CMD);
+    if (runMatch && isToolAllowed('run_cmd')) {
+      const cmd = runMatch[1];
+      const args = runMatch[2];
+      return success(intent, 'run_cmd', { command: `${cmd} ${args}`.trim() }, 'regex_fast_path', start);
+    }
+  }
+
+  // A. Heuristic Parser
+  const heuristicCommand = parseHeuristicCommand(body);
+  if (heuristicCommand && heuristicCommand.error) {
+    return { error: heuristicCommand.error, code: 2 };
+  }
+  if (heuristicCommand && heuristicCommand.tool) {
+    // Check agent permissions for heuristic-matched tools
+    if (!isToolAllowed(heuristicCommand.tool.name)) {
+      if (verbose) console.log(`[Verbose] Heuristic matched ${heuristicCommand.tool.name} but agent ${agent?.name || 'N/A'} lacks permission, skipping to LLM.`);
+    } else {
+      if (verbose) console.log('[Verbose] Matched Heuristic Parser:', heuristicCommand.tool.name);
+      return {
+        version: 1 as const,
+        intent,
+        mode: 'tool_call' as const,
+        tool_call: makeToolCall(heuristicCommand.tool.name, heuristicCommand.tool.args),
+        reply: null,
+        _debug: makeDebug({ path: 'heuristic_parse', start, model: null, memory_read: false, memory_write: false })
+      } as RouteToolCall;
+    }
+  }
+
+  // B. Task Parser
+  const taskCommand = parseTaskCommand(body);
+  if (taskCommand && taskCommand.error) return { error: taskCommand.error, code: 2 };
+  if (taskCommand && taskCommand.tool) {
+    // Check agent permissions for task commands
+    if (!isToolAllowed(taskCommand.tool.name)) {
+      if (verbose) console.log(`[Verbose] Task command matched ${taskCommand.tool.name} but agent ${agent?.name || 'N/A'} lacks permission, skipping to LLM.`);
+    } else {
+      return {
+        version: 1 as const,
+        intent,
+        mode: 'tool_call' as const,
+        tool_call: makeToolCall(taskCommand.tool.name, taskCommand.tool.args),
+        reply: null,
+        _debug: makeDebug({ path: 'cli_parse', start, model: null, memory_read: false, memory_write: false })
+      } as RouteToolCall;
+    }
+  }
+
+  // C. Memory Parser
+  const memoryCommand = parseMemoryCommand(body);
+  if (memoryCommand && memoryCommand.error) return { error: memoryCommand.error, code: 2 };
+  if (memoryCommand && memoryCommand.tool) {
+    // Check agent permissions for memory commands
+    if (!isToolAllowed(memoryCommand.tool.name)) {
+      if (verbose) console.log(`[Verbose] Memory command matched ${memoryCommand.tool.name} but agent ${agent?.name || 'N/A'} lacks permission, skipping to LLM.`);
+    } else {
+      return {
+        version: 1 as const,
+        intent,
+        mode: 'tool_call' as const,
+        tool_call: makeToolCall(memoryCommand.tool.name, memoryCommand.tool.args),
+        reply: null,
+        _debug: makeDebug({ path: 'cli_parse', start, model: null, memory_read: false, memory_write: false })
+      } as RouteToolCall;
+    }
+  }
+
+
+  // 3. LLM Fallback (if provider injected)
+  if (injectedProvider) {
+    try {
+      // Use injected tool schemas or default to module-level TOOL_SCHEMAS
+      const schemas = routerConfig.toolSchemas || TOOL_SCHEMAS;
+
+      // If agent was not provided, default to SYSTEM agent
+      const currentAgent = agent || DEFAULT_SYSTEM_AGENT;
+
+      const provider = injectedProvider;
+      if (verbose && config) console.log(`[Verbose] Agent: ${currentAgent.name} | Provider: ${config.defaultProvider}`);
+
+      // Filter tools based on Agent permissions
+      const allowedTools: Record<string, any> = {};
+      for (const name of currentAgent.tools) {
+        if (schemas[name]) {
+          allowedTools[name] = schemas[name];
+        }
+      }
+
+      if (verbose) {
+        console.log('[Verbose] Filtered Tools:', Object.keys(allowedTools));
+        if (Object.keys(allowedTools).length > 0) {
+          // console.log('[Verbose] Sample Tool Schema:', JSON.stringify(allowedTools[Object.keys(allowedTools)[0]], null, 2));
+        }
+      }
+
+      // We pass options via an extended interface or optional args?
+      // Since LLMProvider interface is fixed, we might need to modify it OR cast it here if we assume OpenAICompatibleProvider
+      // For now, we'll pass it if the provider supports it, or handle it via a side channel/globals if we must (but cleaner to strict type it).
+      // Given the 'provider.complete' signature:
+      // complete(prompt, tools, history, verbose, systemPrompt): Promise<CompletionResult>
+      // We will check if provider has a setOptions method or just append to system prompt manually here.
+
+      const finalSystemPrompt = currentAgent.systemPrompt;
+
+      const res = await provider.complete(body, allowedTools, history, verbose, finalSystemPrompt, { toolFormat: routerConfig.toolFormat });
+
+      if (res.ok) {
+        if (res.toolCall) {
+          if (!isToolAllowed(res.toolCall.tool_name)) {
+            const msg = `Error: Tool '${res.toolCall.tool_name}' is not allowed for agent '${currentAgent.name}'.`;
+            if (verbose) console.log(`[Verbose] ${msg}`);
+            // Return validation error instead of executing
+            return { error: msg, code: 2 };
+          }
+
+          return {
+            version: 1 as const,
+            intent,
+            mode: 'tool_call' as const,
+            tool_call: res.toolCall,
+            reply: null,
+            usage: res.usage || null,
+            _debug: makeDebug({ path: 'llm_fallback', start, model: config?.defaultProvider || 'unknown', memory_read: false, memory_write: false })
+          } as RouteToolCall;
+        }
+        if (res.reply) {
+          return {
+            version: 1 as const,
+            intent,
+            mode: 'reply' as const, // LLM conversational reply
+            tool_call: null,
+            reply: {
+              instruction: forcedInstruction || intent,
+              content: res.reply,
+              prompt: body
+            },
+            usage: res.usage || null,
+            _debug: makeDebug({ path: 'llm_fallback', start, model: config?.defaultProvider || 'unknown', memory_read: false, memory_write: false })
+          } as RouteReply;
+        }
+      } else {
+        const errorMsg = res.error || 'Unknown LLM error';
+        console.error(`[LLM Error] ${errorMsg}`);
+        if (history.length > 0) return { error: errorMsg, code: 2 };
+      }
+    } catch (err: any) {
+      console.error('LLM Error:', err.message); // Log it
+      if (history.length > 0) {
+        // In agent loop, failure is fatal
+        return { error: `LLM Error: ${err.message}`, code: 2 };
+      }
+    }
+  }
+
+  // 4. Default Fallback
+  if (intent === 'spike') {
+    return { error: 'Error: input did not match any tool pattern.', code: 1 };
+  }
+
+  return {
+    version: 1 as const,
+    intent,
+    mode: 'reply' as const,
+    tool_call: null,
+    reply: {
+      instruction: forcedInstruction || INTENTS.spike,
+      content: body,
+      prompt: `${forcedInstruction || INTENTS.spike}\n\n${body}`
+    },
+    _debug: makeDebug({ path: 'fallback', start, model: null, memory_read: false, memory_write: false })
+  } as RouteReply;
+}
+
+function success(intent: string, tool: string, args: any, path: string, start: number): RouteToolCall {
+  return {
+    version: 1 as const,
+    intent,
+    mode: 'tool_call' as const,
+    tool_call: makeToolCall(tool, args),
+    reply: null,
+    _debug: makeDebug({ path, start, model: null, memory_read: false, memory_write: false })
+  };
+}
+
+// CLI Entry Point
+if (require.main === module) {
+  (async () => {
+    const { forcedIntent, jsonOutput, toolJsonOutput, execute, help, version, repl, error, rawInput, flags } = runParseArgs(args);
+    const verbose = !!flags['verbose'];
+
+    // Load config once at entrypoint
+    const rawConfig = loadConfig();
+    const resolvedConfig = resolveConfig(rawConfig);
+
+    if (help) { process.stdout.write(`${USAGE}\n`); process.exit(0); }
+    if (version) { process.stdout.write(`${VERSION}\n`); process.exit(0); }
+    if (error) { process.stderr.write(`${error}\n`); process.exit(2); }
+
+    if (repl) {
+      if (require.main === module) {
+        // Lazy import to avoid circular dep if any (router imports parsers, repl imports router)
+        const { startRepl } = require('./repl');
+        startRepl({ verbose });
+        // Don't exit, REPL keeps process alive
+        return;
+      }
+    }
+
+    if (forcedIntent && !INTENTS[forcedIntent]) { process.stderr.write('Error: unknown intent.\n'); process.exit(2); }
+    if (!rawInput) { process.stderr.write('Error: missing input.\n'); process.exit(2); }
+
+    const { intent, content } = parseInput(rawInput, forcedIntent);
+    const instruction = INTENTS[intent] || INTENTS.spike;
+
+    if (!content.trim()) {
+      process.stderr.write('Error: missing input. Provide content after the intent label.\n');
+      process.exit(2);
+    }
+
+    if (execute) {
+      // Build runtime once via composition root
+      const runtime = buildRuntime(resolvedConfig);
+      const result = await route(content, intent, instruction, [], verbose, undefined, runtime.provider, { enableRegex: true, toolFormat: 'compact', toolSchemas: runtime.toolSchemas }, resolvedConfig);
+      if ('error' in result) {
+        process.stderr.write(`${result.error}\n`);
+        process.exit(result.code || 1);
+      }
+      if (result.mode === 'tool_call' && result.tool_call) {
+        const execResult = await runtime.executor.execute(result.tool_call.tool_name, result.tool_call.args);
+        process.stdout.write(JSON.stringify(execResult, null, 2) + '\n');
+        process.exit(execResult.ok ? 0 : 1);
+      } else if (result.mode === 'reply') {
+        // Just print reply
+        process.stdout.write(result.reply.content + '\n');
+        process.exit(0);
+      }
+    }
+
+    // If tool-json is requested, we run specific routing logic
+    // In original code, tool-json usage triggered the routing logic.
+    // Standard usage (without tool-json) just echo-ed the prompt if not tool-json?
+    // Wait, original 'router.js' logic:
+    // if (toolJsonOutput) { ... perform routing ... }
+    // else if (jsonOutput) { ... echo payload ... }
+    // else { output body }
+
+    // We want to preserve this behavior.
+    if (toolJsonOutput) {
+      // Tool-json mode just parses commands - no runtime needed (no LLM, no executor)
+      // Use default TOOL_SCHEMAS directly
+      const result = await route(content, intent, instruction, [], false, undefined, undefined, { enableRegex: true, toolFormat: 'compact' }, resolvedConfig);
+      if ('error' in result) {
+        process.stderr.write(`${result.error}\n`);
+        process.exit(result.code || 1);
+      }
+      process.stdout.write(`${JSON.stringify(result)}\n`);
+      process.exit(0);
+    } else if (jsonOutput) {
+      // Echo only
+      const payload = {
+        version: 1,
+        intent,
+        instruction,
+        content: content.trim(),
+        prompt: `${instruction}\n\n${content.trim()}`,
+      };
+      process.stdout.write(`${JSON.stringify(payload)}\n`);
+      process.exit(0);
+    } else {
+      // Plain text output
+      const body = content.trim();
+      const prompt = `${instruction}\n\n${body}`;
+      const output = body ? prompt : instruction;
+      process.stdout.write(output);
+      process.exit(0);
+    }
+  })();
+}

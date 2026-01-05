@@ -1,0 +1,47 @@
+{
+  "name": "personal-assistant",
+  "version": "0.1.0",
+  "description": "Local-first personal assistant with CLI, REPL, and web dashboard. Routes natural language to tools with optional LLM fallback.",
+  "main": "dist/core/index.js",
+  "bin": {
+    "assistant": "./dist/app/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "test": "npm run build && TEST_DIST=1 node --max-old-space-size=256 dist/run_tests.js",
+    "test:single": "npm run build && TEST_DIST=1 node --max-old-space-size=256 dist/run_tests.js",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "start": "node dist/app/cli.js",
+    "repl": "node dist/app/cli.js repl",
+    "demo": "node dist/app/cli.js demo --human",
+    "web": "node dist/app/cli.js web"
+  },
+  "keywords": [
+    "assistant",
+    "cli",
+    "repl",
+    "llm",
+    "tools",
+    "groq",
+    "openrouter",
+    "local-first"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@types/node": "^25.0.3",
+    "eslint": "^9.0.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.0.0"
+  },
+  "dependencies": {
+    "zod": "^4.3.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
+

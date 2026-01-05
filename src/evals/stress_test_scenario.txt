@@ -1,0 +1,14 @@
+what time is it
+calculate 123 * 456
+task add "Buy groceries"
+remember "Project code is Phoenix"
+show my tasks
+delegate to coder
+list files
+git status
+return to supervisor
+delegate to organizer
+recall "Phoenix"
+i am done
+/stats
+/reset
