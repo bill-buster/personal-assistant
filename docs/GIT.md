@@ -235,44 +235,45 @@ npm run prepare
 
 ### Overview
 
-This project uses **GitHub Flow** - a simple, branch-based workflow optimized for:
-- ✅ Solo developers and small teams
+This project uses **Direct Commits to Main** - a streamlined workflow optimized for:
+- ✅ Solo developers (fast iteration)
 - ✅ Continuous integration/deployment
 - ✅ Automated semantic versioning
-- ✅ Fast iteration cycles
+- ✅ Pre-commit/pre-push hooks for safety
 
-### Why GitHub Flow?
+### Why Direct Commits?
 
 **Chosen because**:
-- ✅ **Simple**: Single `main` branch (no `develop` branch complexity)
-- ✅ **Fast**: Short-lived feature branches (hours to days, not weeks)
+- ✅ **Fastest**: No branch/PR overhead for most changes
+- ✅ **Simple**: Direct workflow, fewer steps
+- ✅ **Safe**: Pre-commit hooks (format, lint, typecheck) + pre-push hooks (preflight)
 - ✅ **Automated**: Works perfectly with semantic-release (releases from `main`)
-- ✅ **CI/CD Ready**: All checks run on PRs, main is always deployable
-- ✅ **Solo-Friendly**: No complex merge strategies needed
+- ✅ **CI/CD Ready**: All checks run on every push to `main`
+- ✅ **Solo-Friendly**: Perfect for single-developer projects
 
-**Not using GitFlow because**:
-- ❌ Too complex for solo/small teams
-- ❌ Requires `develop` branch (we don't have one)
-- ❌ Release branches unnecessary with automated releases
-- ❌ Overkill for this project size
+**Safeguards**:
+- Pre-commit hooks prevent bad commits (format, lint, typecheck)
+- Pre-push hooks run full preflight (build, leak check, smoke test)
+- CI runs on every push to catch any issues
+- Feature branches still available for large changes
 
 ### Branch Types
 
-#### Protected Branch: `main`
+#### Primary Branch: `main`
 
 **Purpose**: Production-ready code, always deployable
 
-**Protection Rules**:
-- ✅ Requires pull request reviews (1 approval minimum)
-- ✅ Requires CI checks to pass
-- ✅ Requires branches to be up to date before merging
-- ✅ No direct commits (use PRs)
-- ✅ No force pushes
-- ✅ No deletions
+**Direct Commits**: ✅ **Allowed** (with automated safeguards)
+
+**Safeguards**:
+- ✅ Pre-commit hooks: format, lint, typecheck (automatic)
+- ✅ Pre-push hooks: preflight (build, leak check, smoke test)
+- ✅ CI runs full suite on every push
+- ✅ Semantic-release runs on every push
 
 **CI/CD**:
 - Runs full test suite on every push
-- Runs semantic-release on merge (auto-versioning)
+- Runs semantic-release on every push (auto-versioning)
 - Generates changelog automatically
 
 **Releases**:
@@ -283,9 +284,15 @@ This project uses **GitHub Flow** - a simple, branch-based workflow optimized fo
   - `refactor:` → Patch version bump
   - `docs:`, `test:`, `chore:` → No version bump
 
-#### Feature Branches: `feature/<name>`
+#### Optional: Feature Branches `feature/<name>`
 
-**Purpose**: New features and enhancements
+**Purpose**: Large features or experimental work
+
+**When to Use**:
+- Changes > 200 lines
+- Breaking changes
+- Complex refactors
+- Experimental features that might be abandoned
 
 **Naming Convention**:
 ```
@@ -302,20 +309,20 @@ feature/<short-description>
 **Lifecycle**:
 1. Create from `main`
 2. Develop feature
-3. Create PR to `main`
-4. CI runs automatically
-5. Review and merge
-6. Delete branch
+3. Merge to `main` (or delete if abandoned)
+4. Delete branch
 
 **Best Practices**:
-- Keep branches small and focused (one feature per branch)
-- Update frequently with `main` (rebase or merge)
+- Use for large changes only
+- Merge directly to `main` (no PR needed for solo dev)
 - Delete after merge
 - Use descriptive names
 
-#### Fix Branches: `fix/<name>`
+#### Optional: Fix Branches `fix/<name>`
 
-**Purpose**: Bug fixes
+**Purpose**: Complex bug fixes that need isolation
+
+**When to Use**: Multi-file fixes, fixes requiring multiple commits
 
 **Naming Convention**:
 ```
@@ -331,13 +338,15 @@ fix/<short-description>
 **Lifecycle**: Same as feature branches
 
 **Best Practices**:
-- Reference issue number if applicable: `fix/123-router-bug`
-- Keep fixes focused (one bug per branch)
+- Use for complex fixes only
+- Most fixes can go directly to `main`
 - Include tests for the fix
 
-#### Documentation Branches: `docs/<name>`
+#### Optional: Documentation Branches `docs/<name>`
 
-**Purpose**: Documentation updates
+**Purpose**: Large documentation updates
+
+**When to Use**: Major doc rewrites, multiple doc files
 
 **Naming Convention**:
 ```
@@ -349,90 +358,59 @@ docs/<short-description>
 - ✅ `docs/add-api-docs`
 - ✅ `docs/fix-typos`
 
-**Lifecycle**: Same as feature branches
-
-**CI**: Lighter checks (format, lint, no tests required)
-
-#### Hotfix Branches: `hotfix/<name>`
-
-**Purpose**: Critical production fixes (use sparingly)
-
-**Naming Convention**:
-```
-hotfix/<short-description>
-```
-
-**Examples**:
-- ✅ `hotfix/security-patch`
-- ✅ `hotfix/critical-bug`
-- ✅ `hotfix/data-leak`
-
-**When to Use**:
-- Critical security issues
-- Production-breaking bugs
-- Data loss/corruption issues
-
-**Lifecycle**:
-1. Create from `main`
-2. Fix immediately
-3. Create PR (mark as urgent)
-4. Expedited review
-5. Merge to `main`
-6. Delete branch
-
-**Note**: Use sparingly. Most fixes can go through normal `fix/` branches.
+**Note**: Most doc changes can go directly to `main`
 
 ### Branch Workflow
 
-#### Standard Feature Development
+#### Standard Workflow: Direct Commits (Default)
 
 ```bash
-# 1. Start from latest main
-git checkout main
-git pull origin main
+# 1. Make changes
+# ... edit files ...
 
-# 2. Create feature branch
+# 2. Stage and commit (pre-commit hooks run automatically)
+git add <files>
+git commit -m "feat(tools): add new tool"
+
+# 3. Push (pre-push hooks run automatically)
+git push origin main
+
+# That's it! Fast and simple.
+```
+
+#### Optional Workflow: Feature Branches (For Large Changes)
+
+```bash
+# 1. Create feature branch
 git checkout -b feature/add-new-tool
 
-# 3. Develop (commit frequently)
+# 2. Develop (commit frequently)
 git add src/tools/new_tool.ts
 git commit -m "feat(tools): add new tool"
 
-# 4. Keep updated with main (if needed)
-git fetch origin
-git rebase origin/main
-# OR
-git merge origin/main
-
-# 5. Push and create PR
-git push origin feature/add-new-tool
-# Create PR on GitHub
-
-# 6. After merge, cleanup
+# 3. When ready, merge to main
 git checkout main
-git pull origin main
+git merge feature/add-new-tool
+# OR squash: git merge --squash feature/add-new-tool
+
+# 4. Cleanup
 git branch -d feature/add-new-tool
+git push origin main
 ```
 
-#### Bug Fix Workflow
+#### Bug Fix Workflow (Direct Commit)
 
 ```bash
-# 1. Create fix branch
-git checkout main
-git pull origin main
-git checkout -b fix/router-bug
-
-# 2. Fix bug
+# 1. Fix bug directly on main
 git add src/app/router.ts
 git commit -m "fix(router): handle empty queries"
 
-# 3. Add test
+# 2. Add test
 git add src/app/router.test.ts
 git commit -m "test(router): add test for empty query"
 
-# 4. Push and create PR
-git push origin fix/router-bug
-# Create PR on GitHub
+# 3. Push
+git push origin main
 ```
 
 ### Branch Naming Rules
@@ -512,12 +490,11 @@ feature/add-new-feature-for-testing-generation  # Too long
 ### CI/CD Integration
 
 **CI Runs On**:
-- ✅ **All PRs**: Format check, lint, type check, build, tests
-- ✅ **Main branch**: Full test suite + smoke tests
-- ✅ **All branches**: Format and lint checks
+- ✅ **Main branch**: Full suite (format, lint, type check, build, tests) + semantic-release
+- ✅ **Feature branches**: Same checks (if you use them)
 
 **Release Process** (Automated via semantic-release):
-1. PR merged to `main`
+1. Push to `main`
 2. CI runs semantic-release
 3. Analyzes commits since last release
 4. Determines version bump (based on conventional commits)
@@ -531,13 +508,19 @@ feature/add-new-feature-for-testing-generation  # Too long
 ### Best Practices
 
 **✅ Do**:
-- Always start from latest `main`
-- Keep branches small and focused
+- Commit directly to `main` for most changes
+- Run `npm run preflight` before pushing (or rely on pre-push hook)
 - Commit frequently with clear messages
-- Update branch with `main` regularly
-- Delete branches after merge
-- Use descriptive branch names
+- Use feature branches for large changes (> 200 lines)
+- Keep commits focused and atomic
+- Use conventional commit format
 - Write tests for new features/fixes
+
+**❌ Don't**:
+- Push without running preflight (or disable pre-push hook)
+- Commit broken code (hooks should catch this)
+- Create feature branches for small changes
+- Force push to `main` (unless absolutely necessary)
 - Keep PRs small (< 500 lines ideally)
 
 **❌ Don't**:
