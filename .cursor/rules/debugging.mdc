@@ -213,3 +213,165 @@ For benchmarks, use:
 npm run build
 node dist/benchmarks/executor_bench.js
 ```
+
+## Handling Stuck Operations
+
+### When Operations Hang or Don't Return
+
+**If a tool call or command seems stuck:**
+
+1. **Check for timeout**: Most operations have built-in timeouts:
+   - Git commands: 10 seconds (`git_tools.ts`)
+   - LLM requests: 60 seconds (`openai_compatible.ts`)
+   - Fetch requests: 6 seconds (`utility_tools.ts`)
+   - File reads: No timeout (synchronous, should be instant)
+
+2. **If a command hangs:**
+   ```bash
+   # Check if process is actually running
+   ps aux | grep <command>
+   
+   # Kill stuck process if needed
+   kill -9 <PID>
+   ```
+
+3. **If file read fails silently:**
+   - Check file exists: `ls -la <path>`
+   - Check permissions: `stat <path>`
+   - Try reading with `cat` to see error message
+   - File may be locked by another process
+
+4. **If terminal command returns nothing:**
+   - Check exit code: `echo $?` (0 = success, non-zero = error)
+   - Check stderr: Some commands write errors to stderr only
+   - Command may be waiting for input (use `timeout` wrapper)
+   - Command may be buffering output (use `stdbuf` or add `--no-buffer`)
+
+### Timeout Patterns in Code
+
+**For spawnSync commands:**
+```typescript
+const result = spawnSync('command', args, {
+    timeout: 10000,  // 10 second timeout
+    maxBuffer: 10 * 1024 * 1024,  // 10MB max output
+    encoding: 'utf8'
+});
+
+if (result.error) {
+    // Handle timeout or spawn error
+    if (result.error.code === 'ETIMEDOUT') {
+        return { ok: false, error: 'Command timed out' };
+    }
+}
+```
+
+**For async operations:**
+```typescript
+const controller = new AbortController();
+const timeoutId = setTimeout(() => controller.abort(), 60000);
+
+try {
+    const result = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    return result;
+} catch (err) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+        return { ok: false, error: 'Request timed out' };
+    }
+    throw err;
+}
+```
+
+### When to Give Up
+
+**Stop retrying and ask for help if:**
+- Operation has timed out 3+ times
+- File read fails with permission denied (may need user intervention)
+- Command consistently hangs (may be waiting for user input)
+- Error message is unclear and you've tried 2-3 approaches
+
+**Before giving up, try:**
+1. Check if file/command exists
+2. Verify permissions
+3. Try alternative approach (e.g., `cat` instead of `read_file`)
+4. Check if process is stuck: `ps aux | grep <name>`
+5. Read error message carefully (may indicate the issue)
+
+### File Read Failures
+
+**Common causes:**
+- File doesn't exist: Check with `ls` or `test -f`
+- Permission denied: Check with `stat` or `ls -la`
+- File is directory: Use `list_files` instead
+- File is locked: Another process has it open
+- Path traversal blocked: Check `allow_paths` in permissions.json
+
+**Recovery:**
+```typescript
+// Always wrap file reads in try/catch
+try {
+    const content = fs.readFileSync(path, 'utf8');
+    return { ok: true, result: content };
+} catch (err: any) {
+    // Check specific error types
+    if (err.code === 'ENOENT') {
+        return { ok: false, error: 'File not found' };
+    }
+    if (err.code === 'EACCES') {
+        return { ok: false, error: 'Permission denied' };
+    }
+    return { ok: false, error: `Read failed: ${err.message}` };
+}
+```
+
+### Command Execution Failures
+
+**Check result object:**
+```typescript
+const result = spawnSync('command', args, { timeout: 10000 });
+
+if (result.error) {
+    // Process failed to start or timed out
+    return { ok: false, error: result.error.message };
+}
+
+if (result.signal) {
+    // Process was killed by signal
+    return { ok: false, error: `Terminated by signal ${result.signal}` };
+}
+
+if (result.status !== 0) {
+    // Command failed (check stderr for details)
+    const error = result.stderr || `Command failed with status ${result.status}`;
+    return { ok: false, error };
+}
+```
+
+### Debugging Stuck Operations
+
+**Add timeout wrapper for testing:**
+```bash
+# Test if command hangs
+timeout 5 command args
+
+# Or use with spawnSync timeout option (already in code)
+```
+
+**Check what's happening:**
+```bash
+# See if process is running
+ps aux | grep node
+
+# Check file locks (macOS)
+lsof <file-path>
+
+# Check network connections
+netstat -an | grep ESTABLISHED
+```
+
+**If Cursor itself seems stuck:**
+- Check if tool call is waiting for response
+- Look for error messages in stderr
+- Try simpler operation to verify system is responsive
+- May need to restart Cursor if completely frozen

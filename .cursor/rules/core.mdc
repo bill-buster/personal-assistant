@@ -199,6 +199,22 @@ import {
 } from '../core';
 ```
 
+## Handling Stuck Operations
+
+**If a command or file read seems stuck:**
+
+1. **Check timeouts**: Most operations have built-in timeouts (git: 10s, LLM: 60s, fetch: 6s)
+2. **If command hangs**: Check with `ps aux | grep <command>` or add `timeout` wrapper
+3. **If file read fails**: Check existence (`ls`), permissions (`stat`), or try `cat` command
+4. **If no response**: Check exit code (`echo $?`), check stderr, verify command isn't waiting for input
+
+**When to give up:**
+- Operation timed out 3+ times
+- Permission denied (may need user intervention)
+- Error unclear after 2-3 attempts
+
+**See `.cursor/rules/debugging.mdc` for detailed troubleshooting patterns.**
+
 ## Related Rules
 
 - **Error Handling**: See `.cursor/rules/errors.mdc` for error patterns and error codes
