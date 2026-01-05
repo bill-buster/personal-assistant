@@ -412,8 +412,20 @@ export async function route(
             // Use injected tool schemas or default to module-level TOOL_SCHEMAS
             const schemas = routerConfig.toolSchemas || TOOL_SCHEMAS;
 
-            // If agent was not provided, default to SYSTEM agent
-            const currentAgent = agent || DEFAULT_SYSTEM_AGENT;
+            // If agent was not provided, create minimal agent with only SAFE_TOOLS
+            // This matches executor behavior: no agent = only SAFE_TOOLS allowed
+            let currentAgent: Agent;
+            if (!agent) {
+                currentAgent = {
+                    name: 'Minimal',
+                    description: 'Minimal agent with safe tools only (no agent context)',
+                    systemPrompt: 'You are a minimal assistant with limited safe tools only.',
+                    tools: [...SAFE_TOOLS],
+                    kind: 'user',
+                };
+            } else {
+                currentAgent = agent;
+            }
 
             const provider = injectedProvider;
             if (verbose && config)

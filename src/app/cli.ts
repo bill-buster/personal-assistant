@@ -727,7 +727,7 @@ async function handleExplain(
             const validation = schema.safeParse(routed.tool_call.args);
             explanation.validation = {
                 valid: validation.success,
-                error: validation.success ? null : validation.error.message,
+                error: validation.success ? null : validation.error?.message || 'Validation failed',
             };
         }
 
