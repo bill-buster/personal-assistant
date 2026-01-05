@@ -170,8 +170,9 @@ export function parseShellArgs(
 function quoteShellArg(arg: string): string {
     // If the argument contains spaces, quotes, or other special characters, quote it
     if (/[\s"']/.test(arg)) {
-        // Escape any double quotes and wrap in double quotes
-        return `"${arg.replace(/"/g, '\\"')}"`;
+        // Security: Escape backslashes first, then double quotes, then wrap in double quotes
+        // This prevents incomplete escaping vulnerabilities
+        return `"${arg.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
     }
     return arg;
 }

@@ -57,3 +57,6 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+
+# Code review results (generated)
+.review-results/

@@ -58,8 +58,21 @@ export function startWebServer(config: WebServerConfig): void {
         }
 
         // Static file serving
+        // Security: Prevent path traversal attacks
         let filePath = pathname === '/' ? '/index.html' : pathname;
-        filePath = path.join(webDir, filePath);
+        
+        // Normalize and resolve to prevent path traversal
+        const normalizedPath = path.normalize(filePath).replace(/^(\.\.[/\\])+/, '');
+        const resolvedPath = path.resolve(webDir, normalizedPath);
+        
+        // Ensure resolved path is within webDir (prevent directory traversal)
+        if (!resolvedPath.startsWith(path.resolve(webDir))) {
+            res.writeHead(403);
+            res.end('Forbidden');
+            return;
+        }
+        
+        filePath = resolvedPath;
 
         const ext = path.extname(filePath);
         const contentType = MIME_TYPES[ext] || 'text/plain';

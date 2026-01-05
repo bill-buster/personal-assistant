@@ -59,10 +59,11 @@ export function handleReadUrl(args: ReadUrlArgs): ToolResult {
         const html = result.stdout;
 
         // Basic HTML stripping to get text content
+        // Security: Improved regex to handle edge cases (spaces, case variations)
         const text = html
-            // Remove scripts and styles first
-            .replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gim, '')
-            .replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gim, '')
+            // Remove scripts and styles first (handle spaces and case variations)
+            .replace(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/gim, '')
+            .replace(/<style\b[^>]*>([\s\S]*?)<\/style\s*>/gim, '')
             // Replace <br>, <p>, <div> endings with newlines to preserve some structure
             .replace(/<br\s*\/?>/gim, '\n')
             .replace(/<\/p>/gim, '\n')

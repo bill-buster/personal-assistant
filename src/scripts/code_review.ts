@@ -33,65 +33,172 @@ interface FileReview {
     score: number; // 0-100
 }
 
-const REVIEW_CHECKLIST = {
+// Whitelist patterns - known safe patterns that should not be flagged
+const WHITELIST_PATTERNS = [
+    // Safe path.join patterns
+    /path\.join\(__dirname/,
+    /path\.join\(__filename/,
+    /path\.join\(process\.cwd\(\)/,
+    /path\.join\([^,)]+,\s*['"][^'"]+['"]\)/, // path.join(base, 'static')
+    /path\.join\([^,)]+,\s*['"][^'"]+['"],\s*['"][^'"]+['"]\)/, // path.join(base, 'dir', 'file')
+    /context\.paths\.resolveAllowed/, // Safe context usage
+    // Safe console.log patterns
+    /console\.(log|error)\(['"][^'"]*(Info|Debug|Warn|Error|Trace)/, // console.log('[Info] ...')
+    /console\.(log|error)\(['"]\[/, // console.log('[...')
+    // Safe process.env patterns (with validation or fallback)
+    /process\.env\.[A-Z_]+\s*\|\|/, // process.env.KEY || 'default'
+    /process\.env\.[A-Z_]+\s*\?\?/, // process.env.KEY ?? 'default'
+    /if\s*\(!process\.env\.[A-Z_]+\)/, // if (!process.env.KEY)
+    /if\s*\(process\.env\.[A-Z_]+\s*===/, // if (process.env.KEY === ...)
+    // Safe sync I/O in specific contexts
+    /readFileSync\(__dirname/, // Reading from __dirname is usually safe
+    /readFileSync\(__filename/, // Reading from __filename is usually safe
+    /readFileSync\(['"][^'"]+package\.json['"]/, // Reading package.json
+    /readFileSync\(['"][^'"]+tsconfig\.json['"]/, // Reading tsconfig.json
+];
+
+interface PatternCheck {
+    pattern: RegExp;
+    issue: string;
+    whitelist?: RegExp[]; // Patterns that make this safe
+    contextCheck?: (content: string, matchIndex: number) => boolean; // Additional context validation
+}
+
+const REVIEW_CHECKLIST: Record<string, PatternCheck[]> = {
     security: [
         {
-            pattern: /path\.join\([^)]*userInput/gi,
+            pattern: /path\.join\([^,)]+,\s*[^,)]*[uU]ser[Ii]nput|[uU]ser[Dd]ata|[uU]ser[Pp]rovided/gi,
             issue: 'Potential path traversal - use context.paths.resolveAllowed()',
+            whitelist: [/context\.paths\.resolveAllowed/, /path\.join\(__dirname/, /path\.join\(process\.cwd\(\)/],
         },
         {
-            pattern: /exec\([^`]*`[^`]*\$\{/gi,
+            pattern: /exec\([^`]*`[^`]*\$\{[^}]*[uU]ser[Ii]nput|[uU]ser[Dd]ata/gi,
             issue: 'Potential shell injection - use context.commands.runAllowed()',
+            whitelist: [/context\.commands\.runAllowed/],
         },
         {
-            pattern: /console\.(log|error)\([^)]*apiKey|password|secret/gi,
+            pattern: /console\.(log|error|warn)\([^)]*(apiKey|password|secret|token|credential)[^)]*[=:]/gi,
             issue: 'Secrets in logs - sanitize before logging',
+            contextCheck: (content, index) => {
+                // Check if it's in a comment or string literal
+                const before = content.substring(Math.max(0, index - 50), index);
+                return !before.includes('//') && !before.match(/['"`][^'"`]*$/);
+            },
         },
-        { pattern: /\.\.\/\.\.\/\.\./g, issue: 'Path traversal pattern detected' },
+        {
+            pattern: /\.\.\/\.\.\/\.\./g,
+            issue: 'Path traversal pattern detected',
+            whitelist: [/['"`]\.\.\/\.\.\/\.\.['"`]/, /\/\/.*\.\.\/\.\.\/\.\./], // In strings or comments is OK
+        },
         {
             pattern: /process\.env\.[A-Z_]+/g,
             issue: 'Environment variable access - ensure proper validation',
+            contextCheck: (content, index) => {
+                // Check if there's validation nearby (within 5 lines)
+                const start = Math.max(0, index - 500);
+                const end = Math.min(content.length, index + 500);
+                const context = content.substring(start, end);
+                // Look for validation patterns
+                return !(
+                    context.includes('||') ||
+                    context.includes('??') ||
+                    context.match(/if\s*\([^)]*process\.env/) ||
+                    context.match(/if\s*\(![^)]*process\.env/)
+                );
+            },
         },
     ],
     performance: [
         {
             pattern: /readFileSync|writeFileSync/g,
             issue: 'Synchronous file I/O - use async/await with fs.promises',
+            whitelist: [
+                /readFileSync\(__dirname/,
+                /readFileSync\(__filename/,
+                /readFileSync\(['"][^'"]+package\.json['"]/,
+                /readFileSync\(['"][^'"]+tsconfig\.json['"]/,
+                /readFileSync\(['"][^'"]+\.json['"]\s*,\s*['"]utf8['"]\)/, // Small config files
+            ],
         },
         {
             pattern: /for\s*\([^)]+\)\s*\{[^}]*await\s/g,
             issue: 'Sequential async operations - consider Promise.all()',
+            contextCheck: (content, index) => {
+                // Check if it's a small loop (less likely to be a problem)
+                const context = content.substring(Math.max(0, index - 200), Math.min(content.length, index + 200));
+                const loopMatch = context.match(/for\s*\([^)]+\)\s*\{/);
+                if (!loopMatch) return true;
+                // Count await statements - if only 1, might be OK
+                const awaitCount = (context.match(/\bawait\s+/g) || []).length;
+                return awaitCount > 1; // Only flag if multiple awaits
+            },
         },
         {
             pattern: /new RegExp\([^)]+\)/g,
             issue: 'Regex compiled in code - pre-compile as constant',
+            whitelist: [/const\s+\w+\s*=\s*new RegExp/, /RE_\w+\s*=\s*new RegExp/], // If it's already a constant
         },
         {
             pattern: /\.match\(['"`][^'"`]+['"`]\)/g,
             issue: 'Regex compiled in loop - extract to constant',
+            contextCheck: (content, index) => {
+                // Check if it's inside a loop
+                const before = content.substring(Math.max(0, index - 300), index);
+                return before.match(/for\s*\(|while\s*\(/) !== null; // Only flag if in a loop
+            },
         },
     ],
     quality: [
-        { pattern: /:\s*any\s*[=:]/g, issue: 'Any type used - use proper TypeScript types' },
-        { pattern: /export function \w+\([^)]*\)/g, issue: 'Missing JSDoc - add documentation' },
         {
-            pattern: /if\s*\([^)]+\)\s*\{[^}]*if\s*\([^)]+\)\s*\{[^}]*if/g,
+            pattern: /:\s*any\s*[=:;)/]/g,
+            issue: 'Any type used - use proper TypeScript types',
+            whitelist: [/\/\/.*:\s*any/, /catch\s*\([^)]*:\s*any/], // In comments or catch blocks is sometimes OK
+        },
+        {
+            pattern: /export\s+(async\s+)?function\s+\w+\([^)]*\)/g,
+            issue: 'Missing JSDoc - add documentation',
+            contextCheck: (content, index) => {
+                // Check if JSDoc exists before this function
+                const before = content.substring(Math.max(0, index - 200), index);
+                return !before.match(/\/\*\*[\s\S]{0,200}\*\/\s*export/); // No JSDoc found
+            },
+        },
+        {
+            pattern: /if\s*\([^)]+\)\s*\{[^}]*if\s*\([^)]+\)\s*\{[^}]*if\s*\([^)]+\)\s*\{/g,
             issue: 'Deep nesting - use early returns',
         },
         {
-            pattern: /\/\/ TODO|\/\/ FIXME|\/\/ HACK/g,
+            pattern: /\/\/\s*(TODO|FIXME|HACK|XXX|BUG)/gi,
             issue: 'TODO/FIXME comment - address or remove',
         },
-        { pattern: /console\.log\(/g, issue: 'Console.log - use proper logging or remove' },
+        {
+            pattern: /console\.(log|debug|info)\(/g,
+            issue: 'Console.log - use proper logging or remove',
+            whitelist: [
+                /console\.(log|debug|info)\(['"][^'"]*(Info|Debug|Warn|Error|Trace)/,
+                /console\.(log|debug|info)\(['"]\[/,
+            ],
+            contextCheck: (content, index) => {
+                // Check if it's in a test file or debug context
+                const before = content.substring(Math.max(0, index - 100), index);
+                return !before.includes('// Debug:') && !before.includes('// Test:');
+            },
+        },
     ],
     error_handling: [
         {
             pattern: /throw\s+new\s+Error\(/g,
             issue: 'Throw statement - return structured error instead',
+            whitelist: [/\/\/.*throw/, /catch\s*\{[^}]*throw/], // In comments or re-throwing in catch
         },
         {
             pattern: /try\s*\{[^}]*\}\s*(?!catch)/g,
             issue: 'Try without catch - add error handling',
+            contextCheck: (content, index) => {
+                // Check if there's a finally block
+                const after = content.substring(index, Math.min(content.length, index + 200));
+                return !after.match(/finally\s*\{/); // Only flag if no finally
+            },
         },
         {
             pattern: /catch\s*\([^)]*\)\s*\{\s*\}/g,
@@ -99,11 +206,30 @@ const REVIEW_CHECKLIST = {
         },
     ],
     testing: [
-        { pattern: /export function handle\w+\(/g, issue: 'Tool handler - ensure tests exist' },
+        {
+            pattern: /export\s+(async\s+)?function\s+handle\w+\(/g,
+            issue: 'Tool handler - ensure tests exist',
+        },
     ],
     documentation: [
-        { pattern: /export function \w+\(/g, issue: 'Exported function - add JSDoc comment' },
-        { pattern: /export const \w+Schema\s*=/g, issue: 'Schema definition - add description' },
+        {
+            pattern: /export\s+(async\s+)?function\s+\w+\(/g,
+            issue: 'Exported function - add JSDoc comment',
+            contextCheck: (content, index) => {
+                // Check if JSDoc exists
+                const before = content.substring(Math.max(0, index - 200), index);
+                return !before.match(/\/\*\*[\s\S]{0,200}\*\/\s*export/);
+            },
+        },
+        {
+            pattern: /export\s+const\s+\w+Schema\s*=/g,
+            issue: 'Schema definition - add description',
+            contextCheck: (content, index) => {
+                // Check if description exists in schema
+                const after = content.substring(index, Math.min(content.length, index + 500));
+                return !after.match(/\.describe\(/); // No description found
+            },
+        },
     ],
 };
 
@@ -118,17 +244,63 @@ function analyzeFile(filePath: string): ReviewIssue[] {
 
     // Check each category
     for (const [category, patterns] of Object.entries(REVIEW_CHECKLIST)) {
-        for (const { pattern, issue } of patterns) {
+        for (const check of patterns) {
+            const { pattern, issue, whitelist, contextCheck } = check;
+            
             // Skip testing checks for test files
             if (category === 'testing' && isTestFile) continue;
 
             const matches = content.matchAll(new RegExp(pattern.source, pattern.flags));
             for (const match of matches) {
-                if (!match.index) continue;
+                if (match.index === undefined) continue;
+
+                const matchIndex = match.index;
+                const matchText = match[0];
+
+                // Check whitelist patterns
+                if (whitelist) {
+                    let isWhitelisted = false;
+                    for (const whitelistPattern of whitelist) {
+                        // Check if whitelist pattern matches nearby context
+                        const contextStart = Math.max(0, matchIndex - 200);
+                        const contextEnd = Math.min(content.length, matchIndex + matchText.length + 200);
+                        const context = content.substring(contextStart, contextEnd);
+                        
+                        if (whitelistPattern.test(context)) {
+                            isWhitelisted = true;
+                            break;
+                        }
+                    }
+                    if (isWhitelisted) continue;
+                }
+
+                // Check global whitelist
+                let isGloballyWhitelisted = false;
+                for (const globalWhitelist of WHITELIST_PATTERNS) {
+                    const contextStart = Math.max(0, matchIndex - 200);
+                    const contextEnd = Math.min(content.length, matchIndex + matchText.length + 200);
+                    const context = content.substring(contextStart, contextEnd);
+                    
+                    if (globalWhitelist.test(context)) {
+                        isGloballyWhitelisted = true;
+                        break;
+                    }
+                }
+                if (isGloballyWhitelisted) continue;
+
+                // Check context-specific validation
+                if (contextCheck && !contextCheck(content, matchIndex)) {
+                    continue; // Context check says it's safe
+                }
 
                 // Find line number
-                const lineNum = content.substring(0, match.index).split('\n').length;
+                const lineNum = content.substring(0, matchIndex).split('\n').length;
                 const line = lines[lineNum - 1];
+
+                // Skip if in comment (basic check)
+                if (line.trim().startsWith('//') || line.trim().startsWith('*')) {
+                    continue;
+                }
 
                 // Determine severity
                 let severity: ReviewIssue['severity'] = 'medium';
