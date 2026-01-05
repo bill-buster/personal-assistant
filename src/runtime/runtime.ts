@@ -29,6 +29,7 @@ import { createNodeToolRegistry } from '../core/tool_registry';
 import { createProvider, LLMProvider } from '../providers/llm';
 import { TOOL_SCHEMAS } from '../tools/schemas';
 import { SYSTEM } from '../agents';
+import { CommandLogger } from '../core/command_log';
 
 /**
  * Runtime object containing all constructed dependencies.
@@ -52,6 +53,9 @@ export interface Runtime {
 
     /** Default agent for CLI/direct usage */
     defaultAgent: Agent;
+
+    /** Command logger for tracking queries and outcomes */
+    commandLogger: CommandLogger;
 }
 
 /**
@@ -140,7 +144,11 @@ export function buildRuntime(config: ResolvedConfig, options: BuildRuntimeOption
         }
     }
 
-    // 5. Return runtime with all dependencies
+    // 5. Create command logger
+    const commandLogPath = path.resolve(config.storage.baseDir, 'command_log.jsonl');
+    const commandLogger = new CommandLogger(commandLogPath, true);
+
+    // 6. Return runtime with all dependencies
     return {
         config,
         registry,
@@ -148,6 +156,7 @@ export function buildRuntime(config: ResolvedConfig, options: BuildRuntimeOption
         provider,
         toolSchemas: TOOL_SCHEMAS,
         defaultAgent: SYSTEM,
+        commandLogger,
     };
 }
 

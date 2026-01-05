@@ -18,6 +18,7 @@ import type { AppConfig, Message, Agent } from '../core';
 import { AGENTS } from '../agents';
 import { Dispatcher } from '../dispatcher';
 import { initializeRuntime, TOOL_SCHEMAS } from '../runtime';
+import { generateCorrelationId } from '../core';
 
 /**
  * Session data structure for save/load.
@@ -258,6 +259,8 @@ export async function startRepl(options: { verbose?: boolean; stream?: boolean }
                 const spinner = new Spinner(`Thinking...`);
                 spinner.start();
 
+                const correlationId = generateCorrelationId();
+                const inputForLogging = currentInput; // Store before clearing
                 let result;
                 try {
                     result = await route(
@@ -282,6 +285,14 @@ export async function startRepl(options: { verbose?: boolean; stream?: boolean }
                 currentInput = ''; // Clear for subsequent turns
 
                 if (isRouteError(result)) {
+                    // Log command with routing error
+                    runtime.commandLogger.logCommand(
+                        correlationId,
+                        inputForLogging,
+                        result,
+                        undefined,
+                        { intent: 'spike', agent: currentAgent.name }
+                    );
                     console.error(result.error);
                     break;
                 }
@@ -349,6 +360,16 @@ export async function startRepl(options: { verbose?: boolean; stream?: boolean }
 
                     // Execute the tool
                     const execResult = await executor.execute(tool.tool_name, tool.args);
+
+                    // Log command with routing and tool execution results
+                    runtime.commandLogger.logCommand(
+                        correlationId,
+                        inputForLogging,
+                        result,
+                        execResult,
+                        { intent: 'spike', agent: currentAgent.name }
+                    );
+
                     if (execResult.ok) {
                         const output = JSON.stringify(execResult.result);
                         console.log(
@@ -368,6 +389,15 @@ export async function startRepl(options: { verbose?: boolean; stream?: boolean }
                         ),
                     });
                 } else if (result.mode === 'reply') {
+                    // Log command with reply mode
+                    runtime.commandLogger.logCommand(
+                        correlationId,
+                        inputForLogging,
+                        result,
+                        undefined,
+                        { intent: 'spike', agent: currentAgent.name }
+                    );
+
                     // Check if we should stream this reply
                     const shouldStream =
                         stream &&

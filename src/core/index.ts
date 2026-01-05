@@ -80,6 +80,10 @@ export { validateInput, validatePath, validateCommand, formatValidationError } f
 // Logger
 export { logger, createChildLogger, generateCorrelationId, LogLevel, setLogLevel } from './logger';
 
+// Command logging
+export { CommandLogger } from './command_log';
+export type { CommandLogEntry } from './command_log';
+
 // Tool registry
 export { createNodeToolRegistry } from './tool_registry';
 

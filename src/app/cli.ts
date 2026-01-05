@@ -34,6 +34,7 @@ import {
     FileCache,
     TestCache,
     loadAllPlugins,
+    generateCorrelationId,
 } from '../core';
 import type { ToolResult, CLIResult, ResolvedConfig } from '../core';
 import { route } from './router';
@@ -73,6 +74,7 @@ Commands:
   git diff [--staged]          Show changes
   git log [--limit N]          Show recent commits
   audit [--limit N]            View audit trail
+  logs [recent|stats|errors]    Review command logs and metrics
   cache clear                   Clear LLM response cache
   cache stats                   Show cache statistics
   cache test-clear              Clear test result cache
@@ -206,6 +208,10 @@ async function main() {
             result = handleAudit(flags, resolvedConfig); // Audit is synchronous (reads file directly)
             break;
 
+        case 'logs':
+            result = handleLogs(subcommand, flags, runtime);
+            break;
+
         case 'cache':
             result = handleCache(subcommand, flags);
             break;
@@ -255,6 +261,8 @@ async function routeAndExecute(
     runtime: Runtime,
     verbose: boolean = false
 ): Promise<CLIResult> {
+    const correlationId = generateCorrelationId();
+
     try {
         const routed = await route(
             input,
@@ -268,23 +276,62 @@ async function routeAndExecute(
             runtime.config
         );
 
+        let toolResult: any = undefined;
+
         if (isRouteError(routed)) {
+            // Log command with routing error
+            runtime.commandLogger.logCommand(correlationId, input, routed, undefined, {
+                intent: 'spike',
+                agent: runtime.defaultAgent?.name,
+            });
             return { ok: false, error: routed.error };
         }
 
         if (isRouteToolCall(routed)) {
-            const execResult = await runtime.executor.execute(
+            toolResult = await runtime.executor.execute(
                 routed.tool_call.tool_name,
                 routed.tool_call.args
             );
-            return toCliResult(execResult);
+
+            // Log command with routing and tool execution results
+            runtime.commandLogger.logCommand(correlationId, input, routed, toolResult, {
+                intent: 'spike',
+                agent: runtime.defaultAgent?.name,
+            });
+
+            return toCliResult(toolResult);
         } else if (isRouteReply(routed)) {
+            // Log command with reply mode
+            runtime.commandLogger.logCommand(correlationId, input, routed, undefined, {
+                intent: 'spike',
+                agent: runtime.defaultAgent?.name,
+            });
             // Router returned a reply instead of a tool call
             return { ok: true, result: routed.reply.content || 'No response' };
         } else {
+            // Log command with unknown result
+            runtime.commandLogger.logCommand(correlationId, input, routed, undefined, {
+                intent: 'spike',
+                agent: runtime.defaultAgent?.name,
+            });
             return { ok: false, error: 'Router did not return a tool call or reply' };
         }
     } catch (err: any) {
+        // Log command with exception
+        const errorRouteResult: any = {
+            error: err.message || 'Routing failed',
+            _debug: {
+                path: 'exception',
+                duration_ms: null,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            },
+        };
+        runtime.commandLogger.logCommand(correlationId, input, errorRouteResult, undefined, {
+            intent: 'spike',
+            agent: runtime.defaultAgent?.name,
+        });
         return { ok: false, error: err.message || 'Routing failed' };
     }
 }
@@ -442,6 +489,111 @@ function handleAudit(flags: Record<string, string | boolean>, config: ResolvedCo
         return { ok: true, result: { count: entries.length, entries } };
     } catch (e: any) {
         return { ok: false, error: `Failed to read audit log: ${e.message}` };
+    }
+}
+
+function handleLogs(
+    subcommand: string | null,
+    flags: Record<string, string | boolean>,
+    runtime: Runtime
+): CLIResult {
+    const limit = flags['limit'] ? parseInt(flags['limit'] as string, 10) : 50;
+    const statsOnly = flags['stats'] === true;
+    const category = flags['category'] as string | undefined;
+    const tool = flags['tool'] as string | undefined;
+    const outcome = flags['outcome'] as string | undefined;
+
+    try {
+        const entries = runtime.commandLogger.readLogs();
+
+        // Filter entries
+        let filtered = entries;
+        if (category) {
+            filtered = filtered.filter(e => e.outcome_category === category);
+        }
+        if (tool) {
+            filtered = filtered.filter(e => e.tool_name === tool);
+        }
+        if (outcome) {
+            filtered = filtered.filter(e => e.outcome === outcome);
+        }
+
+        // Limit results
+        const limited = filtered.slice(0, limit);
+
+        if (statsOnly || subcommand === 'stats') {
+            // Return statistics
+            const stats = runtime.commandLogger.getStats(filtered);
+            return {
+                ok: true,
+                result: {
+                    summary: {
+                        total: stats.total,
+                        success: stats.success,
+                        error: stats.error,
+                        partial: stats.partial,
+                        success_rate:
+                            stats.total > 0
+                                ? ((stats.success / stats.total) * 100).toFixed(1) + '%'
+                                : '0%',
+                        avg_latency_ms: Math.round(stats.avgLatency),
+                    },
+                    by_category: stats.byCategory,
+                    by_routing_path: stats.byRoutingPath,
+                    by_tool: stats.byTool,
+                    llm_usage: {
+                        total_tokens: stats.llmUsage.totalTokens,
+                        total_calls: stats.llmUsage.totalCalls,
+                        avg_tokens_per_call:
+                            stats.llmUsage.totalCalls > 0
+                                ? Math.round(stats.llmUsage.totalTokens / stats.llmUsage.totalCalls)
+                                : 0,
+                    },
+                },
+            };
+        } else if (subcommand === 'recent' || !subcommand) {
+            // Return recent entries
+            return {
+                ok: true,
+                result: {
+                    count: limited.length,
+                    entries: limited.map(e => ({
+                        ts: e.ts,
+                        input: e.input,
+                        outcome: e.outcome,
+                        category: e.outcome_category,
+                        routing_path: e.routing_path,
+                        tool_name: e.tool_name,
+                        tool_success: e.tool_success,
+                        error: e.routing_error || e.tool_error,
+                        duration_ms: e.tool_duration_ms || e.routing_duration_ms,
+                    })),
+                },
+            };
+        } else if (subcommand === 'errors') {
+            // Return only errors
+            const errors = filtered.filter(e => e.outcome === 'error').slice(0, limit);
+            return {
+                ok: true,
+                result: {
+                    count: errors.length,
+                    entries: errors.map(e => ({
+                        ts: e.ts,
+                        input: e.input,
+                        routing_path: e.routing_path,
+                        tool_name: e.tool_name,
+                        error: e.routing_error || e.tool_error,
+                    })),
+                },
+            };
+        } else {
+            return {
+                ok: false,
+                error: 'Usage: assistant logs [recent|stats|errors] [--limit N] [--category CAT] [--tool TOOL] [--outcome success|error|partial] [--stats]',
+            };
+        }
+    } catch (e: any) {
+        return { ok: false, error: `Failed to read command logs: ${e.message}` };
     }
 }
 
