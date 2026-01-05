@@ -1,4 +1,3 @@
-
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { handleMemorySearch } from '../tools/memory_tools';
@@ -16,7 +15,7 @@ if (!fs.existsSync(BENCH_DIR)) {
 const memoryPath = path.join(BENCH_DIR, 'memory.json');
 const memoryData = {
     version: 1,
-    entries: [] as any[]
+    entries: [] as any[],
 };
 for (let i = 0; i < 1000; i++) {
     memoryData.entries.push({ ts: '2026-01-01', text: `memory entry ${i} about benchmarking` });
@@ -43,12 +42,12 @@ const context = {
             try {
                 const parsed = JSON.parse(line);
                 if (isValid(parsed)) entries.push(parsed as T);
-            } catch (err) { }
+            } catch {}
         }
         return entries;
     },
 
-    scoreEntry: (entry: any, needle: string, terms: string[]) => {
+    scoreEntry: (entry: any, needle: string, _terms: string[]) => {
         const text = typeof entry.text === 'string' ? entry.text.toLowerCase() : '';
         let score = 0;
         if (needle) {
@@ -61,7 +60,7 @@ const context = {
         return score;
     },
 
-    sortByScoreAndRecency: (entries: any[], needle: string) => {
+    sortByScoreAndRecency: (entries: any[], _needle: string) => {
         return entries; // Simplified sort for bench to avoid full re-impl
     },
 
@@ -74,7 +73,7 @@ const context = {
     commands: {
         runAllowed: () => ({ ok: true, result: '' }),
     },
-    requiresConfirmation: () => false
+    requiresConfirmation: () => false,
 } as any;
 
 async function benchAsync(name: string, fn: () => Promise<void>) {
@@ -84,7 +83,9 @@ async function benchAsync(name: string, fn: () => Promise<void>) {
     }
     const end = nowMs();
     const duration = end - start;
-    console.log(`${name}: ${duration.toFixed(2)}ms total, ${(duration / ITERATIONS).toFixed(4)}ms/op`);
+    console.log(
+        `${name}: ${duration.toFixed(2)}ms total, ${(duration / ITERATIONS).toFixed(4)}ms/op`
+    );
 }
 
 (async () => {
@@ -95,18 +96,12 @@ async function benchAsync(name: string, fn: () => Promise<void>) {
         // Check signature... memory_tools exports handle(intent, toolCall, context)?
         // Wait, handleMemorySearch signature in memory_tools.ts?
         // It is: export async function handleMemorySearch(intent: string, toolCall: ToolCall, context: ExecutorContext)
-        await handleMemorySearch(
-            { query: 'benchmarking' },
-            context
-        );
+        await handleMemorySearch({ query: 'benchmarking' }, context);
     });
 
     await benchAsync('List Files (100 files)', async () => {
         // handleListFiles(args, context)
-        await handleListFiles(
-            {},
-            context
-        );
+        await handleListFiles({}, context);
     });
 
     // Cleanup

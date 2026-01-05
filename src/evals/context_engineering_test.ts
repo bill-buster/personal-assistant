@@ -28,23 +28,15 @@ function assert(condition: boolean, message: string) {
 async function testMockInjection() {
     console.log('\n--- Test: Mock Injection (Reply) ---');
     const mockProvider = new MockLLMProvider({
-        "test query": {
-            reply: "This is a mock response"
-        }
+        'test query': {
+            reply: 'This is a mock response',
+        },
     });
 
-    const result = await route(
-        "test query",
-        "spike",
-        null,
-        [],
-        false,
-        SYSTEM,
-        mockProvider
-    );
+    const result = await route('test query', 'spike', null, [], false, SYSTEM, mockProvider);
 
     if ('mode' in result && result.mode === 'reply') {
-        assert(result.reply.content === "This is a mock response", 'Content should match mock');
+        assert(result.reply.content === 'This is a mock response', 'Content should match mock');
     } else {
         assert(false, 'Mode should be reply');
     }
@@ -53,17 +45,17 @@ async function testMockInjection() {
 async function testMockToolCall() {
     console.log('\n--- Test: Mock Tool Call ---');
     const mockProvider = new MockLLMProvider({
-        "calculate factorial 5": {
+        'calculate factorial 5': {
             toolCall: {
-                tool_name: "calculate",
-                args: { expression: "5!" }
-            }
-        }
+                tool_name: 'calculate',
+                args: { expression: '5!' },
+            },
+        },
     });
 
     const result = await route(
-        "calculate factorial 5",
-        "spike",
+        'calculate factorial 5',
+        'spike',
         null,
         [],
         false,
@@ -83,19 +75,19 @@ async function testCustomAgent() {
     console.log('\n--- Test: Custom Agent (System Prompt) ---');
 
     // We create a "Spy" provider that stores the system prompt it received
-    let capturedSystemPrompt = "";
+    let capturedSystemPrompt = '';
     const spyProvider = {
         complete: async (prompt: any, tools: any, history: any, verbose: any, sysPrompt: any) => {
             capturedSystemPrompt = sysPrompt;
-            return { ok: true, reply: "ok" };
-        }
+            return { ok: true, reply: 'ok' };
+        },
     };
 
-    const customAgent = { ...SYSTEM, systemPrompt: "CUSTOM_PROMPT_123" };
+    const customAgent = { ...SYSTEM, systemPrompt: 'CUSTOM_PROMPT_123' };
 
     await route(
-        "any input",
-        "spike",
+        'any input',
+        'spike',
         null,
         [],
         false,
@@ -103,7 +95,10 @@ async function testCustomAgent() {
         spyProvider as any // Cast to satisfy type checker in this script
     );
 
-    assert(capturedSystemPrompt === "CUSTOM_PROMPT_123", 'Provider should receive custom system prompt');
+    assert(
+        capturedSystemPrompt === 'CUSTOM_PROMPT_123',
+        'Provider should receive custom system prompt'
+    );
 }
 
 async function runTests() {

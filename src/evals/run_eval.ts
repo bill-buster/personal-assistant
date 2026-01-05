@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
  * Evaluation Runner for Routing Accuracy
- * 
+ *
  * Runs test cases against the router and reports accuracy metrics.
- * 
+ *
  * Usage:
  *   node dist/evals/run_eval.js [dataset.jsonl] [--use-llm] [--agent name] [--system-prompt file] [--mock-responses file]
- * 
+ *
  * @module evals/run_eval
  */
 
@@ -53,7 +53,8 @@ async function runEval(
     console.log(`\n🧪 Running Eval: ${path.basename(datasetPath)}`);
     if (useLlm) console.log(`   Mode: LLM Enabled`);
     console.log(`   Agent: ${agentName}`);
-    if (systemPromptPath) console.log(`   System Prompt: Custom (${path.basename(systemPromptPath)})`);
+    if (systemPromptPath)
+        console.log(`   System Prompt: Custom (${path.basename(systemPromptPath)})`);
     if (mockResponsesPath) console.log(`   Mock Responses: ${path.basename(mockResponsesPath)}`);
     console.log('─'.repeat(60));
 
@@ -116,7 +117,9 @@ async function runEval(
     const totalLatency = results.reduce((acc, r) => acc + r.latency, 0);
     const avgLatency = results.length > 0 ? (totalLatency / results.length).toFixed(0) : 0;
 
-    console.log(`\n📊 Results: ${passed}/${results.length} passed (${((passed / results.length) * 100).toFixed(1)}%)`);
+    console.log(
+        `\n📊 Results: ${passed}/${results.length} passed (${((passed / results.length) * 100).toFixed(1)}%)`
+    );
     console.log(`   Avg Latency: ${avgLatency}ms\n`);
 
     // Category breakdown
@@ -124,14 +127,19 @@ async function runEval(
     for (const [cat, stats] of Object.entries(categoryStats)) {
         const pct = ((stats.passed / stats.total) * 100).toFixed(0);
         const avg = (stats.totalLatency / stats.total).toFixed(0);
-        const bar = '█'.repeat(Math.round(stats.passed / stats.total * 10)) + '░'.repeat(10 - Math.round(stats.passed / stats.total * 10));
-        console.log(`  ${cat.padEnd(15)} ${bar} ${stats.passed}/${stats.total} (${pct}%) - Avg: ${avg}ms`);
+        const bar =
+            '█'.repeat(Math.round((stats.passed / stats.total) * 10)) +
+            '░'.repeat(10 - Math.round((stats.passed / stats.total) * 10));
+        console.log(
+            `  ${cat.padEnd(15)} ${bar} ${stats.passed}/${stats.total} (${pct}%) - Avg: ${avg}ms`
+        );
     }
 
     // Show failures
     if (failed.length > 0) {
         console.log(`\n❌ Failures (${failed.length}):`);
-        for (const f of failed.slice(0, 10)) { // Show first 10
+        for (const f of failed.slice(0, 10)) {
+            // Show first 10
             console.log(`  Input: "${f.input}"`);
             console.log(`    Expected: ${f.expected}`);
             console.log(`    Actual:   ${f.actual}`);
@@ -146,7 +154,8 @@ async function runEval(
 }
 
 async function evaluateCase(testCase: TestCase, agent: any, provider: any): Promise<EvalResult> {
-    const { input, expected_tool, expected_path, expected_error, expected_reply, category } = testCase;
+    const { input, expected_tool, expected_path, expected_error, expected_reply, category } =
+        testCase;
 
     // Capture start time if router doesn't return it
     const startTs = Date.now();
@@ -155,7 +164,7 @@ async function evaluateCase(testCase: TestCase, agent: any, provider: any): Prom
         // Route
         const result = await route(input, 'spike', null, [], false, agent, provider);
         const endTs = Date.now();
-        const latency = result._debug?.duration || (endTs - startTs);
+        const latency = result._debug?.duration || endTs - startTs;
 
         if (expected_error) {
             const passed = !!result.error;
@@ -163,9 +172,13 @@ async function evaluateCase(testCase: TestCase, agent: any, provider: any): Prom
                 passed,
                 input,
                 expected: 'error',
-                actual: result.error ? 'error' : (result.tool_call ? `tool:${result.tool_call.tool_name}` : 'reply'),
+                actual: result.error
+                    ? 'error'
+                    : result.tool_call
+                      ? `tool:${result.tool_call.tool_name}`
+                      : 'reply',
                 category: category || 'unknown',
-                latency
+                latency,
             };
         }
 
@@ -175,15 +188,19 @@ async function evaluateCase(testCase: TestCase, agent: any, provider: any): Prom
         const isReply = result.mode === 'reply';
 
         if (expected_reply) {
-             const passed = isReply && !result.error;
-             return {
+            const passed = isReply && !result.error;
+            return {
                 passed,
                 input,
                 expected: 'reply',
-                actual: result.error ? `error:${result.error}` : (isReply ? 'reply' : `tool:${actualTool}`),
+                actual: result.error
+                    ? `error:${result.error}`
+                    : isReply
+                      ? 'reply'
+                      : `tool:${actualTool}`,
                 category: category || 'unknown',
-                latency
-             };
+                latency,
+            };
         }
 
         const toolMatch = !expected_tool || actualTool === expected_tool;
@@ -195,9 +212,8 @@ async function evaluateCase(testCase: TestCase, agent: any, provider: any): Prom
             expected: `${expected_tool || '*'}@${expected_path || '*'}`,
             actual: result.error ? `error:${result.error}` : `${actualTool}@${actualPath}`,
             category: category || 'unknown',
-            latency
+            latency,
         };
-
     } catch (err: any) {
         return {
             passed: !!expected_error,
@@ -205,7 +221,7 @@ async function evaluateCase(testCase: TestCase, agent: any, provider: any): Prom
             expected: expected_error ? 'error' : `${expected_tool}`,
             actual: `exception:${err.message}`,
             category: category || 'unknown',
-            latency: Date.now() - startTs
+            latency: Date.now() - startTs,
         };
     }
 }
@@ -236,7 +252,9 @@ const dataset = positionals[0] || path.join(evalDir, 'routing_accuracy.jsonl');
 
 if (!fs.existsSync(dataset)) {
     console.error(`Dataset not found: ${dataset}`);
-    console.error(`Try: node dist/evals/run_eval.js packages/personal-assistant/src/evals/routing_accuracy.jsonl`);
+    console.error(
+        `Try: node dist/evals/run_eval.js packages/personal-assistant/src/evals/routing_accuracy.jsonl`
+    );
     process.exit(1);
 }
 

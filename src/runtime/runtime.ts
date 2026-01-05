@@ -15,7 +15,14 @@
  */
 
 import * as path from 'node:path';
-import { ResolvedConfig, getStoragePaths, AppConfig, loadConfig, resolveConfig, ensureStorageExists } from '../core/config';
+import {
+    ResolvedConfig,
+    getStoragePaths,
+    AppConfig,
+    loadConfig,
+    resolveConfig,
+    ensureStorageExists,
+} from '../core/config';
 import { ToolRegistry, Agent } from '../core/types';
 import { Executor, ExecutorConfig } from '../core/executor';
 import { createNodeToolRegistry } from '../core/tool_registry';
@@ -85,10 +92,7 @@ export interface BuildRuntimeOptions {
  * @param options - Optional customization for paths and agents
  * @returns Runtime object with all dependencies
  */
-export function buildRuntime(
-    config: ResolvedConfig,
-    options: BuildRuntimeOptions = {}
-): Runtime {
+export function buildRuntime(config: ResolvedConfig, options: BuildRuntimeOptions = {}): Runtime {
     // 1. Build tool registry (handlers + schemas)
     const registry = createNodeToolRegistry();
 
@@ -100,10 +104,18 @@ export function buildRuntime(
         limits: config.limits,
         registry,
         agent: options.agent ?? SYSTEM,
-        memoryPath: options.storagePaths?.memory ?? path.resolve(config.storage.baseDir, config.storage.memory),
-        tasksPath: options.storagePaths?.tasks ?? path.resolve(config.storage.baseDir, config.storage.tasks),
-        remindersPath: options.storagePaths?.reminders ?? path.resolve(config.storage.baseDir, config.storage.reminders),
-        memoryLogPath: options.storagePaths?.memoryLog ?? path.resolve(config.storage.baseDir, config.storage.memoryLog),
+        memoryPath:
+            options.storagePaths?.memory ??
+            path.resolve(config.storage.baseDir, config.storage.memory),
+        tasksPath:
+            options.storagePaths?.tasks ??
+            path.resolve(config.storage.baseDir, config.storage.tasks),
+        remindersPath:
+            options.storagePaths?.reminders ??
+            path.resolve(config.storage.baseDir, config.storage.reminders),
+        memoryLogPath:
+            options.storagePaths?.memoryLog ??
+            path.resolve(config.storage.baseDir, config.storage.memoryLog),
         permissionsPath: options.permissionsPath,
         memoryLimit: options.memoryLimit,
         auditEnabled: options.auditEnabled,
@@ -120,7 +132,7 @@ export function buildRuntime(
         if (hasApiKeys) {
             try {
                 provider = createProvider(config);
-            } catch (err) {
+            } catch {
                 // Provider creation failed (e.g., missing key for selected provider)
                 // This is OK - we just won't have LLM fallback
                 provider = undefined;
@@ -141,13 +153,13 @@ export function buildRuntime(
 
 /**
  * Initialize the runtime with standard bootstrap sequence.
- * 
+ *
  * Steps:
  * 1. Load config (file + env)
  * 2. Ensure storage directories exist
  * 3. Resolve config (paths, limits)
  * 4. Build runtime graph
- * 
+ *
  * @param options - Build options
  */
 export function initializeRuntime(options: BuildRuntimeOptions & { mock?: boolean } = {}): Runtime {

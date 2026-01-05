@@ -1,4 +1,3 @@
-
 import { parseTaskCommand } from '../parsers/task_parser';
 import { parseHeuristicCommand } from '../parsers/heuristic_parser';
 import { parseMemoryCommand } from '../parsers/memory_parser';
@@ -13,7 +12,9 @@ function bench(name: string, fn: () => void) {
     }
     const end = nowMs();
     const duration = end - start;
-    console.log(`${name}: ${duration.toFixed(2)}ms total, ${(duration / ITERATIONS).toFixed(4)}ms/op`);
+    console.log(
+        `${name}: ${duration.toFixed(2)}ms total, ${(duration / ITERATIONS).toFixed(4)}ms/op`
+    );
 }
 
 const taskInput = 'task add create benchmark --due 2026-01-01';
