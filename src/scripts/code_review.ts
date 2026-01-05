@@ -202,14 +202,13 @@ const REVIEW_CHECKLIST: Record<string, PatternCheck[]> = {
                 /\/\/.*statSync.*symlink/gi, // Comment explaining why statSync is used
             ],
             contextCheck: (content, index) => {
-                // Check if isSymbolicLink() is used in the same function (within 500 chars)
-                const after = content.substring(index, Math.min(content.length, index + 500));
-                const hasSymbolicLinkCheck = after.includes('isSymbolicLink()');
+                // Check if isSymbolicLink is used within 1000 chars (should cover the function)
+                const after = content.substring(index, Math.min(content.length, index + 1000));
+                const hasSymbolicLinkCheck = after.includes('isSymbolicLink');
                 if (!hasSymbolicLinkCheck) return false; // Only flag if isSymbolicLink is used
 
                 // Check if lstatSync is already used nearby
-                const before = content.substring(Math.max(0, index - 100), index);
-                return !before.includes('lstatSync');
+                return !after.includes('lstatSync');
             },
         },
         {
