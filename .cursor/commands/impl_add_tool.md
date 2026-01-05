@@ -12,3 +12,31 @@ Add a new tool end-to-end:
 
 Follow patterns in tools.mdc, errors.mdc, and testing.mdc.
 
+## Recommended Workflow
+
+After implementation, follow this workflow to ensure quality:
+
+1. **Code Review**: Use `/review_pr` to review the new tool files systematically:
+   - Review handler function for security, error handling, and patterns
+   - Review test file for coverage and edge cases
+   - Review schema registration for correctness
+
+2. **Run Tests**: Verify the implementation works:
+   ```bash
+   npm test src/tools/[tool_name]_tools.test.ts
+   ```
+
+3. **Fix Issues**: Address any issues found during review or testing
+
+4. **Commit**: When ready, commit following git.mdc conventions:
+   - Stage files automatically
+   - Run preflight: `npm run preflight`
+   - Commit with conventional format: `feat(tools): add [tool_name] tool`
+
+## Why This Workflow?
+
+- **Code Review** catches security issues, performance problems, and pattern violations before commit
+- **Testing** ensures the tool works correctly
+- **Explicit Review** gives you control over when to review vs. when to iterate quickly
+- **Quality Gate** ensures all tools meet project standards before being committed
+
