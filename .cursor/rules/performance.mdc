@@ -1,6 +1,6 @@
 ---
 description: Performance optimization patterns and best practices
-globs: ["**/*.ts"]
+globs: ["src/core/**/*.ts", "src/tools/**/*.ts", "src/app/**/*.ts"]
 alwaysApply: false
 ---
 

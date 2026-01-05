@@ -1,7 +1,7 @@
 ---
 description: Test execution policy - when to run tests and how to avoid redundant runs
-globs: ["**/*"]
-alwaysApply: true
+globs: ["**/*.test.ts", "src/run_tests.ts", "package.json"]
+alwaysApply: false
 ---
 
 # Test Execution Policy

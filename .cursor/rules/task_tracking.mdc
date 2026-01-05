@@ -1,7 +1,7 @@
 ---
 description: Task tracking and instruction logging patterns to ensure nothing is forgotten
 globs: ["docs/**/*.md", "*.md", ".cursor/rules/**/*.mdc"]
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Task Tracking and Instruction Log

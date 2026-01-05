@@ -1,6 +1,6 @@
 ---
 description: Error handling patterns and error code conventions
-globs: ["**/*.ts"]
+globs: ["src/**/*.ts", "!**/*.test.ts"]
 alwaysApply: false
 ---
 

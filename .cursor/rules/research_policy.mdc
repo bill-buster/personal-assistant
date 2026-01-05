@@ -1,7 +1,7 @@
 ---
 description: When to use web research vs codebase knowledge for best practices and solutions
-globs: ["**/*"]
-alwaysApply: true
+globs: []
+alwaysApply: false
 ---
 
 # Research Policy
