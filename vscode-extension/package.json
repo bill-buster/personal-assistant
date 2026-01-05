@@ -1,0 +1,106 @@
+{
+  "name": "personal-assistant",
+  "displayName": "Personal Assistant",
+  "description": "Inline commands for Personal Assistant in VS Code",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:personal-assistant.remember",
+    "onCommand:personal-assistant.recall",
+    "onCommand:personal-assistant.taskAdd",
+    "onCommand:personal-assistant.command"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "personal-assistant.remember",
+        "title": "Remember: Store selection in memory",
+        "category": "Personal Assistant"
+      },
+      {
+        "command": "personal-assistant.recall",
+        "title": "Recall: Search memory",
+        "category": "Personal Assistant"
+      },
+      {
+        "command": "personal-assistant.taskAdd",
+        "title": "Task: Add task from selection",
+        "category": "Personal Assistant"
+      },
+      {
+        "command": "personal-assistant.command",
+        "title": "Assistant: Run command",
+        "category": "Personal Assistant"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "personal-assistant.command",
+        "key": "cmd+shift+a",
+        "mac": "cmd+shift+a",
+        "when": "editorTextFocus"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "personal-assistant.remember",
+          "when": "editorHasSelection",
+          "group": "personal-assistant"
+        },
+        {
+          "command": "personal-assistant.taskAdd",
+          "when": "editorHasSelection",
+          "group": "personal-assistant"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "personal-assistant.remember"
+        },
+        {
+          "command": "personal-assistant.recall"
+        },
+        {
+          "command": "personal-assistant.taskAdd"
+        },
+        {
+          "command": "personal-assistant.command"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Personal Assistant",
+      "properties": {
+        "personalAssistant.executablePath": {
+          "type": "string",
+          "default": "assistant",
+          "description": "Path to the assistant CLI executable"
+        },
+        "personalAssistant.dataDir": {
+          "type": "string",
+          "default": "",
+          "description": "Override data directory (defaults to ~/.assistant-data)"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.80.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {}
+}
+
