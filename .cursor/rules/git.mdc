@@ -1,30 +1,79 @@
 ---
 description: Git workflow and commit best practices
 globs: ["**/*"]
-alwaysApply: false
+alwaysApply: true
 ---
 
 # Git Workflow & Best Practices
 
-## Agent Commit Policy
+## ⚠️ CRITICAL: Auto-Commit Policy
 
-**The agent SHOULD commit changes automatically** when:
+**The agent MUST commit changes automatically** when:
 - ✅ Code changes are complete and tested
 - ✅ All preflight checks pass
 - ✅ Changes follow project conventions
 - ✅ Commit message follows conventional commit format
 
-**The agent SHOULD NOT commit** when:
+**This is NOT optional.** After completing any code changes, you MUST:
+1. Stage relevant files automatically
+2. Run preflight checks automatically
+3. Commit automatically if checks pass
+4. Report what was committed
+
+**The agent MUST NOT commit** when:
 - ❌ User explicitly asks not to commit
 - ❌ Changes are incomplete or experimental
 - ❌ Preflight checks fail
 - ❌ User needs to review changes first
 
-**Commit workflow for agent:**
-1. Stage relevant files (`git add <files>`)
-2. Run preflight checks (`npm run preflight`)
-3. If checks pass, commit with conventional message
-4. If checks fail, report errors and do not commit
+## Required Commit Workflow
+
+**After completing ANY code changes, you MUST follow this workflow:**
+
+```bash
+# Step 1: Stage files (automatic)
+git add <modified-files>
+
+# Step 2: Run preflight (automatic)
+npm run preflight
+
+# Step 3: Commit if checks pass (automatic)
+git commit -m "<type>(<scope>): <subject>"
+
+# Step 4: Report what was committed
+```
+
+**Do NOT wait for user to ask.** Commit automatically as part of completing the task.
+
+### Examples of Correct Behavior
+
+**✅ CORRECT:**
+```
+User: "/fix_todos"
+Agent: 
+  1. Fixes all TODOs
+  2. Stages files: git add src/core/executor.ts src/llm/index.ts
+  3. Runs preflight: npm run preflight
+  4. Commits: git commit -m "refactor: convert TODO comments to documentation"
+  5. Reports: "Fixed all TODOs and committed changes"
+```
+
+**❌ WRONG:**
+```
+User: "/fix_todos"
+Agent:
+  1. Fixes all TODOs
+  2. Reports: "Fixed all TODOs" (waits for user to ask about commit)
+```
+
+### Workflow Checklist
+
+Before completing any task that modifies code:
+- [ ] Changes are complete
+- [ ] Files are staged automatically
+- [ ] Preflight checks run automatically
+- [ ] Commit created automatically (if checks pass)
+- [ ] Commit hash and message reported to user
 
 ## Automatic Git Hooks
 

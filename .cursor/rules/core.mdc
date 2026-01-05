@@ -328,8 +328,21 @@ import {
 
 **See `.cursor/rules/debugging.mdc` for detailed troubleshooting patterns.**
 
+## Git Workflow (CRITICAL)
+
+**After completing ANY code changes, you MUST commit automatically:**
+1. Stage files: `git add <modified-files>`
+2. Run preflight: `npm run preflight`
+3. Commit if checks pass: `git commit -m "<type>(<scope>): <subject>"`
+4. Report what was committed
+
+**Do NOT wait for user to ask.** This is REQUIRED, not optional.
+
+See `.cursor/rules/git.mdc` for complete workflow details.
+
 ## Related Rules
 
+- **Git Workflow**: See `.cursor/rules/git.mdc` for commit policy and workflow (REQUIRED)
 - **Error Handling**: See `.cursor/rules/errors.mdc` for error patterns and error codes
 - **Performance**: See `.cursor/rules/performance.mdc` for optimization patterns
 - **Security**: See `.cursor/rules/security.mdc` for security patterns

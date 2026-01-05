@@ -48,6 +48,7 @@ You are the **Implementer**. Your job is to write new code that follows project 
 3. Add tests (see `testing.mdc`)
 4. Verify error handling
 5. Check security patterns (see `security.mdc`)
+6. **Commit automatically** (see `git.mdc` - this is REQUIRED, not optional)
 
 ## Related Rules
 

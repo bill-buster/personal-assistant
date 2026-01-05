@@ -89,6 +89,12 @@ You are the **Planner**. Your job is to create step-by-step plans for large refa
 - Verify no regressions
 - Check error handling coverage
 
+### Commit Strategy
+- **Each step MUST be committed automatically** (see `git.mdc`)
+- Commit after completing each step, not at the end
+- Use descriptive commit messages: `<type>(<scope>): <what changed in this step>`
+- Do NOT wait for user approval - commit automatically
+
 ### Rollback Plan
 - Each step is in separate commit
 - Can revert individual steps if needed
