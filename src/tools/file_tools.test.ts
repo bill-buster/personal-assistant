@@ -8,7 +8,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import { handleDeleteFile, handleMoveFile, handleCopyFile } from './file_tools';
+import { handleDeleteFile, handleMoveFile, handleCopyFile, handleFileInfo } from './file_tools';
 import { createMockContext } from '../core/test_utils';
 import { ExecutorContext } from '../core/types';
 
@@ -790,6 +790,167 @@ try {
         );
     } else {
         logLine('PASS: destination path outside baseDir');
+    }
+
+    // ============================================
+    // FILE_INFO - SUCCESS CASES
+    // ============================================
+
+    // T24: Get file info for regular file
+    const testFile24 = path.join(testRoot, 'test24.txt');
+    fs.writeFileSync(testFile24, 'test content');
+    const context24 = {
+        ...createMockContext({
+            baseDir: testRoot,
+            paths: {
+                resolve: (p: string) => path.resolve(testRoot, p),
+                assertAllowed: () => {},
+                resolveAllowed: (p: string) => path.resolve(testRoot, p),
+            },
+        }),
+        requiresConfirmation: () => false,
+    } as ExecutorContext;
+
+    const result24 = handleFileInfo({ path: 'test24.txt' }, context24);
+    if (!result24.ok || !result24.result?.type || !result24.result?.size) {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: get file info for file\nexpected: ok true, result.type and result.size\n\n',
+            process.stderr
+        );
+    } else if (result24.result.type !== 'file' || !result24.result.isFile) {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: get file info for file\nexpected: type is file, isFile is true\n\n',
+            process.stderr
+        );
+    } else {
+        logLine('PASS: get file info for file');
+    }
+
+    // T25: Get file info for directory
+    const testDir25 = path.join(testRoot, 'testdir25');
+    fs.mkdirSync(testDir25, { recursive: true });
+    const context25 = {
+        ...createMockContext({
+            baseDir: testRoot,
+            paths: {
+                resolve: (p: string) => path.resolve(testRoot, p),
+                assertAllowed: () => {},
+                resolveAllowed: (p: string) => path.resolve(testRoot, p),
+            },
+        }),
+        requiresConfirmation: () => false,
+    } as ExecutorContext;
+
+    const result25 = handleFileInfo({ path: 'testdir25' }, context25);
+    if (!result25.ok || result25.result?.type !== 'directory' || !result25.result?.isDirectory) {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: get file info for directory\nexpected: ok true, type is directory, isDirectory is true\n\n',
+            process.stderr
+        );
+    } else {
+        logLine('PASS: get file info for directory');
+    }
+
+    // T26: Verify file info contains all expected fields
+    const testFile26 = path.join(testRoot, 'test26.txt');
+    fs.writeFileSync(testFile26, 'content');
+    const context26 = {
+        ...createMockContext({
+            baseDir: testRoot,
+            paths: {
+                resolve: (p: string) => path.resolve(testRoot, p),
+                assertAllowed: () => {},
+                resolveAllowed: (p: string) => path.resolve(testRoot, p),
+            },
+        }),
+        requiresConfirmation: () => false,
+    } as ExecutorContext;
+
+    const result26 = handleFileInfo({ path: 'test26.txt' }, context26);
+    if (!result26.ok) {
+        failures += 1;
+        logLine('FAIL\ncase: verify file info fields\nexpected: ok true\n\n', process.stderr);
+    } else {
+        const info = result26.result;
+        const hasAllFields =
+            info?.path !== undefined &&
+            info?.type !== undefined &&
+            info?.size !== undefined &&
+            info?.modified !== undefined &&
+            info?.permissions !== undefined &&
+            info?.isFile !== undefined &&
+            info?.isDirectory !== undefined &&
+            info?.isSymbolicLink !== undefined;
+        if (!hasAllFields) {
+            failures += 1;
+            logLine(
+                'FAIL\ncase: verify file info fields\nexpected: all fields present\n\n',
+                process.stderr
+            );
+        } else {
+            logLine('PASS: verify file info fields');
+        }
+    }
+
+    // ============================================
+    // FILE_INFO - ERROR CASES
+    // ============================================
+
+    // T27: File not found
+    const context27 = {
+        ...createMockContext({
+            baseDir: testRoot,
+            paths: {
+                resolve: (p: string) => path.resolve(testRoot, p),
+                assertAllowed: () => {},
+                resolveAllowed: (p: string) => path.resolve(testRoot, p),
+            },
+        }),
+        requiresConfirmation: () => false,
+    } as ExecutorContext;
+
+    const result27 = handleFileInfo({ path: 'nonexistent27.txt' }, context27);
+    if (result27.ok || result27.error?.code !== 'EXEC_ERROR') {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: file not found\nexpected: ok false, error.code EXEC_ERROR\n\n',
+            process.stderr
+        );
+    } else {
+        logLine('PASS: file not found');
+    }
+
+    // T28: Path outside baseDir (security check)
+    const context28 = {
+        ...createMockContext({
+            baseDir: testRoot,
+            paths: {
+                resolve: (p: string) => {
+                    throw new Error('Path traversal detected');
+                },
+                assertAllowed: () => {
+                    throw new Error('Path not allowed');
+                },
+                resolveAllowed: () => {
+                    throw new Error('Path not allowed');
+                },
+            },
+        }),
+        requiresConfirmation: () => false,
+    } as ExecutorContext;
+
+    const result28 = handleFileInfo({ path: '../../etc/passwd' }, context28);
+    if (result28.ok || result28.error?.code !== 'DENIED_PATH_ALLOWLIST') {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: path outside baseDir\nexpected: ok false, error.code DENIED_PATH_ALLOWLIST\n\n',
+            process.stderr
+        );
+    } else {
+        logLine('PASS: path outside baseDir');
     }
 
     // ============================================

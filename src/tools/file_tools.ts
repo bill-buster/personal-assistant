@@ -21,6 +21,7 @@ import {
     DeleteFileArgs,
     MoveFileArgs,
     CopyFileArgs,
+    FileInfoArgs,
 } from '../core/types';
 
 /**
@@ -905,6 +906,104 @@ export function handleCopyFile(args: CopyFileArgs, context: ExecutorContext): To
     return {
         ok: true,
         result: { source: args.source, destination: args.destination },
+        error: null,
+        _debug: makeDebug({
+            path: 'tool_json',
+            start,
+            model: null,
+            memory_read: false,
+            memory_write: false,
+        }),
+    };
+}
+
+/**
+ * Handle file_info tool.
+ * @param args - Tool arguments containing path.
+ * @param context - Execution context.
+ * @returns Result object with ok, result, error, debug.
+ */
+export function handleFileInfo(args: FileInfoArgs, context: ExecutorContext): ToolResult {
+    const { paths, permissionsPath, start } = context;
+
+    // Validate and resolve path (requires read permission)
+    let targetPath: string;
+    try {
+        targetPath = paths.resolveAllowed(args.path, 'read');
+    } catch {
+        return {
+            ok: false,
+            result: null,
+            error: makePermissionError(
+                'file_info',
+                args.path,
+                permissionsPath,
+                ErrorCode.DENIED_PATH_ALLOWLIST
+            ),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
+    }
+
+    // Get file stats
+    let stats: fs.Stats;
+    try {
+        stats = fs.statSync(targetPath);
+    } catch (err: any) {
+        return {
+            ok: false,
+            result: null,
+            error: makeError(ErrorCode.EXEC_ERROR, `Failed to stat file: ${err.message}`),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
+    }
+
+    // Get file permissions (Unix-style)
+    let mode: string;
+    try {
+        mode = stats.mode.toString(8).slice(-3); // Last 3 octal digits
+    } catch {
+        mode = 'unknown';
+    }
+
+    // Format modified date
+    const modifiedDate = stats.mtime.toISOString();
+
+    // Determine file type
+    let type: 'file' | 'directory' | 'symlink' | 'other';
+    if (stats.isFile()) {
+        type = 'file';
+    } else if (stats.isDirectory()) {
+        type = 'directory';
+    } else if (stats.isSymbolicLink()) {
+        type = 'symlink';
+    } else {
+        type = 'other';
+    }
+
+    return {
+        ok: true,
+        result: {
+            path: args.path,
+            type,
+            size: stats.size,
+            modified: modifiedDate,
+            permissions: mode,
+            isFile: stats.isFile(),
+            isDirectory: stats.isDirectory(),
+            isSymbolicLink: stats.isSymbolicLink(),
+        },
         error: null,
         _debug: makeDebug({
             path: 'tool_json',

@@ -14,6 +14,7 @@ import {
     getPackageVersion,
     loadConfig,
     resolveConfig,
+    generateCorrelationId,
 } from '../core';
 import type { ResolvedConfig, ToolSpec, Message, Agent } from '../core';
 import type { RouteResult, RouteToolCall, RouteReply } from '../core/types';
@@ -627,6 +628,8 @@ if (require.main === module) {
         if (execute) {
             // Build runtime once via composition root
             const runtime = buildRuntime(resolvedConfig);
+            const correlationId = generateCorrelationId();
+
             const result = await route(
                 content,
                 intent,
@@ -638,18 +641,38 @@ if (require.main === module) {
                 { enableRegex: true, toolFormat: 'compact', toolSchemas: runtime.toolSchemas },
                 resolvedConfig
             );
+
+            let toolResult: any = undefined;
+
             if ('error' in result) {
+                // Log command with routing error
+                runtime.commandLogger.logCommand(correlationId, content, result, undefined, {
+                    intent,
+                    agent: undefined,
+                });
                 process.stderr.write(`${result.error}\n`);
                 process.exit(result.code || 1);
             }
             if (result.mode === 'tool_call' && result.tool_call) {
-                const execResult = await runtime.executor.execute(
+                toolResult = await runtime.executor.execute(
                     result.tool_call.tool_name,
                     result.tool_call.args
                 );
-                process.stdout.write(JSON.stringify(execResult, null, 2) + '\n');
-                process.exit(execResult.ok ? 0 : 1);
+
+                // Log command with routing and tool execution results
+                runtime.commandLogger.logCommand(correlationId, content, result, toolResult, {
+                    intent,
+                    agent: undefined,
+                });
+
+                process.stdout.write(JSON.stringify(toolResult, null, 2) + '\n');
+                process.exit(toolResult.ok ? 0 : 1);
             } else if (result.mode === 'reply') {
+                // Log command with reply mode
+                runtime.commandLogger.logCommand(correlationId, content, result, undefined, {
+                    intent,
+                    agent: undefined,
+                });
                 // Just print reply
                 process.stdout.write(result.reply.content + '\n');
                 process.exit(0);
