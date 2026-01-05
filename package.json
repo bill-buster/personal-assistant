@@ -8,15 +8,21 @@
   },
   "scripts": {
     "build": "tsc",
-    "clean": "rm -rf dist",
+    "clean": "rm -rf dist coverage .tmp .cache",
     "test": "npm run build && TEST_DIST=1 node --max-old-space-size=256 dist/run_tests.js",
     "test:single": "npm run build && TEST_DIST=1 node --max-old-space-size=256 dist/run_tests.js",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
+    "typecheck": "tsc --noEmit",
     "start": "node dist/app/cli.js",
+    "dev": "npm run build && node dist/app/cli.js repl",
     "repl": "node dist/app/cli.js repl",
     "demo": "node dist/app/cli.js demo --human",
-    "web": "node dist/app/cli.js web"
+    "web": "node dist/app/cli.js web",
+    "doctor": "node dist/scripts/doctor.js",
+    "preflight": "./scripts/preflight.sh",
+    "leak:check": "./scripts/leak-check.sh",
+    "smoke": "./scripts/smoke-test.sh"
   },
   "keywords": [
     "assistant",
@@ -44,4 +50,3 @@
     "node": ">=18.0.0"
   }
 }
-

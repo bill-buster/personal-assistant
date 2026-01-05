@@ -96,6 +96,18 @@ src/
 └── tools/       # Tool implementations
 ```
 
+## Scope & Boundaries
+
+This repo contains the **personal assistant only**. It explicitly excludes:
+
+- Workflow engine / multi-agent orchestration
+- Agent handoff protocols (HANDOFF.md, AGENTS.md)
+- Multi-agent chain coordination
+
+If you're looking for orchestration tooling, see the parent monorepo's `packages/workflow-engine/`.
+
+This separation is intentional (see [docs/DECISIONS.md](docs/DECISIONS.md) D015) to keep the assistant focused, testable, and independently deployable.
+
 ## License
 
 MIT

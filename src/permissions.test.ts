@@ -8,32 +8,38 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-// When running from dist/, __dirname is dist/ but we need src/
+// When running from dist/, use compiled JS; otherwise use ts-node
 const isDist = __dirname.includes('/dist') || __dirname.includes('\\dist');
-const spikeDir = isDist 
-    ? path.resolve(__dirname, '..', 'src')
-    : path.resolve(__dirname);
-const executorPath = path.join(spikeDir, 'app', 'executor.ts');
-const tsNodeRegister = require.resolve('ts-node/register');
+const baseDir = isDist 
+    ? path.resolve(__dirname)  // dist/
+    : path.resolve(__dirname); // src/
+const executorPath = isDist
+    ? path.join(baseDir, 'app', 'executor.js')
+    : path.join(baseDir, 'app', 'executor.ts');
 const permissionsFile = 'permissions.test.json';
-const permissionsFilePath = path.join(spikeDir, permissionsFile);
+const permissionsFilePath = path.join(baseDir, permissionsFile);
 const testFile = 'test-write.txt';
-const testFilePath = path.join(spikeDir, testFile);
+const testFilePath = path.join(baseDir, testFile);
 
 let failures = 0;
 
 function runExecutor(input: string, extraArgs: string[] = []) {
+    // In dist mode, run compiled JS directly; otherwise use ts-node
+    const execArgs = isDist
+        ? [executorPath, '--permissions-path', permissionsFile, ...extraArgs]
+        : ['-r', require.resolve('ts-node/register'), executorPath, '--permissions-path', permissionsFile, ...extraArgs];
+    
     const result = spawnSync(
         process.execPath,
-        ['-r', tsNodeRegister, executorPath, '--permissions-path', permissionsFile, ...extraArgs],
+        execArgs,
         {
             input,
-            cwd: spikeDir,
+            cwd: baseDir,
             encoding: 'utf8',
             env: {
                 ...process.env,
-                // Use spike directory for data isolation per D011
-                ASSISTANT_DATA_DIR: spikeDir,
+                // Use base directory for data isolation per D011
+                ASSISTANT_DATA_DIR: baseDir,
             },
         }
     );
@@ -159,7 +165,7 @@ if (fs.existsSync(permissionsFilePath)) {
 
 // T1: default deny if no permissions.json
 const noPermsFile = 'permissions.missing.json';
-const noPermsFilePath = path.join(spikeDir, noPermsFile);
+const noPermsFilePath = path.join(baseDir, noPermsFile);
 // Ensure it doesn't exist
 if (fs.existsSync(noPermsFilePath)) {
     fs.unlinkSync(noPermsFilePath);
@@ -179,9 +185,11 @@ if (!t1Json || t1Json.ok !== false) {
     failures += 1;
     process.stderr.write('FAIL\nT1: default deny if no permissions.json\nexpected: ok false\n\n');
 }
-if (!t1Json || !t1Json.error || !t1Json.error.code || !t1Json.error.code.includes('DENIED_COMMAND_ALLOWLIST')) {
+// Error code is at top level (errorCode) not nested in error object
+const t1ErrorCode = t1Json?.errorCode || t1Json?.error?.code;
+if (!t1ErrorCode || !t1ErrorCode.includes('DENIED_COMMAND_ALLOWLIST')) {
     failures += 1;
-    process.stderr.write(`FAIL\nT1: default deny if no permissions.json\nexpected error code: DENIED_COMMAND_ALLOWLIST\ngot: ${t1Json?.error?.code}\n\n`);
+    process.stderr.write(`FAIL\nT1: default deny if no permissions.json\nexpected error code: DENIED_COMMAND_ALLOWLIST\ngot: ${t1ErrorCode}\n\n`);
 }
 
 // T2: allow_commands ["ls"] allows ls, denies pwd
@@ -220,14 +228,16 @@ if (!t2bJson || t2bJson.ok !== false) {
     failures += 1;
     process.stderr.write('FAIL\nT2b: allow_commands ["ls"] denies pwd\nexpected: ok false\n\n');
 }
-if (!t2bJson || !t2bJson.error || !t2bJson.error.code || !t2bJson.error.code.includes('DENIED_COMMAND_ALLOWLIST')) {
+// Error code is at top level (errorCode) not nested in error object
+const t2bErrorCode = t2bJson?.errorCode || t2bJson?.error?.code;
+if (!t2bErrorCode || !t2bErrorCode.includes('DENIED_COMMAND_ALLOWLIST')) {
     failures += 1;
-    process.stderr.write(`FAIL\nT2b: allow_commands ["ls"] denies pwd\nexpected error code: DENIED_COMMAND_ALLOWLIST\ngot: ${t2bJson?.error?.code}\n\n`);
+    process.stderr.write(`FAIL\nT2b: allow_commands ["ls"] denies pwd\nexpected error code: DENIED_COMMAND_ALLOWLIST\ngot: ${t2bErrorCode}\n\n`);
 }
 
 // T3: allow_paths ["."] blocks ../ traversal
 const t3TestFile = 't3-test.txt';
-const t3TestFilePath = path.join(spikeDir, t3TestFile);
+const t3TestFilePath = path.join(baseDir, t3TestFile);
 fs.writeFileSync(t3TestFilePath, 'test content', 'utf8');
 
 const t3Perms = {
@@ -290,7 +300,7 @@ if (!t4Json || !t4Json.error || !t4Json.error.code || !t4Json.error.code.include
 
 // T5: regression: allow_commands ["cat"], allow_paths ["file.txt"] => cat file.txt succeeds (no crash)
 const t5TestFile = 'file.txt';
-const t5TestFilePath = path.join(spikeDir, t5TestFile);
+const t5TestFilePath = path.join(baseDir, t5TestFile);
 fs.writeFileSync(t5TestFilePath, 'test content for cat', 'utf8');
 
 const t5Perms = {
