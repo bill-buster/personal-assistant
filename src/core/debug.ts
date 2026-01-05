@@ -26,6 +26,13 @@ import { DebugInfo } from './types';
 export function makeDebug(options: Partial<DebugInfo>): DebugInfo {
     const start = options && typeof options.start === 'number' ? options.start : undefined;
     const durationMs = start === undefined ? null : Math.max(0, Math.round(nowMs() - start));
+
+    // Performance monitoring: warn about slow operations
+    if (durationMs !== null && durationMs > 1000 && process.env.VERBOSE) {
+        const path = options.path || 'unknown';
+        console.warn(`[Perf] Slow operation detected: ${path} took ${durationMs}ms`);
+    }
+
     return {
         path: options.path || 'fallback',
         duration_ms: durationMs,

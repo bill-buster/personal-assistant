@@ -34,11 +34,13 @@ const EXPERIMENTAL_TOOLS = [
 const ALL_TOOLS = [...READY_TOOLS, ...EXPERIMENTAL_TOOLS];
 
 // SYSTEM agent - has access to all non-stub tools (for CLI direct use)
+// kind='system' grants full privileges (checked in executor)
 export const SYSTEM: Agent = {
     name: 'System',
     description: 'Direct CLI access with all tools.',
     systemPrompt: 'You are a helpful assistant with access to all system tools.',
     tools: ALL_TOOLS,
+    kind: 'system', // Trusted agent created by runtime
 };
 
 export const SUPERVISOR: Agent = {

@@ -9,12 +9,18 @@
             "group": "build"
         },
         {
-            "label": "npm: watch",
+            "label": "npm: build:watch",
             "type": "npm",
-            "script": "watch",
+            "script": "build:watch",
             "problemMatcher": ["$tsc-watch"],
             "isBackground": true,
-            "group": "build"
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "runOptions": {
+                "runOn": "folderOpen"
+            }
         },
         {
             "label": "npm: test",

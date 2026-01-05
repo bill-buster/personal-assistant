@@ -189,12 +189,34 @@ export interface ExecutorContext {
     ) => MemoryEntry[];
 }
 
+/**
+ * Agent kind for privilege determination.
+ * 'system' = full access (trusted, created by runtime)
+ * 'user' = standard agent with explicit tool allowlist
+ * 'worker' = specialized agent (coder, organizer, etc.)
+ */
+export type AgentKind = 'system' | 'user' | 'worker';
+
 export interface Agent {
     name: string;
     description: string;
     systemPrompt: string;
     tools: string[];
+    /** Agent kind for privilege checks. Defaults to 'user' if not specified. */
+    kind?: AgentKind;
 }
+
+/**
+ * Safe tools that can be used without agent context.
+ * These are informational only - no filesystem, shell, or network access.
+ */
+export const SAFE_TOOLS = [
+    'calculate', // Math only
+    'get_time', // Time query only
+    'delegate_to_coder', // Delegation only
+    'delegate_to_organizer', // Delegation only
+    'delegate_to_assistant', // Delegation only
+] as const;
 
 /**
  * Tool handler function type.

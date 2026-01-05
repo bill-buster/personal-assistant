@@ -144,7 +144,7 @@ export function createNodeToolRegistry(): ToolRegistry {
     // Add plugin schemas (plugins use ToolSpec format, need conversion)
     for (const [name, spec] of Object.entries(pluginTools.schemas)) {
         // Convert ToolSpec to Zod schema
-        const zodSchema = convertToolSpecToZod(spec);
+        const zodSchema = convertToolSpecToZod(spec, name);
         if (zodSchema) {
             allSchemas[name] = zodSchema;
         }
@@ -156,8 +156,11 @@ export function createNodeToolRegistry(): ToolRegistry {
 /**
  * Convert a ToolSpec to a Zod schema.
  * This is a simplified conversion - full conversion would need more logic.
+ * @param spec - ToolSpec to convert
+ * @param toolName - Tool name for error reporting
+ * @returns Zod schema or null if conversion fails
  */
-function convertToolSpecToZod(spec: any): z.ZodTypeAny | null {
+function convertToolSpecToZod(spec: any, toolName: string): z.ZodTypeAny | null {
     try {
         const shape: Record<string, z.ZodTypeAny> = {};
 
@@ -195,7 +198,11 @@ function convertToolSpecToZod(spec: any): z.ZodTypeAny | null {
         }
 
         return z.object(shape);
-    } catch {
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        console.warn(
+            `[Plugin Warning] Failed to convert schema for plugin tool '${toolName}': ${message}. Tool will load without schema validation.`
+        );
         return null;
     }
 }

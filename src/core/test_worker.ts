@@ -113,16 +113,27 @@ export async function runTestsInParallel(
         while (running.size < numWorkers && queue.length > 0) {
             const filePath = queue.shift()!;
 
-            const promise = runTestAsync({
-                filePath,
-                baseDir,
-                memLimit,
-                isDist,
-                tsNodeRegister,
-            }).then(result => {
-                results.push(result);
-                running.delete(promise);
-            });
+            // Create promise and track it for cleanup
+            // Use a wrapper to avoid self-reference issue
+            let promiseRef: Promise<void> | null = null;
+            const promise = (async () => {
+                try {
+                    const result = await runTestAsync({
+                        filePath,
+                        baseDir,
+                        memLimit,
+                        isDist,
+                        tsNodeRegister,
+                    });
+                    results.push(result);
+                } finally {
+                    // Remove from running set when done
+                    if (promiseRef) {
+                        running.delete(promiseRef);
+                    }
+                }
+            })();
+            promiseRef = promise;
 
             running.add(promise);
         }

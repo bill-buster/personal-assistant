@@ -38,6 +38,7 @@ import {
 import type { ToolResult, CLIResult, ResolvedConfig } from '../core';
 import { route } from './router';
 import { isRouteError, isRouteToolCall, isRouteReply } from '../core';
+import { SAFE_TOOLS } from '../core/types';
 import { initializeRuntime } from '../runtime';
 import type { Runtime } from '../runtime';
 
@@ -82,6 +83,7 @@ Commands:
   web [--port N]               Start web dashboard
   repl                         Start interactive mode
   demo                         Run demonstration flow
+  explain "<command>"           Explain routing decision (debugging)
 
 Options:
   --human                      Human-readable output (default: JSON)
@@ -234,6 +236,10 @@ async function main() {
         case 'demo':
             await handleDemo(runtime.executor, human);
             return;
+
+        case 'explain':
+            result = await handleExplain(runtime, args, verbose);
+            break;
 
         default:
             result = { ok: false, error: `Unknown command: ${command}. Use --help for usage.` };
@@ -670,6 +676,97 @@ function handlePlugins(
         default:
             return { ok: false, error: 'Usage: assistant plugins <list>' };
     }
+}
+
+async function handleExplain(
+    runtime: Runtime,
+    args: string[],
+    verbose: boolean
+): Promise<CLIResult> {
+    const input = args.join(' ').trim();
+    if (!input) {
+        return { ok: false, error: 'Usage: assistant explain "<command>"' };
+    }
+
+    // Route without executing
+    const routed = await route(
+        input,
+        'spike',
+        null,
+        [],
+        verbose,
+        runtime.defaultAgent,
+        runtime.provider,
+        { enableRegex: true, toolFormat: 'compact', toolSchemas: runtime.toolSchemas },
+        runtime.config
+    );
+
+    const explanation: any = {
+        input,
+        routing_result: {
+            stage: isRouteError(routed) ? 'error' : routed._debug?.path || 'unknown',
+            duration_ms: isRouteError(routed) ? null : routed._debug?.duration_ms || null,
+            model: isRouteError(routed) ? null : routed._debug?.model || null,
+        },
+    };
+
+    if (isRouteError(routed)) {
+        explanation.error = routed.error;
+        explanation.code = routed.code;
+        explanation.would_execute = false;
+    } else if (isRouteToolCall(routed)) {
+        explanation.tool_call = {
+            tool_name: routed.tool_call.tool_name,
+            args: routed.tool_call.args,
+        };
+        explanation.would_execute = true;
+
+        // Check if executor would allow it
+        const schema = runtime.registry.getSchema(routed.tool_call.tool_name);
+        if (schema) {
+            const validation = schema.safeParse(routed.tool_call.args);
+            explanation.validation = {
+                valid: validation.success,
+                error: validation.success ? null : validation.error.message,
+            };
+        }
+
+        // Check agent permissions
+        if (runtime.defaultAgent) {
+            const isSystem = runtime.defaultAgent.kind === 'system';
+            const hasTool = runtime.defaultAgent.tools.includes(routed.tool_call.tool_name);
+            explanation.permissions = {
+                agent: runtime.defaultAgent.name,
+                agent_kind: runtime.defaultAgent.kind || 'user',
+                has_access: isSystem || hasTool,
+                reason: isSystem
+                    ? 'System agent has full access'
+                    : hasTool
+                      ? 'Tool in agent allowlist'
+                      : 'Tool not in agent allowlist',
+            };
+        } else {
+            const isSafe = (SAFE_TOOLS as readonly string[]).includes(routed.tool_call.tool_name);
+            explanation.permissions = {
+                agent: null,
+                has_access: isSafe,
+                reason: isSafe
+                    ? 'Tool is in SAFE_TOOLS (no agent required)'
+                    : 'Tool requires agent context',
+            };
+        }
+    } else if (isRouteReply(routed)) {
+        explanation.reply = {
+            content: routed.reply.content,
+            instruction: routed.reply.instruction,
+        };
+        explanation.would_execute = false;
+    }
+
+    return {
+        ok: true,
+        result: explanation,
+    };
 }
 
 async function handleDemo(executor: Executor, human: boolean): Promise<void> {

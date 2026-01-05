@@ -386,28 +386,28 @@ export function handleListFiles(args: ListFilesArgs, context: ExecutorContext): 
         };
     }
 
-    // Filter entries and add type info
+    // Filter entries and add type info (optimized: single pass instead of filter+map)
     // Exclude hidden files (starting with .) for security - they may contain sensitive data
     // like .npmrc, .bash_history, .ssh, etc.
-    const entries = dirEntries
-        .filter(dirent => {
-            // Skip hidden files/directories (those starting with .)
-            if (dirent.name.startsWith('.')) {
-                return false;
-            }
-            const entryPath = path.join(targetDir, dirent.name);
-            try {
-                paths.assertAllowed(entryPath, 'list');
-                return true;
-            } catch {
-                return false;
-            }
-        })
-        .map(dirent => ({
-            name: dirent.name,
-            type: dirent.isDirectory() ? 'directory' : 'file',
-        }))
-        .sort((a, b) => a.name.localeCompare(b.name));
+    const entries: Array<{ name: string; type: 'file' | 'directory' }> = [];
+    for (const dirent of dirEntries) {
+        // Skip hidden files/directories (those starting with .)
+        if (dirent.name.startsWith('.')) {
+            continue;
+        }
+        const entryPath = path.join(targetDir, dirent.name);
+        try {
+            paths.assertAllowed(entryPath, 'list');
+            entries.push({
+                name: dirent.name,
+                type: dirent.isDirectory() ? 'directory' : 'file',
+            });
+        } catch {
+            // Skip entries that aren't allowed
+        }
+    }
+    // Sort entries by name
+    entries.sort((a, b) => a.name.localeCompare(b.name));
 
     return {
         ok: true,

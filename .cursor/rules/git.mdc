@@ -6,6 +6,26 @@ alwaysApply: false
 
 # Git Workflow & Best Practices
 
+## Agent Commit Policy
+
+**The agent SHOULD commit changes automatically** when:
+- ✅ Code changes are complete and tested
+- ✅ All preflight checks pass
+- ✅ Changes follow project conventions
+- ✅ Commit message follows conventional commit format
+
+**The agent SHOULD NOT commit** when:
+- ❌ User explicitly asks not to commit
+- ❌ Changes are incomplete or experimental
+- ❌ Preflight checks fail
+- ❌ User needs to review changes first
+
+**Commit workflow for agent:**
+1. Stage relevant files (`git add <files>`)
+2. Run preflight checks (`npm run preflight`)
+3. If checks pass, commit with conventional message
+4. If checks fail, report errors and do not commit
+
 ## Automatic Git Hooks
 
 ### Pre-Commit Hook (Runs Automatically)

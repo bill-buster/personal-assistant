@@ -36,6 +36,13 @@ const MATH_CONSTANTS: Record<string, number> = {
     E: Math.E,
 };
 
+// Pre-compiled regex patterns for performance
+const RE_WHITESPACE = /\s/;
+const RE_DIGIT = /[0-9]/;
+const RE_DIGIT_OR_DOT = /[0-9.]/;
+const RE_ALPHA_UNDERSCORE = /[a-zA-Z_]/;
+const RE_ALPHANUMERIC_UNDERSCORE = /[a-zA-Z0-9_]/;
+
 type Token =
     | { type: 'number'; value: number }
     | { type: 'operator'; value: string }
@@ -53,16 +60,19 @@ function tokenize(expr: string): Token[] {
         const ch = expr[i];
 
         // Skip whitespace
-        if (/\s/.test(ch)) {
+        if (RE_WHITESPACE.test(ch)) {
             i++;
             continue;
         }
 
         // Number (including decimals)
-        if (/[0-9]/.test(ch) || (ch === '.' && i + 1 < expr.length && /[0-9]/.test(expr[i + 1]))) {
+        if (
+            RE_DIGIT.test(ch) ||
+            (ch === '.' && i + 1 < expr.length && RE_DIGIT.test(expr[i + 1]))
+        ) {
             let numStr = '';
             let hasDecimal = false;
-            while (i < expr.length && /[0-9.]/.test(expr[i])) {
+            while (i < expr.length && RE_DIGIT_OR_DOT.test(expr[i])) {
                 if (expr[i] === '.') {
                     if (hasDecimal) {
                         throw new Error(`Invalid number: multiple decimal points`);
@@ -104,9 +114,9 @@ function tokenize(expr: string): Token[] {
         }
 
         // Identifiers (functions or constants)
-        if (/[a-zA-Z_]/.test(ch)) {
+        if (RE_ALPHA_UNDERSCORE.test(ch)) {
             let ident = '';
-            while (i < expr.length && /[a-zA-Z0-9_]/.test(expr[i])) {
+            while (i < expr.length && RE_ALPHANUMERIC_UNDERSCORE.test(expr[i])) {
                 ident += expr[i++];
             }
 
@@ -161,7 +171,9 @@ class Parser {
         let left = this.parseTerm();
 
         while (this.peek()?.type === 'operator') {
-            const opValue = (this.peek() as { type: 'operator'; value: string }).value;
+            const peeked = this.peek();
+            if (peeked?.type !== 'operator') break;
+            const opValue = peeked.value;
             if (opValue !== '+' && opValue !== '-') break;
             this.consume();
             const right = this.parseTerm();
@@ -175,14 +187,15 @@ class Parser {
     private parseTerm(): number {
         let left = this.parsePower();
 
-        while (
-            this.peek()?.type === 'operator' &&
-            ['*', '/', '%'].includes((this.peek() as { type: 'operator'; value: string }).value)
-        ) {
-            const op = (this.consume() as { type: 'operator'; value: string }).value;
+        while (this.peek()?.type === 'operator') {
+            const peeked = this.peek();
+            if (peeked?.type !== 'operator') break;
+            const opValue = peeked.value;
+            if (!['*', '/', '%'].includes(opValue)) break;
+            this.consume();
             const right = this.parsePower();
-            if (op === '*') left *= right;
-            else if (op === '/') left /= right;
+            if (opValue === '*') left *= right;
+            else if (opValue === '/') left /= right;
             else left %= right;
         }
 
@@ -193,10 +206,8 @@ class Parser {
     private parsePower(): number {
         let left = this.parseUnary();
 
-        if (
-            this.peek()?.type === 'operator' &&
-            (this.peek() as { type: 'operator'; value: string }).value === '^'
-        ) {
+        const peeked = this.peek();
+        if (peeked?.type === 'operator' && peeked.value === '^') {
             this.consume();
             const right = this.parsePower(); // Right-associative
             left = Math.pow(left, right);
@@ -208,12 +219,9 @@ class Parser {
     // unary = ('-' | '+') unary | primary
     private parseUnary(): number {
         const tok = this.peek();
-        if (
-            tok?.type === 'operator' &&
-            ((tok as { type: 'operator'; value: string }).value === '-' ||
-                (tok as { type: 'operator'; value: string }).value === '+')
-        ) {
-            const op = (this.consume() as { type: 'operator'; value: string }).value;
+        if (tok?.type === 'operator' && (tok.value === '-' || tok.value === '+')) {
+            const op = tok.value;
+            this.consume();
             const val = this.parseUnary();
             return op === '-' ? -val : val;
         }
@@ -313,8 +321,9 @@ export function handleCalculate(args: CalculateArgs): ToolResult {
         }
 
         return { ok: true, result: { expression, value: result } };
-    } catch (err: any) {
-        return { ok: false, error: makeError('EXEC_ERROR', `Calculation error: ${err.message}`) };
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Unknown calculation error';
+        return { ok: false, error: makeError('EXEC_ERROR', `Calculation error: ${message}`) };
     }
 }
 
@@ -365,7 +374,7 @@ export async function handleGetWeather(args: GetWeatherArgs): Promise<ToolResult
             }
 
             return response;
-        } catch (err: any) {
+        } catch (err: unknown) {
             clearTimeout(timeoutId);
             throw err;
         }
@@ -408,11 +417,12 @@ export async function handleGetWeather(args: GetWeatherArgs): Promise<ToolResult
         };
 
         return { ok: true, result };
-    } catch (err: any) {
-        if (err.name === 'AbortError') {
+    } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') {
             return { ok: false, error: makeError('EXEC_ERROR', 'Weather request timed out.') };
         }
-        return { ok: false, error: makeError('EXEC_ERROR', `Weather error: ${err.message}`) };
+        const message = err instanceof Error ? err.message : 'Unknown weather error';
+        return { ok: false, error: makeError('EXEC_ERROR', `Weather error: ${message}`) };
     }
 }
 

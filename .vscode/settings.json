@@ -3,7 +3,8 @@
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.codeActionsOnSave": {
-        "source.fixAll.eslint": "explicit"
+        "source.fixAll.eslint": "explicit",
+        "source.organizeImports": "explicit"
     },
     "editor.tabSize": 4,
 
@@ -23,7 +24,9 @@
         "editor.tabSize": 2
     },
     "[markdown]": {
-        "editor.wordWrap": "on"
+        "editor.wordWrap": "on",
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
     },
 
     // File associations
@@ -38,6 +41,11 @@
     // TypeScript settings
     "typescript.tsdk": "node_modules/typescript/lib",
     "typescript.enablePromptUseWorkspaceTsdk": true,
+    "typescript.preferences.includePackageJsonAutoImports": "on",
+    "typescript.suggest.autoImports": true,
+    "typescript.tsserver.watchOptions": {
+        "excludeDirectories": ["**/node_modules", "**/dist"]
+    },
 
     // Search exclusions
     "search.exclude": {
@@ -57,5 +65,10 @@
         "**/dist/**": true,
         "**/coverage/**": true,
         "**/node_modules/**": true
-    }
+    },
+
+    // Auto-run tasks
+    "task.allowAutomaticTasks": "on",
+    "task.quickOpen.history": 10,
+    "task.quickOpen.detail": true
 }

@@ -28,6 +28,7 @@ import {
     PathOp,
     PathCapabilities,
     CommandCapabilities,
+    SAFE_TOOLS,
 } from './types';
 import { loadPermissions } from './config';
 import { readJsonlSafely, writeJsonlAtomic, appendJsonl } from '../storage/jsonl';
@@ -91,7 +92,8 @@ export class Executor {
         // Limits are always provided by resolvedConfig (no fallback needed)
         // Defensive check: ensure limits exists, provide defaults if missing
         if (!config.limits) {
-            throw new Error('ExecutorConfig must include limits');
+            const error = makeError(ErrorCode.EXEC_ERROR, 'ExecutorConfig must include limits');
+            throw error;
         }
         this.limits = config.limits;
 
@@ -126,7 +128,7 @@ export class Executor {
     }
 
     // Helper methods from original file
-    private safeResolve(relPath: any): string | null {
+    private safeResolve(relPath: unknown): string | null {
         if (!relPath || typeof relPath !== 'string') return null;
         if (path.isAbsolute(relPath)) return null;
         if (relPath.includes('..')) return null;
@@ -200,9 +202,15 @@ export class Executor {
     }
 
     // Path capability helpers (throw-based API)
+    // TODO: Convert to return structured errors instead of throwing
+    // This requires changing PathCapabilities interface and updating all tools
+    // Current tools use try/catch around these methods, so conversion is non-trivial
     private pathResolve(requestedPath: string): string {
         const resolved = this.safeResolve(requestedPath);
         if (resolved === null) {
+            // Note: This throw is part of a documented throw-based API
+            // Tools are designed to catch these throws and convert to ToolResult
+            // Should be converted to return { ok: false, error } in future refactoring
             throw makeError(
                 ErrorCode.DENIED_PATH_ALLOWLIST,
                 `Path '${requestedPath}' is invalid or outside baseDir`
@@ -213,6 +221,9 @@ export class Executor {
 
     private pathAssertAllowed(targetPath: string, op: PathOp): void {
         if (!this.isAllowedPath(targetPath)) {
+            // Note: This throw is part of a documented throw-based API
+            // Tools are designed to catch these throws and convert to ToolResult
+            // Should be converted to return { ok: false, error } in future refactoring
             throw makeError(
                 ErrorCode.DENIED_PATH_ALLOWLIST,
                 `Path '${targetPath}' is not allowed for ${op} operation`
@@ -541,16 +552,14 @@ export class Executor {
         };
     }
 
-    public async execute(toolName: string, args: any): Promise<ToolResult> {
+    public async execute(toolName: string, args: Record<string, unknown>): Promise<ToolResult> {
         // 1. Enforce agent permissions BEFORE any execution
         if (this.agent) {
-            // SYSTEM agent gets access to all tools (for CLI usage)
-            // Check by name to allow proper agent identity without object reference dependency
-            if (this.agent.name === 'System') {
+            // System agents (kind='system') get access to all tools (for CLI usage)
+            // Check by kind to prevent spoofing via name string
+            if (this.agent.kind === 'system') {
                 // Allow any tool that exists in TOOL_HANDLERS
-                // Unless implicitly denied by configuration? Allow deny_tools to override system?
-                // Let's say System is root, but deny_tools is a hard block.
-                // Actually, for now, follow D008: deny_tools checked after.
+                // deny_tools still applies (checked below)
             } else {
                 // Other agents: check allowlist
                 if (!this.agent.tools.includes(toolName)) {
@@ -594,18 +603,10 @@ export class Executor {
 
         // 3. No agent: enforce minimal safe default (fail-closed security)
         if (!this.agent) {
-            // Safe tools: informational only, no filesystem/shell/network access
-            const SAFE_TOOLS = [
-                'calculate', // Math only
-                'get_time', // Time query only
-                'delegate_to_coder', // Delegation only
-                'delegate_to_organizer', // Delegation only
-                'delegate_to_assistant', // Delegation only
-            ];
-
             // Sensitive tools: filesystem, shell, network, data modification
             // All other tools are denied when no agent is provided
-            if (!SAFE_TOOLS.includes(toolName)) {
+            // Type assertion needed because SAFE_TOOLS is a const array with literal types
+            if (!(SAFE_TOOLS as readonly string[]).includes(toolName)) {
                 return {
                     ok: false,
                     result: null,
@@ -626,7 +627,7 @@ export class Executor {
 
         // 4. Validate args with Zod Schema if available
         const schema = this.registry.getSchema(toolName);
-        let validatedArgs = args;
+        let validatedArgs: Record<string, unknown> = args;
 
         if (schema) {
             const parseResult = schema.safeParse(args || {});
@@ -647,7 +648,8 @@ export class Executor {
                     }),
                 };
             }
-            validatedArgs = parseResult.data;
+            // After safeParse success, data is validated and can be safely cast
+            validatedArgs = parseResult.data as Record<string, unknown>;
         }
 
         // 5. Build context
@@ -721,7 +723,7 @@ export class Executor {
     /**
      * Log tool execution to audit trail.
      */
-    private logAudit(toolName: string, args: any, result: ToolResult): void {
+    private logAudit(toolName: string, args: Record<string, unknown>, result: ToolResult): void {
         if (!this.auditEnabled) return;
 
         try {
@@ -748,7 +750,7 @@ export class Executor {
     /**
      * Sanitize args to avoid logging sensitive data.
      */
-    private sanitizeArgs(args: any): any {
+    private sanitizeArgs(args: Record<string, unknown>): Record<string, unknown> {
         if (!args || typeof args !== 'object') return args;
 
         const sanitized = { ...args };

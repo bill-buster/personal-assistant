@@ -17,6 +17,7 @@ import {
 } from '../core';
 import type { ResolvedConfig, ToolSpec, Message, Agent } from '../core';
 import type { RouteResult, RouteToolCall, RouteReply } from '../core/types';
+import { SAFE_TOOLS } from '../core/types';
 import {
     parseTaskCommand,
     parseMemoryCommand,
@@ -122,6 +123,56 @@ const RE_TIME = /^(?:what time is it|current time|time now|what's the time|time|
 const RE_CALC = /^(?:calculate|calc|compute|eval|math)[:\s]+(.+)$/i;
 const RE_GIT = /^git\s+(status|diff|log)(?:\s+(.*))?$/i;
 
+// Cache for filtered tools per agent to avoid recreating on every route call
+// Key: agent name + tool schemas hash, Value: filtered tools object
+const toolFilterCache = new Map<string, Record<string, ToolSpec>>();
+const TOOL_CACHE_MAX_SIZE = 50; // Limit cache size to prevent memory growth
+
+/**
+ * Create cache key for tool filtering.
+ */
+function createToolCacheKey(agentName: string, schemas: Record<string, ToolSpec>): string {
+    // Use agent name + sorted tool names as key (schemas don't change often)
+    const toolNames = Object.keys(schemas).sort().join(',');
+    return `${agentName}::${toolNames}`;
+}
+
+/**
+ * Get filtered tools for an agent, using cache when possible.
+ */
+function getFilteredTools(
+    agent: Agent,
+    schemas: Record<string, ToolSpec>
+): Record<string, ToolSpec> {
+    const cacheKey = createToolCacheKey(agent.name, schemas);
+
+    // Check cache
+    const cached = toolFilterCache.get(cacheKey);
+    if (cached) {
+        return cached;
+    }
+
+    // Filter tools based on Agent permissions
+    const allowedTools: Record<string, ToolSpec> = {};
+    for (const name of agent.tools) {
+        if (schemas[name]) {
+            allowedTools[name] = schemas[name];
+        }
+    }
+
+    // Cache the result (with size limit)
+    if (toolFilterCache.size >= TOOL_CACHE_MAX_SIZE) {
+        // Remove oldest entry (simple FIFO - remove first)
+        const firstKey = toolFilterCache.keys().next().value;
+        if (firstKey) {
+            toolFilterCache.delete(firstKey);
+        }
+    }
+    toolFilterCache.set(cacheKey, allowedTools);
+
+    return allowedTools;
+}
+
 /**
  * Route input to intent or tool call.
  */
@@ -164,10 +215,16 @@ export async function route(
     // 2. Heuristic Strategies
 
     // Helper to check if tool is allowed for current agent
+    // NOTE: Router may propose tools, but Executor is authoritative for security.
+    // When agent is undefined, only SAFE_TOOLS are allowed (matches executor behavior).
     const isToolAllowed = (toolName: string): boolean => {
-        // If agent is not provided (e.g., direct CLI call without agent context), allow all tools.
-        // Otherwise, check agent's tool permissions.
-        return !agent || agent.tools.includes(toolName);
+        if (!agent) {
+            // No agent: only allow safe tools (informational only, no filesystem/shell/network)
+            // This prevents router from proposing tools that executor will deny
+            return (SAFE_TOOLS as readonly string[]).includes(toolName);
+        }
+        // Agent provided: check agent's tool permissions
+        return agent.tools.includes(toolName);
     };
 
     // A. Regex Fast Paths (with agent permission checks)
@@ -364,13 +421,8 @@ export async function route(
                     `[Verbose] Agent: ${currentAgent.name} | Provider: ${config.defaultProvider}`
                 );
 
-            // Filter tools based on Agent permissions
-            const allowedTools: Record<string, any> = {};
-            for (const name of currentAgent.tools) {
-                if (schemas[name]) {
-                    allowedTools[name] = schemas[name];
-                }
-            }
+            // Filter tools based on Agent permissions (with caching)
+            const allowedTools = getFilteredTools(currentAgent, schemas);
 
             if (verbose) {
                 console.log('[Verbose] Filtered Tools:', Object.keys(allowedTools));

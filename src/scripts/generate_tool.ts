@@ -141,7 +141,13 @@ export function ${handlerName}(args: ${typeName}, context: ExecutorContext): Too
 }
 
 function generateToolSpec(toolName: string, args: ArgDef[]): string {
-    const required = args.filter(a => a.required).map(a => a.name);
+    // Single-pass filter to extract required argument names
+    const required: string[] = [];
+    for (const arg of args) {
+        if (arg.required) {
+            required.push(arg.name);
+        }
+    }
     const parameters: string[] = [];
 
     for (const arg of args) {

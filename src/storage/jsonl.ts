@@ -1,4 +1,5 @@
 import * as fs from 'node:fs';
+import * as path from 'node:path';
 import * as crypto from 'node:crypto';
 
 /**
@@ -12,7 +13,7 @@ export interface ReadJsonlOptions<_T = unknown> {
     /**
      * Optional validator function. Entries failing this check are skipped (but not considered corrupt).
      */
-    isValid?: (entry: any) => boolean;
+    isValid?: (entry: unknown) => boolean;
     /**
      * Whether to quarantine corrupt lines to a separate file. Default: true.
      */
@@ -36,14 +37,19 @@ export function readJsonlSafely<T>(options: ReadJsonlOptions<T>): T[] {
     let raw: string;
     try {
         raw = fs.readFileSync(filePath, 'utf8');
-    } catch (err: any) {
-        console.warn(`[JSONL Error] Failed to read file ${filePath}: ${err.message}`);
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        console.warn(`[JSONL Error] Failed to read file ${filePath}: ${message}`);
         return [];
     }
 
     const lines = raw.split(/\r?\n/);
     const entries: T[] = [];
     const corruptLines: string[] = [];
+
+    // Optimize: limit warning spam for large files with many corrupt lines
+    const maxWarnings = 10;
+    let warningCount = 0;
 
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
@@ -54,10 +60,15 @@ export function readJsonlSafely<T>(options: ReadJsonlOptions<T>): T[] {
             if (!isValid || isValid(parsed)) {
                 entries.push(parsed as T);
             }
-        } catch (err: any) {
-            console.warn(
-                `[JSONL Warning] Skipped corrupt line ${i + 1} in ${filePath}: ${err.message}`
-            );
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown parse error';
+            // Only log first few warnings to avoid spam
+            if (warningCount < maxWarnings) {
+                console.warn(
+                    `[JSONL Warning] Skipped corrupt line ${i + 1} in ${filePath}: ${message}`
+                );
+                warningCount++;
+            }
             if (quarantine) {
                 corruptLines.push(line);
             }
@@ -73,9 +84,10 @@ export function readJsonlSafely<T>(options: ReadJsonlOptions<T>): T[] {
             console.warn(
                 `[JSONL Recovery] Quarantined ${corruptLines.length} corrupt line(s) to ${corruptPath}`
             );
-        } catch (writeErr: any) {
+        } catch (writeErr: unknown) {
+            const message = writeErr instanceof Error ? writeErr.message : 'Unknown error';
             console.error(
-                `[JSONL Error] Failed to write to quarantine file ${corruptPath}: ${writeErr.message}`
+                `[JSONL Error] Failed to write to quarantine file ${corruptPath}: ${message}`
             );
         }
     }
@@ -92,22 +104,44 @@ export function readJsonlSafely<T>(options: ReadJsonlOptions<T>): T[] {
  * @param entries Array of data entries to write.
  */
 export function writeJsonlAtomic<T>(filePath: string, entries: T[]): void {
+    // Ensure directory exists before writing (prevents crash if directory missing)
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+    }
+
     // Use UUID to prevent race conditions when multiple processes write simultaneously
-    const tempPath = `${filePath}.tmp.${crypto.randomUUID()}`;
-    // Ensure every file ends with a newline if it has content
-    const content =
-        entries.map(e => JSON.stringify(e)).join('\n') + (entries.length > 0 ? '\n' : '');
+    // Temp file must be in same directory for atomic rename to work cross-platform
+    // (rename only works on same filesystem/device)
+    const tempPath = path.join(dir, `${path.basename(filePath)}.tmp.${crypto.randomUUID()}`);
+
+    // Optimize: for large arrays, pre-allocate string array to avoid repeated allocations
+    let content: string;
+    if (entries.length < 100) {
+        // Small arrays: simple map+join is faster
+        content = entries.map(e => JSON.stringify(e)).join('\n') + (entries.length > 0 ? '\n' : '');
+    } else {
+        // Large arrays: pre-allocate array to avoid repeated string concatenation
+        const lines: string[] = new Array(entries.length);
+        for (let i = 0; i < entries.length; i++) {
+            lines[i] = JSON.stringify(entries[i]);
+        }
+        content = lines.join('\n') + '\n';
+    }
 
     try {
         fs.writeFileSync(tempPath, content, 'utf8');
+        // Atomic rename: works on same filesystem, same directory
+        // On Windows (Node 12+), rename over existing file works correctly
         fs.renameSync(tempPath, filePath);
-    } catch (err: any) {
+    } catch (err: unknown) {
         try {
             if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
         } catch {
             // Ignore cleanup error
         }
-        throw new Error(`Failed to write JSONL atomically to ${filePath}: ${err.message}`);
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        throw new Error(`Failed to write JSONL atomically to ${filePath}: ${message}`);
     }
 }
 
@@ -124,7 +158,8 @@ export function appendJsonl<T>(filePath: string, entry: T): void {
         // We assume the file properly ends with a newline from previous writes.
         // We strictly enforce that this write ends with a newline.
         fs.appendFileSync(filePath, `${line}\n`, 'utf8');
-    } catch (err: any) {
-        throw new Error(`Failed to append to JSONL ${filePath}: ${err.message}`);
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        throw new Error(`Failed to append to JSONL ${filePath}: ${message}`);
     }
 }
