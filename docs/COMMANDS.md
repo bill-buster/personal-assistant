@@ -29,20 +29,20 @@ This document lists all available commands for the Personal Assistant project.
 
 ### Git & Formatting
 
-| Command                | Description                               |
-| ---------------------- | ----------------------------------------- |
-| `npm run fix`          | Auto-fix linting and formatting           |
-| `npm run fix:all`      | Fix lint + format + typecheck             |
-| `npm run format`       | Format TypeScript files                   |
-| `npm run format:all`   | Format all files (ts, js, json, md)       |
-| `npm run format:check` | Check formatting without fixing           |
-| `npm run cleanup`      | Remove generated test files               |
-| `npm run preflight`    | Full pre-commit checks (includes cleanup) |
-| `npm run review`           | Systematic code review (entire codebase)  |
-| `npm run review:fix`       | Auto-fix simple code review issues        |
+| Command                      | Description                                         |
+| ---------------------------- | --------------------------------------------------- |
+| `npm run fix`                | Auto-fix linting and formatting                     |
+| `npm run fix:all`            | Fix lint + format + typecheck                       |
+| `npm run format`             | Format TypeScript files                             |
+| `npm run format:all`         | Format all files (ts, js, json, md)                 |
+| `npm run format:check`       | Check formatting without fixing                     |
+| `npm run cleanup`            | Remove generated test files                         |
+| `npm run preflight`          | Full pre-commit checks (includes cleanup)           |
+| `npm run review`             | Systematic code review (entire codebase)            |
+| `npm run review:fix`         | Auto-fix simple code review issues                  |
 | `npm run review:incremental` | Incremental review (processes files piece by piece) |
-| `npm run review:status`   | Show incremental review progress         |
-| `npm run review:reset`    | Reset incremental review progress        |
+| `npm run review:status`      | Show incremental review progress                    |
+| `npm run review:reset`       | Reset incremental review progress                   |
 
 ### Code Quality
 

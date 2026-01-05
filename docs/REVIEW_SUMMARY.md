@@ -7,6 +7,7 @@
 **Purpose**: Systematic review of entire codebase
 
 **Features**:
+
 - Reviews files in isolation (no context bias)
 - Checks 6 categories: Security, Performance, Quality, Error Handling, Testing, Documentation
 - Scores files (0-100)
@@ -14,6 +15,7 @@
 - Generates actionable reports
 
 **Usage**:
+
 ```bash
 npm run review                    # Review entire codebase
 npm run review src/tools/         # Review directory
@@ -25,11 +27,13 @@ npm run review file.ts            # Review single file
 **Purpose**: Auto-fix simple issues
 
 **Fixes**:
+
 - Adds missing JSDoc (basic)
 - Replaces throw with return error (simple cases)
 - More fixes coming...
 
 **Usage**:
+
 ```bash
 npm run review:fix
 ```
@@ -37,6 +41,7 @@ npm run review:fix
 ### 3. Documentation
 
 **Created**:
+
 - `docs/CONTINUOUS_IMPROVEMENT.md` - Complete improvement strategy
 - `docs/CURSOR_IMPROVEMENT_STRATEGY.md` - How to leverage Cursor
 - `docs/QUICK_REVIEW_GUIDE.md` - Quick start guide
@@ -44,11 +49,13 @@ npm run review:fix
 ## 📊 Initial Review Results
 
 **Baseline** (72 files reviewed):
+
 - **Total issues**: 775
 - **Critical issues**: 34 (security)
 - **Average score**: 73.3/100
 
 **By Category**:
+
 - Security: 36 issues (34 critical)
 - Performance: 67 issues (67 high)
 - Quality: 373 issues (medium)
@@ -57,6 +64,7 @@ npm run review:fix
 - Testing: 35 issues
 
 **Top Files Needing Attention**:
+
 1. `src/app/repl.ts` - Score: 0/100 (70 issues)
 2. `src/core/config.ts` - Score: 0/100 (43 issues, 13 critical)
 3. `src/core/types.ts` - Score: 16/100 (42 issues)
@@ -93,11 +101,13 @@ Check all categories and provide specific fixes."
 ### Continuous Improvement
 
 **Weekly**:
+
 - Review new code
 - Fix critical issues
 - Improve one low-scoring file
 
 **Monthly**:
+
 - Full codebase review
 - Compare progress
 - Fix all critical issues
@@ -109,12 +119,15 @@ Check all categories and provide specific fixes."
 
 ```markdown
 # Isolated review (best)
+
 "Review [file] in isolation using code_review.mdc"
 
 # Category-focused
+
 "Review [file] for [security/performance/quality] issues"
 
 # Fix issues
+
 "Fix all issues found in review of [file]"
 ```
 
@@ -122,23 +135,28 @@ Check all categories and provide specific fixes."
 
 ```markdown
 # Suggest improvements
+
 "What are 5 ways to improve [file]?"
 
 # Refactor
+
 "Refactor [file] to improve type safety and error handling"
 
 # Simplify
+
 "How can [file] be simplified?"
 ```
 
 ## 📈 Success Metrics
 
 **Current**:
+
 - Score: 73.3/100
 - Critical: 34 issues
 - Coverage: 50.8%
 
 **Goals**:
+
 - Week 1: Fix all critical issues
 - Month 1: Score 80+
 - Month 2: Maintain 80+ with 0 critical
@@ -160,4 +178,3 @@ Review → Find Issues → Fix with Cursor → Measure → Repeat
 4. 📋 **Track progress** - Save reviews, compare monthly
 
 **Start now**: `npm run review` → Fix critical issues → Repeat!
-

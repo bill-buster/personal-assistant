@@ -5,6 +5,7 @@
 ### 1. Git Cursor Rules (`.cursor/rules/git.mdc`)
 
 **Created comprehensive git workflow rules**:
+
 - Pre-commit checklist
 - Commit message format (conventional commits)
 - What to commit vs ignore
@@ -14,6 +15,7 @@
 ### 2. Updated `.gitignore`
 
 **Added patterns for generated test files**:
+
 ```
 src/tools/test_tool*.ts
 src/tools/e2e_test*.ts
@@ -24,11 +26,13 @@ src/tools/*_tools_tools.test.ts
 ### 3. Cleanup Script (`scripts/cleanup_generated.sh`)
 
 **Removes generated test files**:
+
 ```bash
 npm run cleanup
 ```
 
 Removes:
+
 - `test_tool*.ts` files
 - `e2e_test*.ts` files
 - `TestTool*.ts` files
@@ -37,6 +41,7 @@ Removes:
 ### 4. Enhanced Formatting Commands
 
 **New commands in `package.json`**:
+
 ```bash
 npm run fix          # lint:fix + format (existing)
 npm run fix:all      # lint:fix + format + typecheck (new)
@@ -47,6 +52,7 @@ npm run cleanup      # Remove generated files (new)
 ### 5. Updated Preflight Script
 
 **Now includes**:
+
 1. Cleanup generated files
 2. Format check (fails if formatting issues)
 3. Lint check
@@ -87,6 +93,7 @@ npm run preflight
 ## Formatting Configuration
 
 ### Prettier (`.prettierrc`)
+
 - Semi-colons: enabled
 - Single quotes
 - Tab width: 4
@@ -95,6 +102,7 @@ npm run preflight
 - End of line: LF
 
 ### ESLint
+
 - Uses flat config (ESLint 9+)
 - Auto-fix available via `npm run lint:fix`
 
@@ -137,6 +145,7 @@ git commit -m "feat: description"
 ## Files Status
 
 ### ✅ Should Commit
+
 - Source code (`src/**/*.ts`)
 - Documentation (`docs/**/*.md`)
 - Configuration (`package.json`, `tsconfig.json`)
@@ -144,6 +153,7 @@ git commit -m "feat: description"
 - Scripts (`scripts/**/*.sh`)
 
 ### ❌ Should NOT Commit
+
 - Generated test files (auto-ignored now)
 - Build artifacts (`dist/`)
 - Test artifacts (`coverage/`, `.test-results/`)
@@ -199,4 +209,3 @@ npm run preflight
 5. ✅ **Commit**: `git commit -m "..."`
 
 All set! 🎉
-

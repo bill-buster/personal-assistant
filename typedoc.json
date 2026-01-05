@@ -1,14 +1,13 @@
 {
-  "entryPoints": ["src/index.ts"],
-  "out": "docs/api",
-  "exclude": ["**/*.test.ts", "**/run_tests.ts", "**/test_worker.ts"],
-  "excludePrivate": true,
-  "excludeProtected": true,
-  "excludeExternals": true,
-  "readme": "none",
-  "name": "Personal Assistant API",
-  "includeVersion": true,
-  "gitRevision": "main",
-  "theme": "default"
+    "entryPoints": ["src/index.ts"],
+    "out": "docs/api",
+    "exclude": ["**/*.test.ts", "**/run_tests.ts", "**/test_worker.ts"],
+    "excludePrivate": true,
+    "excludeProtected": true,
+    "excludeExternals": true,
+    "readme": "none",
+    "name": "Personal Assistant API",
+    "includeVersion": true,
+    "gitRevision": "main",
+    "theme": "default"
 }
-

@@ -118,6 +118,7 @@ Use [Conventional Commits](https://www.conventionalcommits.org/):
 ```
 
 **Types**:
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation
@@ -127,6 +128,7 @@ Use [Conventional Commits](https://www.conventionalcommits.org/):
 - `chore`: Maintenance
 
 **Examples**:
+
 ```
 feat(tools): add generate tests command
 fix(router): handle empty query strings
@@ -215,4 +217,3 @@ npm run typecheck
 - **Cursor Rules**: See `.cursor/rules/git.mdc` for git patterns
 - **Preflight**: See `scripts/preflight.sh` for full checks
 - **Formatting**: Uses Prettier + ESLint (see `package.json`)
-

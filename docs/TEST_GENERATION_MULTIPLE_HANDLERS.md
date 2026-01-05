@@ -22,12 +22,14 @@ Updated `extractSchemaFromFile()` to:
 ## Example
 
 ### Before (Failed)
+
 ```bash
 assistant generate tests git_tools
 # Error: Could not extract schema
 ```
 
 ### After (Works)
+
 ```bash
 assistant generate tests git_tools
 # Found schema: GitDiffSchema
@@ -70,4 +72,3 @@ npm run build && TEST_DIST=1 node dist/tools/git_tools_tools.test.js
 
 ✅ **Fixed** - Test generation now works for files with multiple handlers
 ⚠️ **Limitation** - May not match handler to correct schema (uses first valid schema)
-

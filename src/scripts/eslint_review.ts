@@ -16,7 +16,13 @@ interface ReviewIssue {
     file: string;
     line: number;
     column: number;
-    category: 'security' | 'performance' | 'quality' | 'error_handling' | 'testing' | 'documentation';
+    category:
+        | 'security'
+        | 'performance'
+        | 'quality'
+        | 'error_handling'
+        | 'testing'
+        | 'documentation';
     severity: 'critical' | 'high' | 'medium' | 'low';
     rule: string;
     message: string;
@@ -40,23 +46,23 @@ const RULE_CATEGORIES: Record<string, ReviewIssue['category']> = {
     '@typescript-eslint/no-explicit-any': 'security',
     'no-eval': 'security',
     'no-implied-eval': 'security',
-    
+
     // Performance
     'no-await-in-loop': 'performance',
     '@typescript-eslint/no-floating-promises': 'performance',
-    
+
     // Quality
     '@typescript-eslint/no-unused-vars': 'quality',
     'prefer-const': 'quality',
     'no-var': 'quality',
     '@typescript-eslint/prefer-nullish-coalescing': 'quality',
     '@typescript-eslint/prefer-optional-chain': 'quality',
-    
+
     // Error handling
     'no-throw-literal': 'error_handling',
     '@typescript-eslint/no-throw-literal': 'error_handling',
     'no-empty': 'error_handling',
-    
+
     // Default
     default: 'quality',
 };
@@ -87,7 +93,7 @@ async function analyzeFileWithESLint(filePath: string): Promise<ReviewIssue[]> {
             for (const message of result.messages) {
                 const category = RULE_CATEGORIES[message.ruleId || ''] || RULE_CATEGORIES.default;
                 const severity = mapSeverity(message.severity);
-                
+
                 // Skip low severity issues unless they're security-related
                 if (severity === 'low' && category !== 'security') continue;
 
@@ -300,4 +306,3 @@ if (require.main === module) {
 }
 
 export {};
-

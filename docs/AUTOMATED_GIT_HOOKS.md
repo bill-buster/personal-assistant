@@ -44,7 +44,7 @@ git commit -m "feat: new feature"
 
 # Hook runs and finds issues:
 # ❌ Formatting issues found
-# 
+#
 # You'll see:
 # - What failed
 # - How to fix it
@@ -168,11 +168,13 @@ ls -la .husky/pre-commit
 ### Hook Too Slow
 
 The hook is designed to be fast:
+
 - Cleanup: < 1s
 - Fix: < 5s
 - Checks: < 10s
 
 If it's slow, check:
+
 - Large number of files changed
 - TypeScript compilation issues
 - Network issues (if checking remote)
@@ -200,4 +202,3 @@ If hook is too strict:
 ✅ **Auto-fix**: Enabled
 
 **Everything runs automatically!** 🎉
-

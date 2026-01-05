@@ -291,9 +291,7 @@ function saveProgress(progress: ReviewProgress): void {
 
 function initializeProgress(targetDir: string): ReviewProgress {
     const projectRoot = path.resolve(__dirname, '..', '..');
-    const fullTarget = path.isAbsolute(targetDir)
-        ? targetDir
-        : path.join(projectRoot, targetDir);
+    const fullTarget = path.isAbsolute(targetDir) ? targetDir : path.join(projectRoot, targetDir);
 
     const files = findSourceFiles(fullTarget);
 
@@ -342,7 +340,9 @@ function printStatus(progress: ReviewProgress): void {
     console.log('📊 Incremental Review Status\n');
     console.log('='.repeat(60));
     console.log(`Total files: ${progress.totalFiles}`);
-    console.log(`Reviewed: ${progress.reviewedFiles.length} (${((progress.reviewedFiles.length / progress.totalFiles) * 100).toFixed(1)}%)`);
+    console.log(
+        `Reviewed: ${progress.reviewedFiles.length} (${((progress.reviewedFiles.length / progress.totalFiles) * 100).toFixed(1)}%)`
+    );
     console.log(`Remaining: ${progress.totalFiles - progress.reviewedFiles.length}`);
     console.log(`Last updated: ${progress.lastUpdated}`);
     console.log('');
@@ -493,4 +493,3 @@ if (require.main === module) {
 }
 
 export {};
-

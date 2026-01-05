@@ -20,6 +20,7 @@ npm run compile
 ```
 
 Then in VS Code:
+
 1. Press F5 to open Extension Development Host
 2. Or package with `vsce package` and install the `.vsix` file
 
@@ -29,8 +30,8 @@ Add to your VS Code settings:
 
 ```json
 {
-  "personalAssistant.executablePath": "assistant",
-  "personalAssistant.dataDir": ""
+    "personalAssistant.executablePath": "assistant",
+    "personalAssistant.dataDir": ""
 }
 ```
 
@@ -46,6 +47,7 @@ Add to your VS Code settings:
 ### Context Menu
 
 Right-click selected text:
+
 - "Remember: Store selection in memory"
 - "Task: Add task from selection"
 
@@ -87,4 +89,3 @@ npm run watch  # Watch mode for development
 ```
 
 Press F5 in VS Code to debug the extension.
-

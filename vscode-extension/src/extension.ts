@@ -71,7 +71,9 @@ export function activate(context: vscode.ExtensionContext) {
 
             try {
                 await runAssistant('remember', [selection]);
-                vscode.window.showInformationMessage(`✓ Remembered: ${selection.substring(0, 50)}...`);
+                vscode.window.showInformationMessage(
+                    `✓ Remembered: ${selection.substring(0, 50)}...`
+                );
             } catch (error: any) {
                 vscode.window.showErrorMessage(`Failed to remember: ${error.message}`);
             }
@@ -98,74 +100,81 @@ export function activate(context: vscode.ExtensionContext) {
     });
 
     // Task add command
-    const taskAddCommand = vscode.commands.registerCommand('personal-assistant.taskAdd', async () => {
-        const editor = vscode.window.activeTextEditor;
-        let text = '';
+    const taskAddCommand = vscode.commands.registerCommand(
+        'personal-assistant.taskAdd',
+        async () => {
+            const editor = vscode.window.activeTextEditor;
+            let text = '';
 
-        if (editor) {
-            const selection = editor.document.getText(editor.selection);
-            if (selection.trim()) {
-                text = selection.trim();
+            if (editor) {
+                const selection = editor.document.getText(editor.selection);
+                if (selection.trim()) {
+                    text = selection.trim();
+                }
+            }
+
+            if (!text) {
+                const input = await vscode.window.showInputBox({
+                    prompt: 'Enter task description',
+                    placeHolder: 'Task text...',
+                });
+                if (!input) {
+                    return;
+                }
+                text = input;
+            }
+
+            try {
+                await runAssistant('task', ['add', text]);
+                vscode.window.showInformationMessage(`✓ Task added: ${text.substring(0, 50)}...`);
+            } catch (error: any) {
+                vscode.window.showErrorMessage(`Failed to add task: ${error.message}`);
             }
         }
+    );
 
-        if (!text) {
+    // General command (Cmd+Shift+A)
+    const commandCommand = vscode.commands.registerCommand(
+        'personal-assistant.command',
+        async () => {
             const input = await vscode.window.showInputBox({
-                prompt: 'Enter task description',
-                placeHolder: 'Task text...',
+                prompt: 'Assistant command',
+                placeHolder:
+                    'e.g., "remember: This function handles auth" or "task add: Review PR"',
             });
+
             if (!input) {
                 return;
             }
-            text = input;
-        }
 
-        try {
-            await runAssistant('task', ['add', text]);
-            vscode.window.showInformationMessage(`✓ Task added: ${text.substring(0, 50)}...`);
-        } catch (error: any) {
-            vscode.window.showErrorMessage(`Failed to add task: ${error.message}`);
-        }
-    });
+            try {
+                // Parse input - if it starts with "remember:", "task add:", etc., route accordingly
+                let command = 'spike';
+                let args: string[] = [];
 
-    // General command (Cmd+Shift+A)
-    const commandCommand = vscode.commands.registerCommand('personal-assistant.command', async () => {
-        const input = await vscode.window.showInputBox({
-            prompt: 'Assistant command',
-            placeHolder: 'e.g., "remember: This function handles auth" or "task add: Review PR"',
-        });
+                if (input.startsWith('remember:')) {
+                    command = 'remember';
+                    args = [input.substring(9).trim()];
+                } else if (input.startsWith('recall:')) {
+                    command = 'recall';
+                    args = [input.substring(7).trim(), '--human'];
+                } else if (input.startsWith('task add:')) {
+                    command = 'task';
+                    args = ['add', input.substring(9).trim()];
+                } else {
+                    // Use router mode - pass through to assistant
+                    const result = await runAssistant('', [input, '--human']);
+                    vscode.window.showInformationMessage(result || 'Command completed');
+                    return;
+                }
 
-        if (!input) {
-            return;
-        }
-
-        try {
-            // Parse input - if it starts with "remember:", "task add:", etc., route accordingly
-            let command = 'spike';
-            let args: string[] = [];
-
-            if (input.startsWith('remember:')) {
-                command = 'remember';
-                args = [input.substring(9).trim()];
-            } else if (input.startsWith('recall:')) {
-                command = 'recall';
-                args = [input.substring(7).trim(), '--human'];
-            } else if (input.startsWith('task add:')) {
-                command = 'task';
-                args = ['add', input.substring(9).trim()];
-            } else {
-                // Use router mode - pass through to assistant
-                const result = await runAssistant('', [input, '--human']);
+                const result = await runAssistant(command, args);
                 vscode.window.showInformationMessage(result || 'Command completed');
-                return;
+            } catch (error: any) {
+                vscode.window.showErrorMessage(`Command failed: ${error.message}`);
             }
-
-            const result = await runAssistant(command, args);
-            vscode.window.showInformationMessage(result || 'Command completed');
-        } catch (error: any) {
-            vscode.window.showErrorMessage(`Command failed: ${error.message}`);
         }
-    });
+    );
 
     context.subscriptions.push(rememberCommand, recallCommand, taskAddCommand, commandCommand);
 }
@@ -173,4 +182,3 @@ export function activate(context: vscode.ExtensionContext) {
 export function deactivate() {
     // Cleanup if needed
 }
-

@@ -39,6 +39,7 @@ npm run preflight
 ```
 
 This runs:
+
 1. ✓ Lint
 2. ✓ Type check
 3. ✓ Build
@@ -115,6 +116,7 @@ npm run fix
 See `.cursor/rules/tools.mdc` for the full checklist.
 
 Quick version:
+
 1. Schema in `src/core/types.ts`
 2. Handler in `src/tools/`
 3. Register in `src/core/tool_registry.ts`
@@ -164,4 +166,3 @@ src/
 - Run `npm run doctor`
 - Look at similar existing code
 - See [docs/CACHING.md](docs/CACHING.md) for caching details
-

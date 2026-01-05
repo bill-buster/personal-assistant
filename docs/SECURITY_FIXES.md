@@ -9,12 +9,14 @@
 **Location**: Lines 61-62, 68, 74
 
 **Before**:
+
 ```typescript
 let filePath = pathname === '/' ? '/index.html' : pathname;
-filePath = path.join(webDir, filePath);  // ❌ Vulnerable to path traversal
+filePath = path.join(webDir, filePath); // ❌ Vulnerable to path traversal
 ```
 
 **After**:
+
 ```typescript
 let filePath = pathname === '/' ? '/index.html' : pathname;
 
@@ -29,7 +31,7 @@ if (!resolvedPath.startsWith(path.resolve(webDir))) {
     return;
 }
 
-filePath = resolvedPath;  // ✅ Safe
+filePath = resolvedPath; // ✅ Safe
 ```
 
 **Fix**: Added path normalization and validation to prevent directory traversal attacks.
@@ -41,12 +43,14 @@ filePath = resolvedPath;  // ✅ Safe
 **Location**: Lines 64-65
 
 **Before**:
+
 ```typescript
 .replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gim, '')
 .replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gim, '')
 ```
 
 **After**:
+
 ```typescript
 .replace(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/gim, '')
 .replace(/<style\b[^>]*>([\s\S]*?)<\/style\s*>/gim, '')
@@ -61,13 +65,15 @@ filePath = resolvedPath;  // ✅ Safe
 **Location**: Line 174
 
 **Before**:
+
 ```typescript
-return `"${arg.replace(/"/g, '\\"')}"`;  // ❌ Doesn't escape backslashes
+return `"${arg.replace(/"/g, '\\"')}"`; // ❌ Doesn't escape backslashes
 ```
 
 **After**:
+
 ```typescript
-return `"${arg.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;  // ✅ Escapes backslashes first
+return `"${arg.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`; // ✅ Escapes backslashes first
 ```
 
 **Fix**: Escape backslashes before escaping quotes to prevent incomplete escaping vulnerabilities.
@@ -90,4 +96,3 @@ codeql database analyze codeql-db codeql/javascript-queries --format=csv --outpu
 - Path traversal: Fixed
 - HTML sanitization: Improved
 - String escaping: Fixed
-

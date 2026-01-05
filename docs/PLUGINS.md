@@ -17,30 +17,30 @@ Plugins are located in `~/.assistant/plugins/`. Each plugin is a directory with:
 
 ```json
 {
-  "name": "my-plugin",
-  "version": "1.0.0",
-  "description": "My custom tool plugin",
-  "tools": [
-    {
-      "name": "my_tool",
-      "handler": "handleMyTool",
-      "schema": {
-        "status": "ready",
-        "description": "Does something useful",
-        "required": ["arg1"],
-        "parameters": {
-          "arg1": {
-            "type": "string",
-            "description": "First argument"
-          },
-          "arg2": {
-            "type": "integer",
-            "description": "Optional second argument"
-          }
+    "name": "my-plugin",
+    "version": "1.0.0",
+    "description": "My custom tool plugin",
+    "tools": [
+        {
+            "name": "my_tool",
+            "handler": "handleMyTool",
+            "schema": {
+                "status": "ready",
+                "description": "Does something useful",
+                "required": ["arg1"],
+                "parameters": {
+                    "arg1": {
+                        "type": "string",
+                        "description": "First argument"
+                    },
+                    "arg2": {
+                        "type": "integer",
+                        "description": "Optional second argument"
+                    }
+                }
+            }
         }
-      }
-    }
-  ]
+    ]
 }
 ```
 
@@ -106,10 +106,7 @@ The schema in `package.json` follows the `ToolSpec` format:
 ## Tool Handler Signature
 
 ```typescript
-function handleTool(
-    args: ToolArgs,
-    context: ExecutorContext
-): ToolResult | Promise<ToolResult>
+function handleTool(args: ToolArgs, context: ExecutorContext): ToolResult | Promise<ToolResult>;
 ```
 
 ### ExecutorContext
@@ -120,7 +117,7 @@ interface ExecutorContext {
         resolveAllowed(path: string, operation: 'read' | 'write'): string;
         getDataDir(): string;
     };
-    start: number;  // Timestamp in ms
+    start: number; // Timestamp in ms
     config: ResolvedConfig;
 }
 ```
@@ -142,30 +139,30 @@ interface ToolResult {
 
 ```json
 {
-  "name": "calculator",
-  "version": "1.0.0",
-  "description": "Advanced calculator operations",
-  "tools": [
-    {
-      "name": "power",
-      "handler": "handlePower",
-      "schema": {
-        "status": "ready",
-        "description": "Calculate base raised to exponent",
-        "required": ["base", "exponent"],
-        "parameters": {
-          "base": {
-            "type": "number",
-            "description": "Base number"
-          },
-          "exponent": {
-            "type": "number",
-            "description": "Exponent"
-          }
+    "name": "calculator",
+    "version": "1.0.0",
+    "description": "Advanced calculator operations",
+    "tools": [
+        {
+            "name": "power",
+            "handler": "handlePower",
+            "schema": {
+                "status": "ready",
+                "description": "Calculate base raised to exponent",
+                "required": ["base", "exponent"],
+                "parameters": {
+                    "base": {
+                        "type": "number",
+                        "description": "Base number"
+                    },
+                    "exponent": {
+                        "type": "number",
+                        "description": "Exponent"
+                    }
+                }
+            }
         }
-      }
-    }
-  ]
+    ]
 }
 ```
 
@@ -204,18 +201,19 @@ assistant plugins list
 ```
 
 Output:
+
 ```json
 {
-  "plugins": [
-    {
-      "name": "calculator",
-      "version": "1.0.0",
-      "description": "Advanced calculator operations",
-      "tools": ["power"]
-    }
-  ],
-  "total": 1,
-  "plugins_dir": "/Users/you/.assistant/plugins"
+    "plugins": [
+        {
+            "name": "calculator",
+            "version": "1.0.0",
+            "description": "Advanced calculator operations",
+            "tools": ["power"]
+        }
+    ],
+    "total": 1,
+    "plugins_dir": "/Users/you/.assistant/plugins"
 }
 ```
 
@@ -245,6 +243,7 @@ If a plugin tool conflicts with a built-in tool name, the built-in tool takes pr
 ## Error Handling
 
 If a plugin fails to load:
+
 - The error is logged to console
 - The assistant continues with built-in tools only
 - Other plugins are still loaded
@@ -287,4 +286,3 @@ If a plugin fails to load:
 1. Check schema matches ToolSpec format
 2. Verify parameter types are correct
 3. Ensure required fields are marked correctly
-

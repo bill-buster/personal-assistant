@@ -5,6 +5,7 @@
 ### ✅ Scripts → `src/scripts/`
 
 **Executable code** that performs actions:
+
 - `code_review.ts` - Runs reviews, analyzes code
 - `code_review_fix.ts` - Auto-fixes issues
 - `refactor.ts` - Detects refactoring opportunities
@@ -15,6 +16,7 @@
 ### ✅ Patterns/Rules → `.cursor/rules/*.mdc`
 
 **Guidelines and patterns** for AI to follow:
+
 - `code_review.mdc` - Review checklist, patterns, examples
 - `security.mdc` - Security patterns
 - `errors.mdc` - Error handling patterns
@@ -24,12 +26,14 @@
 ## Best Practice: Separation of Concerns
 
 ### Scripts (Executable)
+
 - **Location**: `src/scripts/`
 - **Purpose**: Run analysis, generate reports, auto-fix
 - **Usage**: `npm run review`, `node dist/scripts/code_review.js`
 - **Examples**: ESLint, Prettier, TypeScript compiler
 
 ### Rules (AI Guidance)
+
 - **Location**: `.cursor/rules/*.mdc`
 - **Purpose**: Guide AI to follow patterns
 - **Usage**: Cursor reads automatically when relevant
@@ -38,6 +42,7 @@
 ## Why This Separation?
 
 ### Scripts Are:
+
 - ✅ Executable code (TypeScript → JavaScript)
 - ✅ Run via CLI (`npm run review`)
 - ✅ Can be tested (`code_review.test.ts`)
@@ -45,6 +50,7 @@
 - ✅ Part of build process
 
 ### Rules Are:
+
 - ✅ Documentation/guidelines
 - ✅ Read by Cursor AI automatically
 - ✅ Define patterns, not implementation
@@ -75,24 +81,29 @@ docs/
 ### Similar Tools
 
 **ESLint**:
+
 - **Script**: `node_modules/.bin/eslint` (executable)
 - **Rules**: `.eslintrc.js` (configuration/patterns)
 
 **Prettier**:
+
 - **Script**: `node_modules/.bin/prettier` (executable)
 - **Config**: `.prettierrc` (configuration)
 
 **TypeScript**:
+
 - **Script**: `node_modules/.bin/tsc` (executable)
 - **Config**: `tsconfig.json` (configuration)
 
 **Our Code Review**:
+
 - **Script**: `src/scripts/code_review.ts` (executable) ✅
 - **Rules**: `.cursor/rules/code_review.mdc` (patterns) ✅
 
 ## When to Use What
 
 ### Use Scripts When:
+
 - ✅ Need to analyze code programmatically
 - ✅ Need to generate reports
 - ✅ Need to auto-fix issues
@@ -100,6 +111,7 @@ docs/
 - ✅ Need to measure metrics
 
 ### Use Rules When:
+
 - ✅ Need to guide AI behavior
 - ✅ Need to define patterns
 - ✅ Need to provide examples
@@ -124,16 +136,20 @@ const rules = fs.readFileSync(rulesPath, 'utf8');
 
 Rules document how to use scripts:
 
-```markdown
+````markdown
 # In code_review.mdc
+
 ## Running Reviews
 
 Use the review script:
+
 ```bash
 npm run review
 ```
+````
 
 This runs `src/scripts/code_review.ts` which checks...
+
 ```
 
 ## Conclusion
@@ -146,3 +162,4 @@ This runs `src/scripts/code_review.ts` which checks...
 
 This follows industry best practices and separation of concerns.
 
+```

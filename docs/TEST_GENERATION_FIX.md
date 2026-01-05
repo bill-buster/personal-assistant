@@ -9,11 +9,13 @@ The `assistant generate tests` command was failing for tools that import their s
 ## Root Cause
 
 The test generation script was only looking for schemas defined directly in the tool file using:
+
 ```typescript
 export const MyToolSchema = z.object({...})
 ```
 
 But some tools (like `fetch_tools.ts`) import their types:
+
 ```typescript
 import { ReadUrlArgs } from '../core/types';
 ```
@@ -62,4 +64,3 @@ npm run build && TEST_DIST=1 node dist/tools/fetch_tools_tools.test.js
 ## Status
 
 ✅ **Fixed** - Test generation now works for all tools regardless of schema location
-

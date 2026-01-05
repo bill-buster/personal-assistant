@@ -37,12 +37,14 @@ docker-compose run assistant npm test
 ## Volumes
 
 The Docker setup mounts:
+
 - `~/.assistant-data` → `/root/.assistant-data` (data storage)
 - `~/.assistant` → `/root/.assistant` (configuration)
 
 ## Environment Variables
 
 Set via `-e` flag or in `docker-compose.yml`:
+
 - `GROQ_API_KEY` - Groq API key
 - `OPENROUTER_API_KEY` - OpenRouter API key
 - `ASSISTANT_DATA_DIR` - Override data directory (default: `/root/.assistant-data`)
@@ -92,6 +94,5 @@ Change the port mapping in `docker-compose.yml`:
 
 ```yaml
 ports:
-  - "3001:3000"  # Use port 3001 on host
+    - '3001:3000' # Use port 3001 on host
 ```
-

@@ -55,15 +55,19 @@ function renderTasks(tasks) {
         return;
     }
 
-    taskList.innerHTML = tasks.map(task => `
+    taskList.innerHTML = tasks
+        .map(
+            task => `
         <li class="${task.done ? 'done' : ''}" data-id="${task.id}">
             <span>${escapeHtml(task.text)}</span>
             ${!task.done ? `<button onclick="completeTask(${task.id})">Done</button>` : ''}
         </li>
-    `).join('');
+    `
+        )
+        .join('');
 }
 
-taskForm.addEventListener('submit', async (e) => {
+taskForm.addEventListener('submit', async e => {
     e.preventDefault();
     const text = taskInput.value.trim();
     if (!text) return;
@@ -72,7 +76,7 @@ taskForm.addEventListener('submit', async (e) => {
         const res = await fetch(`${API_BASE}/api/tasks`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text })
+            body: JSON.stringify({ text }),
         });
 
         if (res.ok) {
@@ -89,7 +93,7 @@ async function completeTask(id) {
         await fetch(`${API_BASE}/api/tasks/done`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id })
+            body: JSON.stringify({ id }),
         });
         await loadTasks();
     } catch (err) {
@@ -98,7 +102,7 @@ async function completeTask(id) {
 }
 
 // Memory
-memoryForm.addEventListener('submit', async (e) => {
+memoryForm.addEventListener('submit', async e => {
     e.preventDefault();
     const text = memoryInput.value.trim();
     if (!text) return;
@@ -107,7 +111,7 @@ memoryForm.addEventListener('submit', async (e) => {
         const res = await fetch(`${API_BASE}/api/memory`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text })
+            body: JSON.stringify({ text }),
         });
 
         if (res.ok) {
@@ -135,7 +139,7 @@ searchBtn.addEventListener('click', async () => {
     }
 });
 
-memorySearch.addEventListener('keypress', (e) => {
+memorySearch.addEventListener('keypress', e => {
     if (e.key === 'Enter') searchBtn.click();
 });
 
@@ -145,12 +149,16 @@ function renderMemory(entries) {
         return;
     }
 
-    memoryList.innerHTML = entries.map(entry => `
+    memoryList.innerHTML = entries
+        .map(
+            entry => `
         <li class="memory-item">
             <span>${escapeHtml(entry.text)}</span>
             <span class="time">${formatTime(entry.ts)}</span>
         </li>
-    `).join('');
+    `
+        )
+        .join('');
 }
 
 // Utilities

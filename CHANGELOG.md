@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - Streaming responses in REPL mode (enabled by default)
 - Plugin system for loading external tools from `~/.assistant/plugins/`
 - VS Code extension for inline commands (Cmd+Shift+A)
@@ -18,16 +19,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cursor rules for better AI assistance (10 rule files)
 
 ### Changed
+
 - REPL now streams responses by default
 - Tests run in parallel by default
 - Plugin tools are automatically loaded on startup
 
 ### Fixed
+
 - Documentation gaps filled per documentation.mdc requirements
 
 ## [0.1.0] - 2025-01-05
 
 ### Added
+
 - Initial release
 - CLI interface
 - REPL mode
@@ -37,4 +41,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Memory and task management
 - Git integration (read-only)
 - File operations (sandboxed)
-

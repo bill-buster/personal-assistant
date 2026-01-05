@@ -70,6 +70,7 @@ npm run dev:watch   # Start REPL with hot reload
 ### Pre-commit Hook
 
 Automatically runs on `git commit`:
+
 - ESLint with `--fix` on staged `.ts` files
 - Prettier formatting on staged `.ts` files
 
@@ -78,6 +79,7 @@ Automatically runs on `git commit`:
 ### Pre-push Hook
 
 Automatically runs on `git push`:
+
 - `npm run check` (typecheck + lint + format check)
 - `npm test` (all tests)
 
@@ -90,20 +92,20 @@ Automatically runs on `git push`:
 Press `F5` in VS Code and select:
 
 1. **Debug CLI** - Debug any CLI command
-   - Prompts for command input
-   - Sets breakpoints in TypeScript source
+    - Prompts for command input
+    - Sets breakpoints in TypeScript source
 
 2. **Debug REPL** - Debug REPL interactions
-   - Starts REPL with debugger attached
-   - Step through REPL code
+    - Starts REPL with debugger attached
+    - Step through REPL code
 
 3. **Debug Current Test** - Debug the test file you're editing
-   - Automatically detects test file
-   - Runs with debugger attached
+    - Automatically detects test file
+    - Runs with debugger attached
 
 4. **Debug Web Server** - Debug web dashboard
-   - Starts web server on port 3000
-   - Debug server-side code
+    - Starts web server on port 3000
+    - Debug server-side code
 
 ### Command Line Debugging
 
@@ -126,6 +128,7 @@ npm run test:coverage:open
 ```
 
 Coverage reports are saved to `coverage/` directory:
+
 - `coverage/index.html` - HTML report
 - `coverage/lcov.info` - LCOV format (for CI)
 - `coverage/lcov-report/` - Detailed HTML report
@@ -147,6 +150,7 @@ node --prof-process isolate-*.log > profile.txt
 ```
 
 The profile shows:
+
 - Function call counts
 - Time spent in each function
 - Call graph
@@ -165,6 +169,7 @@ kill -SIGUSR2 <PID>
 ```
 
 Heap snapshots can be opened in Chrome DevTools:
+
 1. Open `chrome://inspect`
 2. Click "Open dedicated DevTools for Node"
 3. Go to Memory tab
@@ -175,6 +180,7 @@ Heap snapshots can be opened in Chrome DevTools:
 Code is automatically formatted on save (VS Code) or via pre-commit hook.
 
 **Prettier Config** (`.prettierrc`):
+
 - Single quotes
 - 4-space indentation
 - Semicolons
@@ -182,6 +188,7 @@ Code is automatically formatted on save (VS Code) or via pre-commit hook.
 - LF line endings
 
 **To format manually**:
+
 ```bash
 npm run format           # Format all files
 npm run format:check     # Check formatting
@@ -238,4 +245,3 @@ npm run prepare
 - [ESLint Rules](https://eslint.org/docs/rules/)
 - [Prettier Options](https://prettier.io/docs/en/options.html)
 - [Node.js Profiling](https://nodejs.org/en/docs/guides/simple-profiling/)
-

@@ -37,6 +37,7 @@ cat review-baseline.txt | head -30
 ```
 
 **What you'll get**:
+
 - Files reviewed
 - Total issues by category
 - Critical issues list
@@ -50,6 +51,7 @@ cat review-baseline.txt | head -30
 
 ```markdown
 # Open file in Cursor
+
 # Use this prompt:
 
 "Review [file] for [issue_type] issues.
@@ -59,6 +61,7 @@ Review the file in isolation (no context of other files)."
 ```
 
 **Example**:
+
 ```markdown
 "Review src/tools/file_tools.ts for security issues.
 The code review tool found: Potential path traversal at line 45.
@@ -82,12 +85,14 @@ npm run review | grep "Score:" | sort -t: -k2 -n
 ```
 
 **Cursor Prompt**:
+
 ```markdown
 "Review [file] systematically using code_review.mdc checklist.
 Review it as if you have NO knowledge of other files in the codebase.
 This ensures we catch issues that rely on implicit context.
 
 Check each category:
+
 1. Security: Path validation, command validation, secrets
 2. Performance: Sync I/O, sequential async, regex compilation
 3. Quality: Type safety, naming, complexity, unused code
@@ -96,6 +101,7 @@ Check each category:
 6. Documentation: Missing JSDoc, unclear comments
 
 For each issue found:
+
 - Provide line number
 - Explain the issue
 - Suggest specific fix
@@ -144,12 +150,14 @@ npm run review [file]
 ```markdown
 "Review [file] in complete isolation.
 Pretend you have NO knowledge of:
+
 - Other files in the codebase
 - How other modules work
 - Implicit conventions
 
 Review it as if it's the first time you've seen it.
 This will help catch:
+
 - Missing documentation
 - Implicit dependencies
 - Unclear code
@@ -164,6 +172,7 @@ Use code_review.mdc checklist."
 
 ```markdown
 "Review [file] specifically for [category]:
+
 - Security vulnerabilities
 - Performance bottlenecks
 - Type safety issues
@@ -171,6 +180,7 @@ Use code_review.mdc checklist."
 - Test coverage gaps
 
 Provide detailed analysis with:
+
 - Specific line numbers
 - Code examples
 - Impact assessment
@@ -183,6 +193,7 @@ Provide detailed analysis with:
 
 ```markdown
 "Compare [file1] and [file2] for consistency:
+
 - Do they follow the same error handling patterns?
 - Do they use the same validation approach?
 - Are naming conventions consistent?
@@ -198,6 +209,7 @@ Prefer the better pattern and apply it to both."
 
 ```markdown
 "Review the architecture of [directory]:
+
 - Are responsibilities clear?
 - Is coupling low?
 - Is cohesion high?
@@ -251,18 +263,23 @@ diff reviews/20250101.txt reviews/20250201.txt
 
 ```markdown
 # Basic review
+
 "Review [file] using code_review.mdc checklist"
 
 # Isolated review (recommended)
+
 "Review [file] in isolation (no context of other files) using code_review.mdc"
 
 # Security-focused
+
 "Review [file] for security vulnerabilities. Check for path traversal, shell injection, secrets in logs."
 
 # Performance-focused
+
 "Review [file] for performance issues. Check for sync I/O, sequential async, regex compilation."
 
 # Quality-focused
+
 "Review [file] for code quality. Check types, naming, complexity, documentation."
 ```
 
@@ -270,12 +287,15 @@ diff reviews/20250101.txt reviews/20250201.txt
 
 ```markdown
 # Fix specific issue
+
 "Fix [issue] at line [N] in [file] using code_review.mdc patterns"
 
 # Fix all issues
+
 "Fix all code review issues in [file]. Apply fixes from code_review.mdc"
 
 # Fix category
+
 "Fix all [security/performance/quality] issues in [file]"
 ```
 
@@ -283,15 +303,19 @@ diff reviews/20250101.txt reviews/20250201.txt
 
 ```markdown
 # Suggest improvements
+
 "What are 5 ways to improve [file]? Prioritize by impact."
 
 # Refactor
+
 "Refactor [file] to improve type safety, error handling, and readability"
 
 # Simplify
+
 "How can [file] be simplified? What can be removed?"
 
 # Extract patterns
+
 "What patterns can be extracted from [file]? How can we reuse them?"
 ```
 
@@ -407,6 +431,7 @@ cp .cursor/rules/code_review.mdc [other-project]/.cursor/rules/
 ### 2. Adapt Checklist
 
 **Update `code_review.mdc`** for project-specific patterns:
+
 - Language-specific issues
 - Framework-specific patterns
 - Project conventions
@@ -424,7 +449,8 @@ npm run review:fix
 
 ## Conclusion
 
-**The Secret**: 
+**The Secret**:
+
 1. Review systematically (no context)
 2. Fix with Cursor (AI-powered)
 3. Measure progress (track scores)
@@ -433,4 +459,3 @@ npm run review:fix
 **Result**: Codebase that gets better every week! 🚀
 
 Start with one file today, fix issues, measure improvement, repeat tomorrow.
-

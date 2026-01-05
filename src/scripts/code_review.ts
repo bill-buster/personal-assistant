@@ -67,9 +67,14 @@ interface PatternCheck {
 const REVIEW_CHECKLIST: Record<string, PatternCheck[]> = {
     security: [
         {
-            pattern: /path\.join\([^,)]+,\s*[^,)]*[uU]ser[Ii]nput|[uU]ser[Dd]ata|[uU]ser[Pp]rovided/gi,
+            pattern:
+                /path\.join\([^,)]+,\s*[^,)]*[uU]ser[Ii]nput|[uU]ser[Dd]ata|[uU]ser[Pp]rovided/gi,
             issue: 'Potential path traversal - use context.paths.resolveAllowed()',
-            whitelist: [/context\.paths\.resolveAllowed/, /path\.join\(__dirname/, /path\.join\(process\.cwd\(\)/],
+            whitelist: [
+                /context\.paths\.resolveAllowed/,
+                /path\.join\(__dirname/,
+                /path\.join\(process\.cwd\(\)/,
+            ],
         },
         {
             pattern: /exec\([^`]*`[^`]*\$\{[^}]*[uU]ser[Ii]nput|[uU]ser[Dd]ata/gi,
@@ -77,7 +82,8 @@ const REVIEW_CHECKLIST: Record<string, PatternCheck[]> = {
             whitelist: [/context\.commands\.runAllowed/],
         },
         {
-            pattern: /console\.(log|error|warn)\([^)]*(apiKey|password|secret|token|credential)[^)]*[=:]/gi,
+            pattern:
+                /console\.(log|error|warn)\([^)]*(apiKey|password|secret|token|credential)[^)]*[=:]/gi,
             issue: 'Secrets in logs - sanitize before logging',
             contextCheck: (content, index) => {
                 // Check if it's in a comment or string literal
@@ -125,7 +131,10 @@ const REVIEW_CHECKLIST: Record<string, PatternCheck[]> = {
             issue: 'Sequential async operations - consider Promise.all()',
             contextCheck: (content, index) => {
                 // Check if it's a small loop (less likely to be a problem)
-                const context = content.substring(Math.max(0, index - 200), Math.min(content.length, index + 200));
+                const context = content.substring(
+                    Math.max(0, index - 200),
+                    Math.min(content.length, index + 200)
+                );
                 const loopMatch = context.match(/for\s*\([^)]+\)\s*\{/);
                 if (!loopMatch) return true;
                 // Count await statements - if only 1, might be OK
@@ -246,7 +255,7 @@ function analyzeFile(filePath: string): ReviewIssue[] {
     for (const [category, patterns] of Object.entries(REVIEW_CHECKLIST)) {
         for (const check of patterns) {
             const { pattern, issue, whitelist, contextCheck } = check;
-            
+
             // Skip testing checks for test files
             if (category === 'testing' && isTestFile) continue;
 
@@ -263,9 +272,12 @@ function analyzeFile(filePath: string): ReviewIssue[] {
                     for (const whitelistPattern of whitelist) {
                         // Check if whitelist pattern matches nearby context
                         const contextStart = Math.max(0, matchIndex - 200);
-                        const contextEnd = Math.min(content.length, matchIndex + matchText.length + 200);
+                        const contextEnd = Math.min(
+                            content.length,
+                            matchIndex + matchText.length + 200
+                        );
                         const context = content.substring(contextStart, contextEnd);
-                        
+
                         if (whitelistPattern.test(context)) {
                             isWhitelisted = true;
                             break;
@@ -278,9 +290,12 @@ function analyzeFile(filePath: string): ReviewIssue[] {
                 let isGloballyWhitelisted = false;
                 for (const globalWhitelist of WHITELIST_PATTERNS) {
                     const contextStart = Math.max(0, matchIndex - 200);
-                    const contextEnd = Math.min(content.length, matchIndex + matchText.length + 200);
+                    const contextEnd = Math.min(
+                        content.length,
+                        matchIndex + matchText.length + 200
+                    );
                     const context = content.substring(contextStart, contextEnd);
-                    
+
                     if (globalWhitelist.test(context)) {
                         isGloballyWhitelisted = true;
                         break;

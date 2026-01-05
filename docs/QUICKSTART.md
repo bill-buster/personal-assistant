@@ -4,7 +4,7 @@ Get the Personal Assistant running in 5 minutes.
 
 ## Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - npm
 
 ## Installation
@@ -36,10 +36,10 @@ Create `~/.assistant/config.json`:
 
 ```json
 {
-  "defaultProvider": "groq",
-  "apiKeys": {
-    "groq": "your-groq-api-key"
-  }
+    "defaultProvider": "groq",
+    "apiKeys": {
+        "groq": "your-groq-api-key"
+    }
 }
 ```
 
@@ -88,6 +88,7 @@ assistant remember "test" --mock
 ```
 
 Commands in REPL:
+
 - `/help` - Show all commands
 - `/tools` - List available tools
 - `/stats` - Show token usage statistics
@@ -119,11 +120,13 @@ npm run web
 ## Data Location
 
 By default, data is stored in:
+
 - `~/.assistant-data/memory.json` - Memories
 - `~/.assistant-data/tasks.jsonl` - Tasks
 - `~/.assistant-data/reminders.jsonl` - Reminders
 
 Override with:
+
 ```bash
 export ASSISTANT_DATA_DIR=/path/to/data
 export ASSISTANT_CONFIG_DIR=/path/to/config  # Override config directory
@@ -133,21 +136,25 @@ export ASSISTANT_PERMISSIONS_PATH=/path/to/permissions.json  # Override permissi
 ## Troubleshooting
 
 ### "No API key configured"
+
 Set `GROQ_API_KEY` or `OPENROUTER_API_KEY` env var, or use `--mock` for testing.
 
 ### "Command not allowed"
+
 Create `~/.assistant-data/permissions.json`:
+
 ```json
 {
-  "version": 1,
-  "allow_paths": ["./", "~/"],
-  "allow_commands": ["ls", "pwd", "cat", "du"],
-  "require_confirmation_for": [],
-  "deny_tools": []
+    "version": 1,
+    "allow_paths": ["./", "~/"],
+    "allow_commands": ["ls", "pwd", "cat", "du"],
+    "require_confirmation_for": [],
+    "deny_tools": []
 }
 ```
 
 ### Build errors
+
 ```bash
 npm run clean && npm install && npm run build
 ```
@@ -173,4 +180,3 @@ See [vscode-extension/README.md](../vscode-extension/README.md) for details.
 - Explore [docs/PLUGINS.md](./PLUGINS.md) to create custom tools
 - Check [docs/STACK_DECISION.md](./STACK_DECISION.md) for design rationale
 - Run `npm test` to verify your setup
-

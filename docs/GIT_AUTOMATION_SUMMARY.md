@@ -11,10 +11,11 @@ git commit -m "feat: new feature"
 ```
 
 **Automatically does**:
+
 1. ✅ Cleans up generated test files
 2. ✅ Auto-fixes formatting and linting
 3. ✅ Checks formatting
-4. ✅ Checks linting  
+4. ✅ Checks linting
 5. ✅ Checks TypeScript types
 
 **If anything fails**, the commit is blocked and you'll see what to fix.
@@ -28,6 +29,7 @@ git push
 ```
 
 **Automatically does**:
+
 - ✅ Full preflight checks (build, leak check, smoke test)
 
 **If checks fail**, the push is blocked.
@@ -60,7 +62,7 @@ git commit -m "feat: new feature"
 
 # Hook runs and finds:
 # ❌ Type errors found
-# 
+#
 # Shows you:
 # - What failed
 # - How to fix
@@ -96,6 +98,7 @@ git commit -m "feat: new feature"
 ### Setup
 
 Hooks are installed via `husky`:
+
 - Runs automatically on `npm install`
 - Can reinstall with: `npm run prepare`
 
@@ -135,4 +138,3 @@ Hooks are installed via `husky`:
 **Everything runs automatically!** 🎉
 
 Just commit and push - the hooks handle everything!
-

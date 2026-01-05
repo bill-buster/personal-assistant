@@ -11,9 +11,9 @@ labels: bug
 
 ## Steps to Reproduce
 
-1. 
-2. 
-3. 
+1.
+2.
+3.
 
 ## Expected Behavior
 
@@ -25,13 +25,12 @@ labels: bug
 
 ## Environment
 
-- OS: 
-- Node.js: 
-- npm: 
+- OS:
+- Node.js:
+- npm:
 
 ## Logs
 
 ```
 <!-- Paste relevant logs here -->
 ```
-

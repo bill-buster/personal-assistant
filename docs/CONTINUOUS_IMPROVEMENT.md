@@ -23,6 +23,7 @@ This document outlines a systematic approach to continuously improve code qualit
 **Purpose**: Systematic review of entire codebase
 
 **Usage**:
+
 ```bash
 # Review entire codebase
 npm run review
@@ -35,6 +36,7 @@ npm run review src/tools/file_tools.ts
 ```
 
 **What it checks**:
+
 - ✅ Security issues (path traversal, shell injection, secrets)
 - ✅ Performance issues (sync I/O, sequential async, regex)
 - ✅ Code quality (any types, missing docs, nesting)
@@ -49,11 +51,13 @@ npm run review src/tools/file_tools.ts
 **Purpose**: Auto-fix simple issues
 
 **Usage**:
+
 ```bash
 npm run review:fix
 ```
 
 **What it fixes**:
+
 - ✅ Adds missing JSDoc (basic)
 - ✅ Replaces throw with return error (simple cases)
 - ⚠️ More fixes coming...
@@ -63,6 +67,7 @@ npm run review:fix
 ### 3. Refactoring Tools
 
 **Existing tools**:
+
 - `refactor.ts` - Detect refactoring opportunities
 - `refactor_fix.ts` - Auto-fix some issues
 - `batch_refactor.ts` - Batch process multiple files
@@ -91,69 +96,72 @@ cat review-report.txt
 **Goal**: Fix all critical security issues
 
 **Workflow**:
+
 1. Review critical issues from report
 2. For each issue:
-   ```bash
-   # Open file in Cursor
-   # Ask Cursor: "Fix [issue description] in [file]"
-   # Example: "Fix path traversal vulnerability in src/tools/file_tools.ts"
-   ```
+    ```bash
+    # Open file in Cursor
+    # Ask Cursor: "Fix [issue description] in [file]"
+    # Example: "Fix path traversal vulnerability in src/tools/file_tools.ts"
+    ```
 3. Verify fix:
-   ```bash
-   npm run review src/tools/file_tools.ts
-   ```
+    ```bash
+    npm run review src/tools/file_tools.ts
+    ```
 
 ### Phase 3: Systematic Improvement
 
 **Goal**: Improve code quality file by file
 
 **Workflow**:
+
 1. **List files by score** (lowest first)
 2. **For each file**:
-   ```bash
-   # Open file in Cursor
-   # Ask Cursor: "Review this file using code_review.mdc checklist"
-   # Cursor will review systematically:
-   # - Security
-   # - Performance  
-   # - Quality
-   # - Error handling
-   # - Testing
-   # - Documentation
-   ```
+    ```bash
+    # Open file in Cursor
+    # Ask Cursor: "Review this file using code_review.mdc checklist"
+    # Cursor will review systematically:
+    # - Security
+    # - Performance
+    # - Quality
+    # - Error handling
+    # - Testing
+    # - Documentation
+    ```
 3. **Fix issues**:
-   ```bash
-   # Ask Cursor: "Fix all issues found in this review"
-   # Or fix manually based on suggestions
-   ```
+    ```bash
+    # Ask Cursor: "Fix all issues found in this review"
+    # Or fix manually based on suggestions
+    ```
 4. **Verify**:
-   ```bash
-   npm run review [file]
-   npm test
-   ```
+    ```bash
+    npm run review [file]
+    npm test
+    ```
 
 ### Phase 4: Continuous Monitoring
 
 **Goal**: Maintain quality over time
 
 **Workflow**:
+
 1. **Weekly review**:
-   ```bash
-   npm run review
-   # Check for new issues
-   # Fix critical/high issues
-   ```
+    ```bash
+    npm run review
+    # Check for new issues
+    # Fix critical/high issues
+    ```
 2. **Before major features**:
-   ```bash
-   # Review affected files
-   npm run review src/tools/
-   ```
+    ```bash
+    # Review affected files
+    npm run review src/tools/
+    ```
 3. **After refactoring**:
-   ```bash
-   # Verify no regressions
-   npm run review
-   npm test
-   ```
+    ```bash
+    # Verify no regressions
+    npm run review
+    npm test
+    ```
 
 ## Leveraging Cursor for Reviews
 
@@ -162,11 +170,12 @@ cat review-report.txt
 **Best for**: Systematic review without context bias
 
 ```markdown
-Prompt: "Review [file] using the code_review.mdc checklist. 
+Prompt: "Review [file] using the code_review.mdc checklist.
 Review it as if you have no knowledge of other files in the codebase.
 Check for:
+
 1. Security issues
-2. Performance issues  
+2. Performance issues
 3. Code quality issues
 4. Error handling issues
 5. Missing tests
@@ -175,7 +184,8 @@ Check for:
 Provide specific line numbers and suggestions."
 ```
 
-**Why isolated**: 
+**Why isolated**:
+
 - Catches issues that rely on "magic" context
 - Forces explicit dependencies
 - Better documentation
@@ -187,6 +197,7 @@ Provide specific line numbers and suggestions."
 
 ```markdown
 Prompt: "Review [file] specifically for [category]:
+
 - Security vulnerabilities
 - Performance bottlenecks
 - Error handling patterns
@@ -202,6 +213,7 @@ Provide detailed analysis with code examples."
 
 ```markdown
 Prompt: "Compare [file1] and [file2] for consistency:
+
 - Do they follow the same patterns?
 - Are there inconsistencies?
 - Which approach is better?
@@ -214,6 +226,7 @@ Prompt: "Compare [file1] and [file2] for consistency:
 
 ```markdown
 Prompt: "Analyze [file] and suggest improvements:
+
 1. What can be simplified?
 2. What can be optimized?
 3. What patterns can be extracted?
@@ -228,17 +241,20 @@ Prioritize by impact."
 ### Weekly Cycle
 
 **Monday**: Review new code from last week
+
 ```bash
 git log --since="1 week ago" --name-only --pretty=format: | sort -u | grep '\.ts$' | xargs npm run review
 ```
 
 **Wednesday**: Review low-scoring files
+
 ```bash
 npm run review | grep "Score: [0-6][0-9]" | head -5
 # Review and fix top 5
 ```
 
 **Friday**: Review critical categories
+
 ```bash
 npm run review | grep -A 5 "Critical Issues"
 # Fix all critical issues
@@ -247,21 +263,25 @@ npm run review | grep -A 5 "Critical Issues"
 ### Monthly Cycle
 
 **Week 1**: Security review
+
 - Review all security issues
 - Fix critical vulnerabilities
 - Update security patterns
 
 **Week 2**: Performance review
+
 - Profile slow operations
 - Optimize bottlenecks
 - Add caching where needed
 
 **Week 3**: Quality review
+
 - Refactor complex code
 - Improve type safety
 - Add missing documentation
 
 **Week 4**: Testing review
+
 - Improve test coverage
 - Add missing test cases
 - Refactor test code
@@ -299,67 +319,81 @@ diff reviews/baseline-20250101.txt reviews/baseline-20250108.txt
 
 ```markdown
 # Systematic review
-"Review [file] systematically using code_review.mdc. 
+
+"Review [file] systematically using code_review.mdc.
 Review it in isolation (no context of other files).
 Provide specific line numbers and fixes."
 
 # Security review
+
 "Review [file] for security vulnerabilities:
+
 - Path traversal
 - Shell injection
 - Secrets in logs
 - Missing validation
-Provide fixes for each issue."
+  Provide fixes for each issue."
 
 # Performance review
+
 "Review [file] for performance issues:
+
 - Synchronous I/O
 - Sequential async operations
 - Regex compilation
 - Unnecessary operations
-Suggest optimizations."
+  Suggest optimizations."
 
 # Quality review
+
 "Review [file] for code quality:
+
 - Type safety (any types)
 - Function complexity
 - Naming clarity
 - Code duplication
-Suggest improvements."
+  Suggest improvements."
 ```
 
 ### Fix Prompts
 
 ```markdown
 # Fix specific issue
+
 "Fix [issue] in [file] at line [N].
 Use the patterns from code_review.mdc."
 
 # Fix all issues
+
 "Fix all code review issues in [file].
 Apply fixes from code_review.mdc checklist."
 
 # Refactor
+
 "Refactor [file] to improve:
+
 - Type safety
 - Error handling
 - Performance
 - Readability
-Maintain existing functionality."
+  Maintain existing functionality."
 ```
 
 ### Improvement Prompts
 
 ```markdown
 # Suggest improvements
+
 "What are 5 ways to improve [file]?
 Prioritize by impact and effort."
 
 # Extract patterns
+
 "What patterns can be extracted from [file]?
 How can we reuse them?"
 
 # Simplify
+
 "How can [file] be simplified?
 What can be removed or consolidated?"
 ```
@@ -369,6 +403,7 @@ What can be removed or consolidated?"
 ### Pre-Commit Review
 
 **Add to pre-commit hook**:
+
 ```bash
 # Review changed files
 git diff --cached --name-only | grep '\.ts$' | xargs npm run review
@@ -377,6 +412,7 @@ git diff --cached --name-only | grep '\.ts$' | xargs npm run review
 ### Pre-Push Review
 
 **Add to pre-push hook**:
+
 ```bash
 # Review all files (full check)
 npm run review
@@ -385,6 +421,7 @@ npm run review
 ### PR Review
 
 **Before opening PR**:
+
 ```bash
 # Review changed files
 git diff main --name-only | grep '\.ts$' | xargs npm run review
@@ -415,6 +452,7 @@ git diff main --name-only | grep '\.ts$' | xargs npm run review
 
 ```markdown
 Prompt: "Analyze dependencies in [file]:
+
 - What does it depend on?
 - What depends on it?
 - Are dependencies explicit?
@@ -425,22 +463,24 @@ Prompt: "Analyze dependencies in [file]:
 
 ```markdown
 Prompt: "Check if [file] follows the same patterns as [other_file]:
+
 - Error handling
 - Validation
 - Structure
 - Naming
-Suggest how to make them consistent."
+  Suggest how to make them consistent."
 ```
 
 ### Architecture Review
 
 ```markdown
 Prompt: "Review architecture of [directory]:
+
 - Are responsibilities clear?
 - Is coupling low?
 - Is cohesion high?
 - Are there circular dependencies?
-Suggest improvements."
+  Suggest improvements."
 ```
 
 ## Tools Integration
@@ -534,4 +574,3 @@ diff reviews/20250101.txt reviews/20250108.txt
 **Systematic review + Cursor AI + Iterative improvement = Continuously improving codebase**
 
 Start with one file, fix issues, measure progress, repeat. 🚀
-

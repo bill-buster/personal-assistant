@@ -3,6 +3,7 @@
 ## Current Status
 
 **Overall Coverage**: 50.8% average
+
 - **Total files**: 68
 - **Files with tests**: 48
 - **Files without tests**: 20
@@ -13,6 +14,7 @@
 ### ❌ No Coverage (0%) - 20 files
 
 **Scripts** (Priority: Medium):
+
 - `scripts/batch_refactor.ts`
 - `scripts/doctor.ts`
 - `scripts/generate_tests.ts`
@@ -22,6 +24,7 @@
 - `scripts/test_coverage_report.ts`
 
 **Tools** (Priority: High):
+
 - `tools/TestTool_tools.ts` (test tool)
 - `tools/e2e_test_tool2_tools.ts` (test tool)
 - `tools/e2e_test_tool_tools.ts` (test tool)
@@ -29,29 +32,34 @@
 - `tools/test_tool_opt_tools.ts` (test tool)
 
 **Providers** (Priority: Low - mostly unused):
+
 - `providers/llm/embeddings.ts`
 - `llm/index.ts`
 - `llm/providers/MockChatModel.ts`
 
 **Other**:
+
 - `app/router_stream.ts`
 - `core/test_utils.ts` (new, may not need tests)
 
 ### ⚠️ Low Coverage (<80%) - Top Priority
 
 **Critical Tools** (Priority: High):
+
 1. `tools/fetch_tools.ts` - **7.4%** ⚠️
 2. `tools/git_tools.ts` - **14.9%** ⚠️
 3. `tools/utility_tools.ts` - **25.3%** ⚠️
 4. `tools/comms_tools.ts` - **53.9%**
 
 **Core Components** (Priority: High):
+
 1. `app/cli.ts` - **52.7%**
 2. `app/repl.ts` - **35.6%**
 3. `core/validation.ts` - **57.8%**
 4. `core/cache.ts` - **37.5%**
 
 **Providers** (Priority: Medium):
+
 1. `providers/llm/openai_compatible.ts` - **9.5%**
 2. `providers/llm/index.ts` - **31.6%**
 
@@ -62,39 +70,39 @@
 **Goal**: Get all tools to 80%+ coverage
 
 1. **fetch_tools.ts** (7.4% → 80%)
-   - Test: fetch URL, handle errors, validate URLs
-   - Use: `assistant generate tests fetch_tools`
+    - Test: fetch URL, handle errors, validate URLs
+    - Use: `assistant generate tests fetch_tools`
 
 2. **git_tools.ts** (14.9% → 80%)
-   - Test: git status, git log, git diff
-   - Use: `assistant generate tests git_tools`
+    - Test: git status, git log, git diff
+    - Use: `assistant generate tests git_tools`
 
 3. **utility_tools.ts** (25.3% → 80%)
-   - Test: calculate expressions, get_time, get_weather
-   - Use: `assistant generate tests utility_tools`
+    - Test: calculate expressions, get_time, get_weather
+    - Use: `assistant generate tests utility_tools`
 
 4. **comms_tools.ts** (53.9% → 80%)
-   - Test: send_message, read_messages
-   - Use: `assistant generate tests comms_tools`
+    - Test: send_message, read_messages
+    - Use: `assistant generate tests comms_tools`
 
 ### Phase 2: Core Components (Week 2)
 
 **Goal**: Get core components to 80%+ coverage
 
 1. **app/cli.ts** (52.7% → 80%)
-   - Test: All CLI commands
-   - E2E tests already cover some, add unit tests
+    - Test: All CLI commands
+    - E2E tests already cover some, add unit tests
 
 2. **app/repl.ts** (35.6% → 80%)
-   - Test: REPL commands, command parsing
-   - Integration tests
+    - Test: REPL commands, command parsing
+    - Integration tests
 
 3. **core/validation.ts** (57.8% → 80%)
-   - Test: All validation functions
-   - Edge cases, error handling
+    - Test: All validation functions
+    - Edge cases, error handling
 
 4. **core/cache.ts** (37.5% → 80%)
-   - Test: Cache operations, expiration, cleanup
+    - Test: Cache operations, expiration, cleanup
 
 ### Phase 3: Scripts (Week 3)
 
@@ -123,6 +131,7 @@
 ### 1. Generate Tests for Low-Coverage Files
 
 **Workflow**:
+
 ```
 1. Run: npm run test:coverage:report
 2. Identify low-coverage file
@@ -134,6 +143,7 @@
 ### 2. Identify Missing Test Cases
 
 **Workflow**:
+
 ```
 1. Open low-coverage file
 2. Ask Cursor: "What test cases are missing for this file?"
@@ -147,6 +157,7 @@
 ### 3. Improve Existing Tests
 
 **Workflow**:
+
 ```
 1. Open test file
 2. Ask Cursor: "How can I improve these tests?"
@@ -160,6 +171,7 @@
 ### 4. Coverage-Driven Development
 
 **Workflow**:
+
 ```
 1. Write code
 2. Run: npm run test:coverage:report
@@ -187,16 +199,19 @@ npm run test:coverage:open
 ## Coverage Goals
 
 ### Short Term (1 month)
+
 - **All tools**: 80%+ coverage
 - **Core components**: 80%+ coverage
 - **Scripts**: 70%+ coverage
 
 ### Medium Term (3 months)
+
 - **Overall**: 75%+ average coverage
 - **Critical files**: 90%+ coverage
 - **All files**: 70%+ minimum
 
 ### Long Term (6 months)
+
 - **Overall**: 85%+ average coverage
 - **All files**: 80%+ minimum
 - **Critical files**: 95%+ coverage
@@ -234,6 +249,7 @@ npm run test:coverage:open
 5. 📋 **Add script tests** - Priority 4
 
 **Start Now**:
+
 ```bash
 # See current gaps
 npm run test:coverage:report
@@ -247,4 +263,3 @@ npm run test:single fetch_tools
 # Check coverage improved
 npm run test:coverage:open
 ```
-

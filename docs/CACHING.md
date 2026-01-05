@@ -31,6 +31,7 @@ assistant cache stats
 ### Cache Key Details
 
 The cache key includes:
+
 - Full prompt text
 - Tool schemas (sorted keys for consistency)
 - Last 3 messages from history (for conversation context)
@@ -194,4 +195,3 @@ ls -la .test-results/
 # Clear cache if LLM responses seem outdated
 assistant cache clear
 ```
-

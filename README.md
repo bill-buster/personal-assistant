@@ -87,45 +87,45 @@ Create `~/.assistant/config.json`:
 
 ```json
 {
-  "defaultProvider": "groq",
-  "apiKeys": {
-    "groq": "your-groq-api-key"
-  },
-  "models": {
-    "groq": "llama-3.1-70b-versatile",
-    "openrouter": "anthropic/claude-3.5-sonnet"
-  },
-  "historyLimit": 20,
-  "compactToolSchemas": true,
-  "maxReadSize": 1048576,
-  "maxWriteSize": 10485760,
-  "maxRetries": 3
+    "defaultProvider": "groq",
+    "apiKeys": {
+        "groq": "your-groq-api-key"
+    },
+    "models": {
+        "groq": "llama-3.1-70b-versatile",
+        "openrouter": "anthropic/claude-3.5-sonnet"
+    },
+    "historyLimit": 20,
+    "compactToolSchemas": true,
+    "maxReadSize": 1048576,
+    "maxWriteSize": 10485760,
+    "maxRetries": 3
 }
 ```
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `GROQ_API_KEY` | Groq API key | - |
-| `OPENROUTER_API_KEY` | OpenRouter API key | - |
-| `DEFAULT_PROVIDER` | Default provider (groq, openrouter) | groq |
-| `ASSISTANT_DATA_DIR` | Data storage directory | `~/.assistant-data` |
-| `ASSISTANT_CONFIG_DIR` | Config directory | `~/.assistant` |
-| `ASSISTANT_PERMISSIONS_PATH` | Permissions file path | `~/.assistant/permissions.json` |
+| Variable                     | Description                         | Default                         |
+| ---------------------------- | ----------------------------------- | ------------------------------- |
+| `GROQ_API_KEY`               | Groq API key                        | -                               |
+| `OPENROUTER_API_KEY`         | OpenRouter API key                  | -                               |
+| `DEFAULT_PROVIDER`           | Default provider (groq, openrouter) | groq                            |
+| `ASSISTANT_DATA_DIR`         | Data storage directory              | `~/.assistant-data`             |
+| `ASSISTANT_CONFIG_DIR`       | Config directory                    | `~/.assistant`                  |
+| `ASSISTANT_PERMISSIONS_PATH` | Permissions file path               | `~/.assistant/permissions.json` |
 
 ### Configuration Options
 
-| Option | Type | Description | Default |
-|--------|------|-------------|---------|
-| `defaultProvider` | string | LLM provider (groq, openrouter, mock) | groq |
-| `apiKeys` | object | API keys per provider | {} |
-| `models` | object | Model overrides per provider | {} |
-| `historyLimit` | number | Max messages in history (1-50) | - |
-| `compactToolSchemas` | boolean | Use compact tool schema format | false |
-| `maxReadSize` | number | Max file read size (bytes) | 1048576 (1MB) |
-| `maxWriteSize` | number | Max file write size (bytes) | 10485760 (10MB) |
-| `maxRetries` | number | Max LLM retry attempts (1-10) | - |
+| Option               | Type    | Description                           | Default         |
+| -------------------- | ------- | ------------------------------------- | --------------- |
+| `defaultProvider`    | string  | LLM provider (groq, openrouter, mock) | groq            |
+| `apiKeys`            | object  | API keys per provider                 | {}              |
+| `models`             | object  | Model overrides per provider          | {}              |
+| `historyLimit`       | number  | Max messages in history (1-50)        | -               |
+| `compactToolSchemas` | boolean | Use compact tool schema format        | false           |
+| `maxReadSize`        | number  | Max file read size (bytes)            | 1048576 (1MB)   |
+| `maxWriteSize`       | number  | Max file write size (bytes)           | 10485760 (10MB) |
+| `maxRetries`         | number  | Max LLM retry attempts (1-10)         | -               |
 
 > 📖 **Full Configuration Guide**: See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for detailed configuration options.
 

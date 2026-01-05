@@ -24,6 +24,7 @@ npm run compile
 ```
 
 Then in VS Code:
+
 1. Press F5 to open Extension Development Host
 2. Or package with `vsce package` and install the `.vsix` file
 
@@ -40,4 +41,3 @@ This extension is **optional** and not required for the main CLI assistant to fu
 - `out/` directory is gitignored (build artifacts)
 - `node_modules/` is gitignored (dependencies)
 - Only source code (`src/`) and config files are committed
-

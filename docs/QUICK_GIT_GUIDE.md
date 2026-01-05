@@ -9,6 +9,7 @@ git commit -m "feat: description"
 ```
 
 The pre-commit hook automatically:
+
 1. ✅ Cleans up generated files
 2. ✅ Fixes formatting/linting
 3. ✅ Checks everything
@@ -25,6 +26,7 @@ npm run cleanup && npm run fix && npm run preflight
 ```
 
 This will:
+
 1. ✅ Clean up generated test files
 2. ✅ Auto-fix formatting and linting
 3. ✅ Run all preflight checks
@@ -44,6 +46,7 @@ npm run cleanup
 ```
 
 Removes:
+
 - `test_tool*.ts`
 - `e2e_test*.ts`
 - `TestTool*.ts`
@@ -55,6 +58,7 @@ npm run fix
 ```
 
 Auto-fixes:
+
 - ESLint errors
 - Prettier formatting
 
@@ -65,6 +69,7 @@ npm run preflight
 ```
 
 Runs:
+
 - Format check
 - Lint check
 - Type check
@@ -102,6 +107,7 @@ npm run cleanup
 ```
 
 **Examples**:
+
 - `feat(tools): add generate tests command`
 - `fix(router): handle empty queries`
 - `docs: update git workflow`
@@ -110,6 +116,7 @@ npm run cleanup
 ## ❌ What NOT to Commit
 
 These are auto-ignored (in `.gitignore`):
+
 - Generated test files (`test_tool*.ts`, `e2e_test*.ts`)
 - Build artifacts (`dist/`)
 - Test artifacts (`coverage/`, `.test-results/`)
@@ -150,4 +157,3 @@ npm run preflight
 - **Full Guide**: `docs/GIT_WORKFLOW.md`
 - **Cursor Rules**: `.cursor/rules/git.mdc`
 - **Setup Summary**: `docs/GIT_SETUP_SUMMARY.md`
-

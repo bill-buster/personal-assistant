@@ -42,13 +42,13 @@
 
 ## Why NOT Python (Option B)
 
-| Factor | Assessment |
-|--------|------------|
-| Rewrite effort | ~3k LOC estimate (run `cloc src/` to verify) |
-| Feature parity | Months to reach current functionality |
-| Dependencies | Would need FastAPI, Typer, Pydantic, httpx — heavier |
-| Distribution | Python versioning/venv is user-hostile for CLI tools |
-| Current velocity | We're shipping features now; rewrite = full stop |
+| Factor           | Assessment                                           |
+| ---------------- | ---------------------------------------------------- |
+| Rewrite effort   | ~3k LOC estimate (run `cloc src/` to verify)         |
+| Feature parity   | Months to reach current functionality                |
+| Dependencies     | Would need FastAPI, Typer, Pydantic, httpx — heavier |
+| Distribution     | Python versioning/venv is user-hostile for CLI tools |
+| Current velocity | We're shipping features now; rewrite = full stop     |
 
 **Verdict:** The costs massively outweigh benefits. We have working software.
 
@@ -58,12 +58,12 @@
 
 A hybrid approach (TypeScript core + Python inference sidecar) was considered for local inference support.
 
-| Scenario | Approach | Effort |
-|----------|----------|--------|
-| Use Groq/OpenRouter | Already works | 0 |
-| Add Ollama support | HTTP API from TS | ~50 LOC |
-| Add llama.cpp support | node-llama-cpp or HTTP server | Medium |
-| Add local embeddings | Python sidecar OR Ollama | Medium |
+| Scenario              | Approach                      | Effort  |
+| --------------------- | ----------------------------- | ------- |
+| Use Groq/OpenRouter   | Already works                 | 0       |
+| Add Ollama support    | HTTP API from TS              | ~50 LOC |
+| Add llama.cpp support | node-llama-cpp or HTTP server | Medium  |
+| Add local embeddings  | Python sidecar OR Ollama      | Medium  |
 
 **Current constraint:** 8GB RAM limits local model options anyway. When we have more resources, HTTP-based local adapters are the path forward.
 
@@ -98,24 +98,28 @@ We will reconsider Python or a hybrid architecture if any of the following becom
 ## 30-Day Plan
 
 ### Week 1: Extraction & Hardening
+
 - [ ] Complete migration to `/personal-assistant/`
 - [ ] Verify all tests pass
 - [ ] Add missing smoke tests (root leakage, CLI commands)
 - [ ] Write QUICKSTART.md (5-minute onboarding)
 
 ### Week 2: Provider Abstraction
+
 - [ ] Formalize `ChatModel` interface in `src/llm/ChatModel.ts`
 - [ ] Formalize `EmbeddingModel` interface in `src/embeddings/EmbeddingModel.ts`
 - [ ] Add spend/limits hooks (stubs) for usage tracking
 - [ ] Add Ollama adapter (if Ollama is installed, use it)
 
 ### Week 3: Reliability
+
 - [ ] Unify bootstrap across CLI/REPL/server (single `initializeRuntime()`)
 - [ ] Ensure all storage paths flow through config
 - [ ] Add integration test: full remember → recall flow
 - [ ] Add integration test: task add → list → done flow
 
 ### Week 4: Documentation & Polish
+
 - [ ] Architecture doc updated for new repo
 - [ ] Known limitations updated
 - [ ] README with badges, examples, troubleshooting
@@ -183,7 +187,7 @@ Adding Ollama requires only implementing `ChatModel`:
 // src/llm/providers/ollama.ts (proposed)
 export class OllamaAdapter implements ChatModel {
     constructor(private baseUrl: string = 'http://localhost:11434') {}
-    
+
     async chat(request: ChatRequest): Promise<ChatResponse> {
         // POST to /api/chat
     }

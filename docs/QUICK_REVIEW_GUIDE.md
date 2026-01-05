@@ -12,12 +12,14 @@ npm run review
 ## 📊 Current Status
 
 **Baseline Review**:
+
 - Files reviewed: 72
 - Total issues: 775
 - Critical issues: 34 (security)
 - Average score: 73.3/100
 
 **Top Issues**:
+
 - Security: 34 critical (path traversal, shell injection, secrets)
 - Performance: 67 high (sync I/O, sequential async)
 - Quality: 373 medium (any types, missing docs)
@@ -43,6 +45,7 @@ Review the file in isolation (no context of other files)."
 ```
 
 **Example**:
+
 ```markdown
 "Review src/core/config.ts for security vulnerabilities.
 The code review tool found potential path traversal at line 45.
@@ -103,6 +106,7 @@ Review it as if you have NO knowledge of other files in the codebase.
 This ensures we catch issues that rely on implicit context.
 
 Check each category:
+
 1. Security: Path validation, command validation, secrets
 2. Performance: Sync I/O, sequential async, regex
 3. Quality: Type safety, naming, complexity
@@ -111,6 +115,7 @@ Check each category:
 6. Documentation: Missing JSDoc
 
 For each issue:
+
 - Line number
 - Explanation
 - Specific fix
@@ -175,4 +180,3 @@ npm run review:fix       # Auto-fix simple issues (experimental)
 5. **Documentation** (141 issues) - Add as you go
 
 **Start with critical security issues today!** 🔒
-

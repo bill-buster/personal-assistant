@@ -7,12 +7,14 @@ This document outlines the complete testing strategy for the Personal Assistant 
 ## Current Testing Infrastructure
 
 ### Test Runner
+
 - **Custom test runner**: `src/run_tests.ts`
 - **Parallel execution**: 4 workers by default
 - **Test caching**: Skips unchanged tests
 - **Coverage**: c8 with HTML/LCOV reports
 
 ### Test Files
+
 - **19 test files** covering core functionality
 - **Colocated**: Tests next to source files (`*.test.ts`)
 - **Categories**: Unit, integration, E2E, security
@@ -20,11 +22,13 @@ This document outlines the complete testing strategy for the Personal Assistant 
 ### Coverage Status
 
 **Current Coverage**:
+
 - Overall: ~70% (varies by module)
 - Scripts: 0% (needs tests)
 - Some tools: Low coverage (14-25%)
 
 **Target Coverage**:
+
 - Minimum: 80% for all metrics
 - Critical files: 90%+
 
@@ -33,12 +37,14 @@ This document outlines the complete testing strategy for the Personal Assistant 
 ### 1. Unit Tests ✅
 
 **What to Test**:
+
 - Individual functions
 - Parsers
 - Validators
 - Utilities
 
 **Example**:
+
 ```typescript
 // src/parsers/task_parser.test.ts
 const result = parseTaskCommand('task add buy milk');
@@ -50,11 +56,13 @@ assert.equal(result?.tool?.name, 'task_add');
 ### 2. Integration Tests ✅
 
 **What to Test**:
+
 - Tool execution through Executor
 - Router → Executor flow
 - Storage operations
 
 **Example**:
+
 ```typescript
 // src/executor.test.ts
 const result = await executor.execute('remember', { text: 'test' });
@@ -66,12 +74,14 @@ assert.ok(result.ok);
 ### 3. E2E Tests ✅ NEW
 
 **What to Test**:
+
 - Full CLI commands
 - 100x features (generate, profile)
 - Cache operations
 - Plugin system
 
 **Example**:
+
 ```typescript
 // src/app/cli_e2e.test.ts
 const result = runCli(['generate', 'tool', 'my_tool', '--args', 'text:string']);
@@ -83,11 +93,13 @@ assert.ok(result.json.ok);
 ### 4. Script Tests ✅ NEW
 
 **What to Test**:
+
 - Code generation scripts
 - Test generation scripts
 - Refactoring scripts
 
 **Example**:
+
 ```typescript
 // src/scripts/generate_tool.test.ts
 const result = runGenerateTool(['test_tool', '--args', 'name:string']);
@@ -99,11 +111,13 @@ assert.ok(fs.existsSync('src/tools/test_tool_tools.ts'));
 ### 5. Security Tests ✅
 
 **What to Test**:
+
 - Path validation
 - Command allowlist
 - Permission enforcement
 
 **Example**:
+
 ```typescript
 // src/permissions.test.ts
 const result = executor.execute('run_cmd', { cmd: 'rm', args: ['-rf', '/'] });
@@ -117,17 +131,18 @@ assertError(result, 'DENIED_COMMAND_ALLOWLIST');
 Created `src/core/test_utils.ts` with helpers:
 
 ```typescript
-import { 
-    createMockContext,    // Create test context
-    runCli,               // Run CLI commands
-    assertSuccess,        // Assert success
-    assertError,          // Assert error code
-    createTestDir,        // Create temp dir
-    cleanupTestDir        // Cleanup
+import {
+    createMockContext, // Create test context
+    runCli, // Run CLI commands
+    assertSuccess, // Assert success
+    assertError, // Assert error code
+    createTestDir, // Create temp dir
+    cleanupTestDir, // Cleanup
 } from '../core/test_utils';
 ```
 
 **Benefits**:
+
 - Consistent test setup
 - Easier test writing
 - Less boilerplate
@@ -137,11 +152,13 @@ import {
 New script: `src/scripts/test_coverage_report.ts`
 
 **Usage**:
+
 ```bash
 npm run test:coverage:report
 ```
 
 **Output**:
+
 - Lists files with 0% coverage
 - Lists files below 80% coverage
 - Provides recommendations
@@ -152,11 +169,13 @@ npm run test:coverage:report
 ### 1. Test Generation from Code
 
 **How Cursor Helps**:
+
 - Select function → Ask: "Generate tests for this"
 - Cursor suggests test cases
 - Cursor generates test structure
 
 **Example**:
+
 ```
 User: "Generate tests for handleRemember function"
 Cursor: Generates test file with success/error cases
@@ -165,6 +184,7 @@ Cursor: Generates test file with success/error cases
 ### 2. Test Suggestions
 
 **How Cursor Helps**:
+
 - Analyzes code coverage
 - Suggests missing test cases
 - Identifies edge cases
@@ -173,6 +193,7 @@ Cursor: Generates test file with success/error cases
 ### 3. Test-Driven Development
 
 **Workflow**:
+
 1. Write test first (Cursor helps structure)
 2. Implement feature (Cursor suggests code)
 3. Run tests (Cursor shows results)
@@ -181,6 +202,7 @@ Cursor: Generates test file with success/error cases
 ### 4. Test Review
 
 **How Cursor Helps**:
+
 - Reviews test quality
 - Suggests improvements
 - Identifies flaky tests
@@ -189,6 +211,7 @@ Cursor: Generates test file with success/error cases
 ## Testing Commands
 
 ### Run All Tests
+
 ```bash
 npm test                    # Full suite (parallel + caching)
 npm run test:parallel       # Explicit parallel
@@ -196,6 +219,7 @@ npm run test:sequential     # Sequential execution
 ```
 
 ### Run Specific Tests
+
 ```bash
 npm run test:single executor
 npm run test:single cli_e2e
@@ -203,6 +227,7 @@ npm run test:single generate_tool
 ```
 
 ### Coverage
+
 ```bash
 npm run test:coverage              # Generate coverage
 npm run test:coverage:open         # Open HTML report
@@ -210,11 +235,13 @@ npm run test:coverage:report       # Analyze gaps
 ```
 
 ### E2E Tests
+
 ```bash
 npm run test:e2e                  # Run E2E tests
 ```
 
 ### Watch Mode
+
 ```bash
 npm run test:watch                # Auto-rerun on changes
 ```
@@ -245,14 +272,14 @@ npm run test:watch                # Auto-rerun on changes
 
 ## Coverage Goals by Module
 
-| Module | Current | Target | Priority |
-|--------|---------|--------|----------|
-| `src/core/` | ~85% | 90% | High |
-| `src/tools/` | ~62% | 80% | High |
-| `src/app/` | ~75% | 85% | Medium |
-| `src/scripts/` | 0% | 70% | Medium |
-| `src/parsers/` | ~80% | 85% | Medium |
-| `src/storage/` | ~84% | 85% | Low |
+| Module         | Current | Target | Priority |
+| -------------- | ------- | ------ | -------- |
+| `src/core/`    | ~85%    | 90%    | High     |
+| `src/tools/`   | ~62%    | 80%    | High     |
+| `src/app/`     | ~75%    | 85%    | Medium   |
+| `src/scripts/` | 0%      | 70%    | Medium   |
+| `src/parsers/` | ~80%    | 85%    | Medium   |
+| `src/storage/` | ~84%    | 85%    | Low      |
 
 ## Testing Improvements Roadmap
 
@@ -267,29 +294,29 @@ npm run test:watch                # Auto-rerun on changes
 ### 🔮 Future Enhancements
 
 1. **Snapshot Testing**
-   - Test output snapshots
-   - Schema validation snapshots
+    - Test output snapshots
+    - Schema validation snapshots
 
 2. **Property-Based Testing**
-   - Generate test inputs
-   - Fuzz testing
+    - Generate test inputs
+    - Fuzz testing
 
 3. **Mutation Testing**
-   - Test quality validation
-   - Identify weak tests
+    - Test quality validation
+    - Identify weak tests
 
 4. **Visual Test Results**
-   - HTML test dashboard
-   - Test timeline visualization
+    - HTML test dashboard
+    - Test timeline visualization
 
 5. **Test Performance Monitoring**
-   - Track test execution time
-   - Identify slow tests
+    - Track test execution time
+    - Identify slow tests
 
 6. **CI/CD Integration**
-   - Automated test runs
-   - Coverage reporting
-   - Test result notifications
+    - Automated test runs
+    - Coverage reporting
+    - Test result notifications
 
 ## Best Practices
 
@@ -351,6 +378,7 @@ assistant generate tests my_tool
 ## Conclusion
 
 The testing infrastructure is comprehensive with:
+
 - ✅ Unit, integration, E2E, and script tests
 - ✅ Test utilities for easier writing
 - ✅ Coverage analysis and reporting
@@ -358,8 +386,8 @@ The testing infrastructure is comprehensive with:
 - ✅ Parallel execution and caching
 
 **Next Steps**:
+
 1. Run `npm run test:coverage:report` to see gaps
 2. Add tests for files with 0% coverage
 3. Improve coverage for low-coverage files
 4. Use Cursor to generate and improve tests
-

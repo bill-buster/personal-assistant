@@ -36,6 +36,7 @@ Test Runner
 ### Isolation
 
 Each test runs in its own Node.js process with:
+
 - Isolated memory (`--max-old-space-size=256`)
 - Isolated environment variables
 - Isolated temp directories (tests create their own)
@@ -45,12 +46,12 @@ Each test runs in its own Node.js process with:
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `TEST_PARALLEL` | Enable parallel execution | `1` (enabled) |
-| `TEST_MAX_WORKERS` | Number of parallel workers | `4` |
-| `TEST_SKIP_CACHE` | Skip test result cache | `0` (use cache) |
-| `TEST_MAX_MEM` | Memory limit per test (MB) | `256` |
+| Variable           | Description                | Default         |
+| ------------------ | -------------------------- | --------------- |
+| `TEST_PARALLEL`    | Enable parallel execution  | `1` (enabled)   |
+| `TEST_MAX_WORKERS` | Number of parallel workers | `4`             |
+| `TEST_SKIP_CACHE`  | Skip test result cache     | `0` (use cache) |
+| `TEST_MAX_MEM`     | Memory limit per test (MB) | `256`           |
 
 ### Examples
 
@@ -73,19 +74,19 @@ TEST_MAX_WORKERS=1 npm test
 ### Benchmarks
 
 | Test Count | Sequential | Parallel (4 workers) | Speedup |
-|------------|------------|---------------------|---------|
-| 5 tests    | ~15s       | ~5s                 | 3x      |
-| 10 tests   | ~30s       | ~8s                 | 3.75x   |
-| 20 tests   | ~60s       | ~15s                | 4x      |
+| ---------- | ---------- | -------------------- | ------- |
+| 5 tests    | ~15s       | ~5s                  | 3x      |
+| 10 tests   | ~30s       | ~8s                  | 3.75x   |
+| 20 tests   | ~60s       | ~15s                 | 4x      |
 
 ### Combined with Caching
 
 When combined with test result caching:
 
-| Scenario | Time |
-|----------|------|
-| First run (all tests) | ~15s (parallel) |
-| Second run (unchanged) | ~0.1s (all cached) |
+| Scenario                    | Time                  |
+| --------------------------- | --------------------- |
+| First run (all tests)       | ~15s (parallel)       |
+| Second run (unchanged)      | ~0.1s (all cached)    |
 | Partial change (2/10 tests) | ~3s (2 run, 8 cached) |
 
 **Total speedup**: Up to 20x faster for unchanged code!
@@ -104,6 +105,7 @@ Use sequential execution (`TEST_PARALLEL=0`) when:
 ### Worker Count
 
 Choose worker count based on:
+
 - **CPU cores**: `TEST_MAX_WORKERS = CPU cores - 1`
 - **Memory**: Each worker uses ~256MB, ensure `workers × 256MB < available RAM`
 - **Test duration**: More workers help if tests are long-running
@@ -168,6 +170,7 @@ node --max-old-space-size=256 test_file.js
 ### Concurrency Control
 
 Uses a queue-based approach:
+
 - Maintains up to `maxWorkers` running tests
 - As tests complete, new ones start
 - All tests complete before summary
@@ -175,18 +178,18 @@ Uses a queue-based approach:
 ### Result Collection
 
 Results are collected as tests complete:
+
 - Output is streamed in real-time
 - Results are saved to cache immediately
 - Final summary shows all results
 
 ## Comparison
 
-| Feature | Sequential | Parallel |
-|---------|------------|----------|
-| Speed | Baseline | 3-5x faster |
-| Output order | Deterministic | Non-deterministic |
-| Memory usage | Lower | Higher (workers × 256MB) |
-| CPU usage | Single core | Multi-core |
-| Debugging | Easier | Harder |
-| CI/CD | Compatible | Compatible |
-
+| Feature      | Sequential    | Parallel                 |
+| ------------ | ------------- | ------------------------ |
+| Speed        | Baseline      | 3-5x faster              |
+| Output order | Deterministic | Non-deterministic        |
+| Memory usage | Lower         | Higher (workers × 256MB) |
+| CPU usage    | Single core   | Multi-core               |
+| Debugging    | Easier        | Harder                   |
+| CI/CD        | Compatible    | Compatible               |
