@@ -14,7 +14,7 @@ Use this checklist to implement tools one by one. Copy the tool name and descrip
 ## Phase 1: Core File Operations (Priority: High)
 
 - [x] `delete_file` - Delete a file (requires confirmation if configured). ✅ **DONE**
-- [ ] `move_file` - Move or rename a file from one path to another.
+- [x] `move_file` - Move or rename a file from one path to another. ✅ **DONE**
 - [ ] `copy_file` - Copy a file from source to destination path.
 - [ ] `file_info` - Get file metadata (size, modified date, permissions, type).
 - [ ] `create_directory` - Create a directory (with parent directories if needed).
@@ -153,8 +153,8 @@ Use this checklist to implement tools one by one. Copy the tool name and descrip
 ## Progress Tracking
 
 **Total Tools:** ~100+
-**Completed:** 1 (`delete_file`)
-**Remaining:** ~99+
+**Completed:** 2 (`delete_file`, `move_file`)
+**Remaining:** ~98+
 
 **Current Phase:** Phase 1 (Core File Operations)
 **Next Recommended:** `move_file` or `copy_file`
