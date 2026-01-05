@@ -205,4 +205,5 @@ import {
 - **Performance**: See `.cursor/rules/performance.mdc` for optimization patterns
 - **Security**: See `.cursor/rules/security.mdc` for security patterns
 - **Tools**: See `.cursor/rules/tools.mdc` for tool implementation patterns
-- **Testing**: See `.cursor/rules/testing.mdc` for test patterns
+- **Test Policy**: See `.cursor/rules/test_policy.mdc` for when to run tests
+- **Testing**: See `.cursor/rules/testing.mdc` for test-writing patterns

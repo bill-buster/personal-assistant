@@ -1,13 +1,12 @@
 #!/usr/bin/env node
 /**
  * Doctor: Diagnose configuration and environment
- * 
+ *
  * Prints configuration, data directories, provider status, and permissions.
  * Useful for debugging and onboarding.
  */
 
 import * as fs from 'node:fs';
-import * as path from 'node:path';
 import * as os from 'node:os';
 import { loadConfig, resolveConfig, getStoragePaths, loadPermissions } from '../core/config';
 
@@ -60,9 +59,15 @@ if (process.env.ASSISTANT_DATA_DIR) {
 // 5. Permissions
 console.log('\n🔒 Permissions\n');
 const permissions = loadPermissions(config.fileBaseDir);
-console.log(`  Allow paths:    ${permissions.allow_paths.length > 0 ? permissions.allow_paths.join(', ') : '(none - deny all)'}`);
-console.log(`  Allow commands: ${permissions.allow_commands.length > 0 ? permissions.allow_commands.join(', ') : '(none - deny all)'}`);
-console.log(`  Deny tools:     ${permissions.deny_tools.length > 0 ? permissions.deny_tools.join(', ') : '(none)'}`);
+console.log(
+    `  Allow paths:    ${permissions.allow_paths.length > 0 ? permissions.allow_paths.join(', ') : '(none - deny all)'}`
+);
+console.log(
+    `  Allow commands: ${permissions.allow_commands.length > 0 ? permissions.allow_commands.join(', ') : '(none - deny all)'}`
+);
+console.log(
+    `  Deny tools:     ${permissions.deny_tools.length > 0 ? permissions.deny_tools.join(', ') : '(none)'}`
+);
 
 // 6. File Limits
 console.log('\n📏 Limits\n');
@@ -85,4 +90,3 @@ if (issues.length === 0) {
     issues.forEach(issue => console.log(`   • ${issue}`));
     console.log('');
 }
-

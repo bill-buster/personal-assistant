@@ -6,79 +6,24 @@ alwaysApply: false
 
 # Testing Conventions
 
-## ⚠️ BEFORE Running Tests
+## Test Execution Policy
 
-**Check existing test results first** to avoid wasting resources:
+**See `.cursor/rules/test_policy.mdc` for when to run tests and how to avoid redundant runs.**
 
-```bash
-# Check if tests already passed recently
-cat .test-results/latest.json 2>/dev/null
-
-# Or check specific test
-grep "executor.test" .test-results/latest.json
-```
-
-If tests passed within the last hour and no relevant files changed, **skip re-running**.
-
-## Test Result Persistence
-
-Always save test results for other agents to access:
-
-```typescript
-// At end of test file, save results
-const testResult = {
-    file: path.basename(__filename),
-    timestamp: new Date().toISOString(),
-    passed: failures === 0,
-    failures,
-    duration_ms: Date.now() - startTime,
-    filesHashed: ['src/core/executor.ts', 'src/tools/memory_tools.ts'], // relevant source files
-};
-
-// Append to shared results file
-const resultsDir = path.join(__dirname, '..', '.test-results');
-if (!fs.existsSync(resultsDir)) fs.mkdirSync(resultsDir, { recursive: true });
-fs.appendFileSync(
-    path.join(resultsDir, 'results.jsonl'),
-    JSON.stringify(testResult) + '\n'
-);
-```
+The test runner automatically handles result persistence and caching via `TestCache` in `src/core/test_cache.ts`. You don't need to write persistence code in test files.
 
 ## Test Results Location
 
+The test runner automatically creates:
+
 ```
 .test-results/
-├── results.jsonl      # Append-only log of all test runs
-├── latest.json        # Summary of most recent full test run
-└── checksums.json     # File hashes to detect changes
+├── results.jsonl      # Append-only log of all test runs (auto-managed)
+├── latest.json        # Summary of most recent full test run (auto-managed)
+└── checksums.json     # File hashes for change detection (auto-managed)
 ```
 
-## Checking Before Running
-
-Before running tests, check if they're needed:
-
-```typescript
-function shouldRunTest(testFile: string): boolean {
-    const resultsPath = '.test-results/results.jsonl';
-    if (!fs.existsSync(resultsPath)) return true;
-    
-    // Find last result for this test
-    const lines = fs.readFileSync(resultsPath, 'utf8').trim().split('\n');
-    for (let i = lines.length - 1; i >= 0; i--) {
-        const result = JSON.parse(lines[i]);
-        if (result.file === testFile && result.passed) {
-            // Check if source files changed since last run
-            const lastRun = new Date(result.timestamp).getTime();
-            const hourAgo = Date.now() - 3600000;
-            if (lastRun > hourAgo) {
-                console.log(`⏭️  Skipping ${testFile} - passed recently`);
-                return false;
-            }
-        }
-    }
-    return true;
-}
-```
+These files are managed by `src/run_tests.ts` and `src/core/test_cache.ts`. Do not manually write to them.
 
 ## Test File Location
 
@@ -251,37 +196,14 @@ npm test
 npm run build && TEST_DIST=1 node dist/run_tests.js
 ```
 
-## Agent Workflow for Tests
+## Running Tests
 
-When an agent needs to verify code changes:
+**See `.cursor/rules/test_policy.mdc` for the complete decision tree on when to run tests.**
 
-### 1. Check Existing Results First
-```bash
-# Read the latest test results
-cat .test-results/latest.json
-
-# If all passed and no relevant changes, STOP HERE
-```
-
-### 2. Run Only Affected Tests
-```bash
-# If you changed src/tools/memory_tools.ts, only run:
-npm run build && node dist/memory_store.test.js
-
-# NOT the full suite
-```
-
-### 3. Save Results After Running
-```bash
-# The test should auto-save, but verify:
-tail -1 .test-results/results.jsonl
-```
-
-### 4. Update Summary for Next Agent
-```bash
-# After full test run, update latest.json
-echo '{"timestamp":"'$(date -Iseconds)'","passed":true,"tests":42}' > .test-results/latest.json
-```
+Quick reference:
+- Check `.test-results/latest.json` first
+- Prefer `npm run test:single <name>` for targeted runs
+- The test runner automatically handles caching and result persistence
 
 ## Test Result Schema
 
@@ -306,22 +228,9 @@ interface TestSummary {
 }
 ```
 
-## Avoiding Redundant Runs
-
-**DO NOT** run full test suite if:
-- `.test-results/latest.json` shows all passed
-- No source files changed since `timestamp`
-- Less than 1 hour since last run
-
-**DO** run tests if:
-- You modified source code
-- You modified test files
-- No recent results exist
-- Previous run failed
-
 ## Sharing Context Between Agents
 
-When handing off to another agent, include:
+When handing off to another agent, include test status:
 
 ```markdown
 ## Test Status
@@ -332,6 +241,8 @@ When handing off to another agent, include:
 
 No need to re-run tests.
 ```
+
+**See `.cursor/rules/test_policy.mdc` for complete anti-thrash rules.**
 
 ## Test Coverage Expectations
 
