@@ -18,6 +18,7 @@ import {
     WriteFileArgs,
     ReadFileArgs,
     ListFilesArgs,
+    DeleteFileArgs,
 } from '../core/types';
 
 /**
@@ -412,6 +413,122 @@ export function handleListFiles(args: ListFilesArgs, context: ExecutorContext): 
     return {
         ok: true,
         result: { entries },
+        error: null,
+        _debug: makeDebug({
+            path: 'tool_json',
+            start,
+            model: null,
+            memory_read: false,
+            memory_write: false,
+        }),
+    };
+}
+
+/**
+ * Handle delete_file tool.
+ * @param args - Tool arguments containing path and optional confirm flag.
+ * @param context - Execution context.
+ * @returns Result object with ok, result, error, debug.
+ */
+export function handleDeleteFile(args: DeleteFileArgs, context: ExecutorContext): ToolResult {
+    const { paths, requiresConfirmation, permissionsPath, start } = context;
+
+    // Check confirmation requirement BEFORE path check
+    if (requiresConfirmation('delete_file') && args.confirm !== true) {
+        return {
+            ok: false,
+            result: null,
+            error: makeConfirmationError('delete_file', permissionsPath),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
+    }
+
+    // Validate and resolve path
+    let targetPath: string;
+    try {
+        targetPath = paths.resolveAllowed(args.path, 'write'); // Delete requires write permission
+    } catch {
+        return {
+            ok: false,
+            result: null,
+            error: makePermissionError(
+                'delete_file',
+                args.path,
+                permissionsPath,
+                ErrorCode.DENIED_PATH_ALLOWLIST
+            ),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
+    }
+
+    // Check if file exists and is not a directory
+    try {
+        const stats = fs.statSync(targetPath);
+        if (stats.isDirectory()) {
+            return {
+                ok: false,
+                result: null,
+                error: makeError(
+                    ErrorCode.EXEC_ERROR,
+                    `Path '${args.path}' is a directory, not a file.`
+                ),
+                _debug: makeDebug({
+                    path: 'tool_json',
+                    start,
+                    model: null,
+                    memory_read: false,
+                    memory_write: false,
+                }),
+            };
+        }
+    } catch (err: any) {
+        return {
+            ok: false,
+            result: null,
+            error: makeError(ErrorCode.EXEC_ERROR, `File not found: ${err.message}`),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
+    }
+
+    // Delete the file
+    try {
+        fs.unlinkSync(targetPath);
+    } catch (err: any) {
+        return {
+            ok: false,
+            result: null,
+            error: makeError(ErrorCode.EXEC_ERROR, `Failed to delete file: ${err.message}`),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
+    }
+
+    return {
+        ok: true,
+        result: { deleted: args.path },
         error: null,
         _debug: makeDebug({
             path: 'tool_json',

@@ -52,7 +52,7 @@ type Token =
     | { type: 'rparen' }
     | { type: 'comma' };
 
-function tokenize(expr: string): Token[] {
+function tokenize(expr: string): { ok: boolean; tokens?: Token[]; error?: string } {
     const tokens: Token[] = [];
     let i = 0;
 
@@ -75,14 +75,16 @@ function tokenize(expr: string): Token[] {
             while (i < expr.length && RE_DIGIT_OR_DOT.test(expr[i])) {
                 if (expr[i] === '.') {
                     if (hasDecimal) {
-                        throw new Error(`Invalid number: multiple decimal points`);
+                        return { ok: false, error: `Invalid number: multiple decimal points` };
                     }
                     hasDecimal = true;
                 }
                 numStr += expr[i++];
             }
             const value = parseFloat(numStr);
-            if (isNaN(value)) throw new Error(`Invalid number: ${numStr}`);
+            if (isNaN(value)) {
+                return { ok: false, error: `Invalid number: ${numStr}` };
+            }
             tokens.push({ type: 'number', value });
             continue;
         }
@@ -132,13 +134,13 @@ function tokenize(expr: string): Token[] {
                 continue;
             }
 
-            throw new Error(`Unknown identifier: ${ident}`);
+            return { ok: false, error: `Unknown identifier: ${ident}` };
         }
 
-        throw new Error(`Unexpected character: ${ch}`);
+        return { ok: false, error: `Unexpected character: ${ch}` };
     }
 
-    return tokens;
+    return { ok: true, tokens };
 }
 
 // Recursive descent parser
@@ -150,10 +152,13 @@ class Parser {
         this.tokens = tokens;
     }
 
-    parse(): number {
+    parse(): { ok: boolean; value?: number; error?: string } {
         const result = this.parseExpression();
+        if (!result.ok) {
+            return result;
+        }
         if (this.pos < this.tokens.length) {
-            throw new Error('Unexpected tokens after expression');
+            return { ok: false, error: 'Unexpected tokens after expression' };
         }
         return result;
     }
@@ -167,8 +172,12 @@ class Parser {
     }
 
     // expression = term (('+' | '-') term)*
-    private parseExpression(): number {
-        let left = this.parseTerm();
+    private parseExpression(): { ok: boolean; value?: number; error?: string } {
+        const leftResult = this.parseTerm();
+        if (!leftResult.ok) {
+            return leftResult;
+        }
+        let left = leftResult.value!;
 
         while (this.peek()?.type === 'operator') {
             const peeked = this.peek();
@@ -176,16 +185,24 @@ class Parser {
             const opValue = peeked.value;
             if (opValue !== '+' && opValue !== '-') break;
             this.consume();
-            const right = this.parseTerm();
+            const rightResult = this.parseTerm();
+            if (!rightResult.ok) {
+                return rightResult;
+            }
+            const right = rightResult.value!;
             left = opValue === '+' ? left + right : left - right;
         }
 
-        return left;
+        return { ok: true, value: left };
     }
 
     // term = power (('*' | '/' | '%') power)*
-    private parseTerm(): number {
-        let left = this.parsePower();
+    private parseTerm(): { ok: boolean; value?: number; error?: string } {
+        const leftResult = this.parsePower();
+        if (!leftResult.ok) {
+            return leftResult;
+        }
+        let left = leftResult.value!;
 
         while (this.peek()?.type === 'operator') {
             const peeked = this.peek();
@@ -193,55 +210,77 @@ class Parser {
             const opValue = peeked.value;
             if (!['*', '/', '%'].includes(opValue)) break;
             this.consume();
-            const right = this.parsePower();
+            const rightResult = this.parsePower();
+            if (!rightResult.ok) {
+                return rightResult;
+            }
+            const right = rightResult.value!;
             if (opValue === '*') left *= right;
-            else if (opValue === '/') left /= right;
-            else left %= right;
+            else if (opValue === '/') {
+                if (right === 0) {
+                    return { ok: false, error: 'Division by zero' };
+                }
+                left /= right;
+            } else left %= right;
         }
 
-        return left;
+        return { ok: true, value: left };
     }
 
     // power = unary ('^' power)?
-    private parsePower(): number {
-        let left = this.parseUnary();
+    private parsePower(): { ok: boolean; value?: number; error?: string } {
+        const leftResult = this.parseUnary();
+        if (!leftResult.ok) {
+            return leftResult;
+        }
+        let left = leftResult.value!;
 
         const peeked = this.peek();
         if (peeked?.type === 'operator' && peeked.value === '^') {
             this.consume();
-            const right = this.parsePower(); // Right-associative
+            const rightResult = this.parsePower(); // Right-associative
+            if (!rightResult.ok) {
+                return rightResult;
+            }
+            const right = rightResult.value!;
             left = Math.pow(left, right);
         }
 
-        return left;
+        return { ok: true, value: left };
     }
 
     // unary = ('-' | '+') unary | primary
-    private parseUnary(): number {
+    private parseUnary(): { ok: boolean; value?: number; error?: string } {
         const tok = this.peek();
         if (tok?.type === 'operator' && (tok.value === '-' || tok.value === '+')) {
             const op = tok.value;
             this.consume();
-            const val = this.parseUnary();
-            return op === '-' ? -val : val;
+            const valResult = this.parseUnary();
+            if (!valResult.ok) {
+                return valResult;
+            }
+            const val = valResult.value!;
+            return { ok: true, value: op === '-' ? -val : val };
         }
         return this.parsePrimary();
     }
 
     // primary = number | constant | function '(' args ')' | '(' expression ')'
-    private parsePrimary(): number {
+    private parsePrimary(): { ok: boolean; value?: number; error?: string } {
         const tok = this.peek();
 
-        if (!tok) throw new Error('Unexpected end of expression');
+        if (!tok) {
+            return { ok: false, error: 'Unexpected end of expression' };
+        }
 
         if (tok.type === 'number') {
             this.consume();
-            return tok.value;
+            return { ok: true, value: tok.value };
         }
 
         if (tok.type === 'constant') {
             this.consume();
-            return MATH_CONSTANTS[tok.value];
+            return { ok: true, value: MATH_CONSTANTS[tok.value] };
         }
 
         if (tok.type === 'function') {
@@ -252,54 +291,69 @@ class Parser {
             // Expect '('
             const lparen = this.consume();
             if (lparen?.type !== 'lparen') {
-                throw new Error(`Expected '(' after function ${fnName}`);
+                return { ok: false, error: `Expected '(' after function ${fnName}` };
             }
 
             // Parse arguments
             const args: number[] = [];
             if (this.peek()?.type !== 'rparen') {
-                args.push(this.parseExpression());
+                const arg1Result = this.parseExpression();
+                if (!arg1Result.ok) {
+                    return arg1Result;
+                }
+                args.push(arg1Result.value!);
                 while (this.peek()?.type === 'comma') {
                     this.consume();
-                    args.push(this.parseExpression());
+                    const argResult = this.parseExpression();
+                    if (!argResult.ok) {
+                        return argResult;
+                    }
+                    args.push(argResult.value!);
                 }
             }
 
             // Expect ')'
             const rparen = this.consume();
             if (rparen?.type !== 'rparen') {
-                throw new Error(`Expected ')' after function arguments`);
+                return { ok: false, error: `Expected ')' after function arguments` };
             }
 
             if (args.length !== fnInfo.arity) {
-                throw new Error(
-                    `Function ${fnName} expects ${fnInfo.arity} argument(s), got ${args.length}`
-                );
+                return {
+                    ok: false,
+                    error: `Function ${fnName} expects ${fnInfo.arity} argument(s), got ${args.length}`,
+                };
             }
 
-            return fnInfo.fn(...args);
+            return { ok: true, value: fnInfo.fn(...args) };
         }
 
         if (tok.type === 'lparen') {
             this.consume();
-            const value = this.parseExpression();
+            const valueResult = this.parseExpression();
+            if (!valueResult.ok) {
+                return valueResult;
+            }
             const rparen = this.consume();
             if (rparen?.type !== 'rparen') {
-                throw new Error("Expected ')'");
+                return { ok: false, error: "Expected ')'" };
             }
-            return value;
+            return valueResult;
         }
 
-        throw new Error(`Unexpected token: ${JSON.stringify(tok)}`);
+        return { ok: false, error: `Unexpected token: ${JSON.stringify(tok)}` };
     }
 }
 
-function safeEvaluate(expression: string): number {
-    const tokens = tokenize(expression);
-    if (tokens.length === 0) {
-        throw new Error('Empty expression');
+function safeEvaluate(expression: string): { ok: boolean; value?: number; error?: string } {
+    const tokenResult = tokenize(expression);
+    if (!tokenResult.ok) {
+        return tokenResult;
     }
-    const parser = new Parser(tokens);
+    if (!tokenResult.tokens || tokenResult.tokens.length === 0) {
+        return { ok: false, error: 'Empty expression' };
+    }
+    const parser = new Parser(tokenResult.tokens);
     return parser.parse();
 }
 
@@ -310,21 +364,26 @@ function safeEvaluate(expression: string): number {
 export function handleCalculate(args: CalculateArgs): ToolResult {
     const { expression } = args;
 
-    try {
-        const result = safeEvaluate(expression);
+    const evalResult = safeEvaluate(expression);
 
-        if (typeof result !== 'number' || !Number.isFinite(result)) {
-            return {
-                ok: false,
-                error: makeError('EXEC_ERROR', 'Expression did not result in a valid number.'),
-            };
-        }
-
-        return { ok: true, result: { expression, value: result } };
-    } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Unknown calculation error';
-        return { ok: false, error: makeError('EXEC_ERROR', `Calculation error: ${message}`) };
+    if (!evalResult.ok) {
+        return {
+            ok: false,
+            error: makeError(
+                'EXEC_ERROR',
+                `Calculation error: ${evalResult.error || 'Unknown error'}`
+            ),
+        };
     }
+
+    if (typeof evalResult.value !== 'number' || !Number.isFinite(evalResult.value)) {
+        return {
+            ok: false,
+            error: makeError('EXEC_ERROR', 'Expression did not result in a valid number.'),
+        };
+    }
+
+    return { ok: true, result: { expression, value: evalResult.value } };
 }
 
 /**
@@ -360,7 +419,9 @@ export async function handleGetWeather(args: GetWeatherArgs): Promise<ToolResult
     const encodedLocation = encodeURIComponent(location);
     const url = `https://wttr.in/${encodedLocation}?format=j1`;
 
-    async function fetchWithTimeout(retryCount = 0): Promise<Response> {
+    async function fetchWithTimeout(
+        retryCount = 0
+    ): Promise<{ ok: boolean; response?: Response; error?: string }> {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
@@ -373,24 +434,42 @@ export async function handleGetWeather(args: GetWeatherArgs): Promise<ToolResult
                 return fetchWithTimeout(retryCount + 1);
             }
 
-            return response;
+            return { ok: true, response };
         } catch (err: unknown) {
             clearTimeout(timeoutId);
-            throw err;
+            const message = err instanceof Error ? err.message : 'Unknown network error';
+            return { ok: false, error: message };
         }
     }
 
-    try {
-        const response = await fetchWithTimeout();
+    const fetchResult = await fetchWithTimeout();
 
-        if (!response.ok) {
+    if (!fetchResult.ok) {
+        return {
+            ok: false,
+            error: makeError(
+                'EXEC_ERROR',
+                `Weather request failed: ${fetchResult.error || 'Unknown error'}`
+            ),
+        };
+    }
+
+    if (!fetchResult.response) {
+        return {
+            ok: false,
+            error: makeError('EXEC_ERROR', 'Weather request failed: No response received'),
+        };
+    }
+
+    try {
+        if (!fetchResult.response.ok) {
             return {
                 ok: false,
-                error: makeError('EXEC_ERROR', `Weather API error: ${response.status}`),
+                error: makeError('EXEC_ERROR', `Weather API error: ${fetchResult.response.status}`),
             };
         }
 
-        const data = await response.json();
+        const data = await fetchResult.response.json();
 
         // Extract key weather info
         const current = data.current_condition?.[0];

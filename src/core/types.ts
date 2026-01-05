@@ -351,6 +351,12 @@ export const ListFilesSchema = z.object({
 });
 export type ListFilesArgs = z.infer<typeof ListFilesSchema>;
 
+export const DeleteFileSchema = z.object({
+    path: z.string().min(1),
+    confirm: z.boolean().optional(),
+});
+export type DeleteFileArgs = z.infer<typeof DeleteFileSchema>;
+
 export const RunCmdSchema = z.object({
     command: z.string().min(1),
     confirm: z.boolean().optional(),
@@ -519,6 +525,7 @@ export const ToolSchemas: Record<string, z.ZodTypeAny> = {
     write_file: WriteFileSchema,
     read_file: ReadFileSchema,
     list_files: ListFilesSchema,
+    delete_file: DeleteFileSchema,
     run_cmd: RunCmdSchema,
     remember: RememberSchema,
     recall: RecallSchema,

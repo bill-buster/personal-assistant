@@ -75,6 +75,18 @@ export const TOOL_SCHEMAS: Record<string, ToolSpec> = {
         required: [],
         parameters: {},
     },
+    delete_file: {
+        status: 'ready',
+        description: 'Delete a file (requires confirmation if configured).',
+        required: ['path'],
+        parameters: {
+            path: { type: 'string', description: 'File path to delete.' },
+            confirm: {
+                type: 'boolean',
+                description: 'Confirmation flag (required if tool requires confirmation).',
+            },
+        },
+    },
     run_cmd: {
         status: 'ready',
         description: 'Execute a safe shell command (ls, pwd, cat, du).',

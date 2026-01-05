@@ -5,6 +5,7 @@ const READY_TOOLS = [
     'read_file',
     'write_file',
     'list_files',
+    'delete_file',
     'run_cmd',
     'remember',
     'recall',
