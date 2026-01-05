@@ -33,7 +33,7 @@ vscode-extension/*.vsix
 
 # IDE
 .idea/
-# Keep .vscode/ settings but ignore user-specific files
+# Keep .vscode/ settings but keep user-specific files
 .vscode/settings.json.bak
 .vscode/launch.json.bak
 *.swp

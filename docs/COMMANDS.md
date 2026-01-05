@@ -38,8 +38,11 @@ This document lists all available commands for the Personal Assistant project.
 | `npm run format:check` | Check formatting without fixing           |
 | `npm run cleanup`      | Remove generated test files               |
 | `npm run preflight`    | Full pre-commit checks (includes cleanup) |
-| `npm run review`       | Systematic code review (entire codebase)  |
-| `npm run review:fix`   | Auto-fix simple code review issues        |
+| `npm run review`           | Systematic code review (entire codebase)  |
+| `npm run review:fix`       | Auto-fix simple code review issues        |
+| `npm run review:incremental` | Incremental review (processes files piece by piece) |
+| `npm run review:status`   | Show incremental review progress         |
+| `npm run review:reset`    | Reset incremental review progress        |
 
 ### Code Quality
 
