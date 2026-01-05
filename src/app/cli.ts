@@ -135,9 +135,9 @@ function parseCliArgs(argv: string[]): ParsedArgs {
     let subcommand: string | null = null;
     let args = positionals.slice(1);
 
-    // Handle compound commands like "task add", "git status", "generate tool", "cache clear"
+    // Handle compound commands like "task add", "git status", "generate tool", "cache clear", "logs stats"
     if (
-        ['task', 'remind', 'git', 'generate', 'cache', 'plugins'].includes(command) &&
+        ['task', 'remind', 'git', 'generate', 'cache', 'plugins', 'logs'].includes(command) &&
         positionals.length > 1
     ) {
         subcommand = positionals[1];
