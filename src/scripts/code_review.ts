@@ -193,6 +193,41 @@ const REVIEW_CHECKLIST: Record<string, PatternCheck[]> = {
                 return !before.includes('// Debug:') && !before.includes('// Test:');
             },
         },
+        // Semantic pattern checks - common logic bugs
+        {
+            pattern: /fs\.statSync\(/g,
+            issue: 'statSync() follows symlinks - if checking isSymbolicLink(), use lstatSync() instead',
+            whitelist: [
+                /fs\.lstatSync\(/g, // Already using lstatSync
+                /\/\/.*statSync.*symlink/gi, // Comment explaining why statSync is used
+            ],
+            contextCheck: (content, index) => {
+                // Check if isSymbolicLink() is used in the same function (within 500 chars)
+                const after = content.substring(index, Math.min(content.length, index + 500));
+                const hasSymbolicLinkCheck = after.includes('isSymbolicLink()');
+                if (!hasSymbolicLinkCheck) return false; // Only flag if isSymbolicLink is used
+
+                // Check if lstatSync is already used nearby
+                const before = content.substring(Math.max(0, index - 100), index);
+                return !before.includes('lstatSync');
+            },
+        },
+        {
+            pattern: /\.toString\(8\)\.slice\(-3\)/g,
+            issue: 'String formatting may be missing padding - use padStart(3, "0") for consistent 3-digit format',
+            whitelist: [
+                /\.padStart\(3,\s*['"]0['"]\)/g, // Already using padStart
+                /\/\/.*padStart/gi, // Comment explaining padding
+            ],
+            contextCheck: (content, index) => {
+                // Check if padStart is used nearby
+                const context = content.substring(
+                    Math.max(0, index - 100),
+                    Math.min(content.length, index + 100)
+                );
+                return !context.includes('padStart');
+            },
+        },
     ],
     error_handling: [
         {
@@ -550,10 +585,15 @@ Examples:
 Reviews for:
   - Security issues (path traversal, shell injection, secrets)
   - Performance issues (sync I/O, sequential async, regex)
-  - Code quality (any types, missing docs, nesting)
+  - Code quality (any types, missing docs, nesting, semantic bugs)
   - Error handling (throw statements, empty catch)
   - Testing (missing tests)
   - Documentation (missing JSDoc)
+
+Semantic pattern checks include:
+  - fs.statSync() + isSymbolicLink() anti-pattern (should use lstatSync())
+  - String formatting without padding (toString(8).slice(-3))
+  - More patterns added as common issues are discovered
         `.trim()
         );
         process.exit(0);

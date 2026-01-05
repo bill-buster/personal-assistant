@@ -22,6 +22,7 @@ import {
     MoveFileArgs,
     CopyFileArgs,
     FileInfoArgs,
+    CreateDirectoryArgs,
 } from '../core/types';
 
 /**
@@ -245,8 +246,8 @@ export function handleReadFile(args: ReadFileArgs, context: ExecutorContext): To
     }
 
     // Read the specified byte range
-    let content: string;
-    let bytesRead: number;
+    let content: string = '';
+    let bytesRead: number = 0;
     try {
         const fd = fs.openSync(targetPath, 'r');
         try {
@@ -1013,4 +1014,127 @@ export function handleFileInfo(args: FileInfoArgs, context: ExecutorContext): To
             memory_write: false,
         }),
     };
+}
+
+/**
+ * Handle create_directory tool.
+ * @param args - Tool arguments containing path.
+ * @param context - Execution context.
+ * @returns Result object with ok, result, error, debug.
+ */
+export function handleCreateDirectory(
+    args: CreateDirectoryArgs,
+    context: ExecutorContext
+): ToolResult {
+    const { paths, permissionsPath, start } = context;
+
+    // Validate and resolve path (requires write permission)
+    let targetPath: string;
+    try {
+        targetPath = paths.resolveAllowed(args.path, 'write');
+    } catch {
+        return {
+            ok: false,
+            result: null,
+            error: makePermissionError(
+                'create_directory',
+                args.path,
+                permissionsPath,
+                ErrorCode.DENIED_PATH_ALLOWLIST
+            ),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
+    }
+
+    // Check if path already exists
+    try {
+        const stats = fs.statSync(targetPath);
+        if (stats.isDirectory()) {
+            // Directory already exists - this is OK, return success
+            return {
+                ok: true,
+                result: { path: args.path, created: false, message: 'Directory already exists' },
+                error: null,
+                _debug: makeDebug({
+                    path: 'tool_json',
+                    start,
+                    model: null,
+                    memory_read: false,
+                    memory_write: false,
+                }),
+            };
+        } else {
+            // Path exists but is a file
+            return {
+                ok: false,
+                result: null,
+                error: makeError(
+                    ErrorCode.EXEC_ERROR,
+                    `Path '${args.path}' already exists and is a file, not a directory.`
+                ),
+                _debug: makeDebug({
+                    path: 'tool_json',
+                    start,
+                    model: null,
+                    memory_read: false,
+                    memory_write: false,
+                }),
+            };
+        }
+    } catch (err: any) {
+        // Path doesn't exist - create it
+        if (err.code === 'ENOENT') {
+            try {
+                // Create directory with parent directories (recursive)
+                fs.mkdirSync(targetPath, { recursive: true });
+                return {
+                    ok: true,
+                    result: { path: args.path, created: true, message: 'Directory created' },
+                    error: null,
+                    _debug: makeDebug({
+                        path: 'tool_json',
+                        start,
+                        model: null,
+                        memory_read: false,
+                        memory_write: false,
+                    }),
+                };
+            } catch (mkdirErr: any) {
+                return {
+                    ok: false,
+                    result: null,
+                    error: makeError(
+                        ErrorCode.EXEC_ERROR,
+                        `Failed to create directory: ${mkdirErr.message}`
+                    ),
+                    _debug: makeDebug({
+                        path: 'tool_json',
+                        start,
+                        model: null,
+                        memory_read: false,
+                        memory_write: false,
+                    }),
+                };
+            }
+        }
+        // Other error
+        return {
+            ok: false,
+            result: null,
+            error: makeError(ErrorCode.EXEC_ERROR, `Failed to check path: ${err.message}`),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
+    }
 }

@@ -17,7 +17,7 @@ Use this checklist to implement tools one by one. Copy the tool name and descrip
 - [x] `move_file` - Move or rename a file from one path to another. ✅ **DONE**
 - [x] `copy_file` - Copy a file from source to destination path. ✅ **DONE**
 - [x] `file_info` - Get file metadata (size, modified date, permissions, type). ✅ **DONE**
-- [ ] `create_directory` - Create a directory (with parent directories if needed).
+- [x] `create_directory` - Create a directory (with parent directories if needed). ✅ **DONE**
 - [ ] `delete_directory` - Delete a directory and its contents (requires confirmation).
 
 ## Phase 2: Search and Discovery (Priority: High)

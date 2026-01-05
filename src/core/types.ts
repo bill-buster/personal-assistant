@@ -376,6 +376,11 @@ export const FileInfoSchema = z.object({
 });
 export type FileInfoArgs = z.infer<typeof FileInfoSchema>;
 
+export const CreateDirectorySchema = z.object({
+    path: z.string().min(1),
+});
+export type CreateDirectoryArgs = z.infer<typeof CreateDirectorySchema>;
+
 export const RunCmdSchema = z.object({
     command: z.string().min(1),
     confirm: z.boolean().optional(),
@@ -548,6 +553,7 @@ export const ToolSchemas: Record<string, z.ZodTypeAny> = {
     move_file: MoveFileSchema,
     copy_file: CopyFileSchema,
     file_info: FileInfoSchema,
+    create_directory: CreateDirectorySchema,
     run_cmd: RunCmdSchema,
     remember: RememberSchema,
     recall: RecallSchema,

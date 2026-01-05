@@ -8,7 +8,13 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import { handleDeleteFile, handleMoveFile, handleCopyFile, handleFileInfo } from './file_tools';
+import {
+    handleDeleteFile,
+    handleMoveFile,
+    handleCopyFile,
+    handleFileInfo,
+    handleCreateDirectory,
+} from './file_tools';
 import { createMockContext } from '../core/test_utils';
 import { ExecutorContext } from '../core/types';
 
@@ -951,6 +957,157 @@ try {
         );
     } else {
         logLine('PASS: path outside baseDir');
+    }
+
+    // ============================================
+    // CREATE_DIRECTORY - SUCCESS CASES
+    // ============================================
+
+    // T29: Create directory successfully
+    const context29 = {
+        ...createMockContext({
+            baseDir: testRoot,
+            paths: {
+                resolve: (p: string) => path.resolve(testRoot, p),
+                assertAllowed: () => {},
+                resolveAllowed: (p: string) => path.resolve(testRoot, p),
+            },
+        }),
+        requiresConfirmation: () => false,
+    } as ExecutorContext;
+
+    const result29 = handleCreateDirectory({ path: 'newdir29' }, context29);
+    const newDir29 = path.join(testRoot, 'newdir29');
+    if (!result29.ok || !result29.result?.created) {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: create directory successfully\nexpected: ok true, result.created true\n\n',
+            process.stderr
+        );
+    } else if (!fs.existsSync(newDir29) || !fs.statSync(newDir29).isDirectory()) {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: create directory successfully\nexpected: directory should exist\n\n',
+            process.stderr
+        );
+    } else {
+        logLine('PASS: create directory successfully');
+    }
+
+    // T30: Create directory with parent directories (recursive)
+    const context30 = {
+        ...createMockContext({
+            baseDir: testRoot,
+            paths: {
+                resolve: (p: string) => path.resolve(testRoot, p),
+                assertAllowed: () => {},
+                resolveAllowed: (p: string) => path.resolve(testRoot, p),
+            },
+        }),
+        requiresConfirmation: () => false,
+    } as ExecutorContext;
+
+    const result30 = handleCreateDirectory({ path: 'parent30/child30/grandchild30' }, context30);
+    const nestedDir30 = path.join(testRoot, 'parent30', 'child30', 'grandchild30');
+    if (!result30.ok || !result30.result?.created) {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: create nested directory\nexpected: ok true, result.created true\n\n',
+            process.stderr
+        );
+    } else if (!fs.existsSync(nestedDir30) || !fs.statSync(nestedDir30).isDirectory()) {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: create nested directory\nexpected: nested directory should exist\n\n',
+            process.stderr
+        );
+    } else {
+        logLine('PASS: create nested directory');
+    }
+
+    // T31: Directory already exists (should return success)
+    const existingDir31 = path.join(testRoot, 'existingdir31');
+    fs.mkdirSync(existingDir31, { recursive: true });
+    const context31 = {
+        ...createMockContext({
+            baseDir: testRoot,
+            paths: {
+                resolve: (p: string) => path.resolve(testRoot, p),
+                assertAllowed: () => {},
+                resolveAllowed: (p: string) => path.resolve(testRoot, p),
+            },
+        }),
+        requiresConfirmation: () => false,
+    } as ExecutorContext;
+
+    const result31 = handleCreateDirectory({ path: 'existingdir31' }, context31);
+    if (!result31.ok || result31.result?.created !== false) {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: directory already exists\nexpected: ok true, result.created false\n\n',
+            process.stderr
+        );
+    } else {
+        logLine('PASS: directory already exists');
+    }
+
+    // ============================================
+    // CREATE_DIRECTORY - ERROR CASES
+    // ============================================
+
+    // T32: Path is a file, not a directory
+    const file32 = path.join(testRoot, 'file32.txt');
+    fs.writeFileSync(file32, 'test');
+    const context32 = {
+        ...createMockContext({
+            baseDir: testRoot,
+            paths: {
+                resolve: (p: string) => path.resolve(testRoot, p),
+                assertAllowed: () => {},
+                resolveAllowed: (p: string) => path.resolve(testRoot, p),
+            },
+        }),
+        requiresConfirmation: () => false,
+    } as ExecutorContext;
+
+    const result32 = handleCreateDirectory({ path: 'file32.txt' }, context32);
+    if (result32.ok || result32.error?.code !== 'EXEC_ERROR') {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: path is a file\nexpected: ok false, error.code EXEC_ERROR\n\n',
+            process.stderr
+        );
+    } else {
+        logLine('PASS: path is a file');
+    }
+
+    // T33: Path not allowed
+    const context33 = {
+        ...createMockContext({
+            baseDir: testRoot,
+            paths: {
+                resolve: (p: string) => path.resolve(testRoot, p),
+                assertAllowed: () => {
+                    throw new Error('Path not allowed');
+                },
+                resolveAllowed: () => {
+                    throw new Error('Path not allowed');
+                },
+            },
+            permissionsPath: path.join(testRoot, 'permissions.json'),
+        }),
+        requiresConfirmation: () => false,
+    } as ExecutorContext;
+
+    const result33 = handleCreateDirectory({ path: 'notallowed33' }, context33);
+    if (result33.ok || result33.error?.code !== 'DENIED_PATH_ALLOWLIST') {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: path not allowed\nexpected: ok false, error.code DENIED_PATH_ALLOWLIST\n\n',
+            process.stderr
+        );
+    } else {
+        logLine('PASS: path not allowed');
     }
 
     // ============================================
