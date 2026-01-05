@@ -14,12 +14,37 @@ memory.json
 *.test.output.txt
 .tmp/
 coverage/
+.test-results/
+
+# Generated test files (temporary - review before committing)
+src/tools/test_tool*.ts
+src/tools/e2e_test*.ts
+src/tools/TestTool*.ts
+src/tools/*_tools_tools.test.ts
+
+# VS Code extension
+vscode-extension/node_modules/
+vscode-extension/out/
+vscode-extension/*.vsix
+
+# Cache directories
+.assistant/.cache/
+.cache/
 
 # IDE
 .idea/
-.vscode/
+# Keep .vscode/ settings but ignore user-specific files
+.vscode/settings.json.bak
+.vscode/launch.json.bak
 *.swp
 *.swo
+
+# Coverage and profiling
+coverage/
+*.prof
+*.profraw
+*.cpuprofile
+*.heapsnapshot
 
 # OS
 .DS_Store

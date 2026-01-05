@@ -48,7 +48,10 @@ Create `~/.assistant/config.json`:
 No API key needed for testing:
 
 ```bash
+# Use --mock flag to avoid API calls
 ./dist/app/cli.js remember "test" --mock
+# or
+assistant remember "test" --mock
 ```
 
 ## Basic Usage
@@ -80,14 +83,23 @@ No API key needed for testing:
 
 ```bash
 ./dist/app/cli.js repl
+# Streaming enabled by default - see responses in real-time
+# Disable with: ./dist/app/cli.js repl --no-stream
 ```
 
 Commands in REPL:
-- `/help` - Show commands
+- `/help` - Show all commands
 - `/tools` - List available tools
-- `/stats` - Show token usage
-- `/reset` - Reset conversation
-- `/exit` - Exit
+- `/stats` - Show token usage statistics
+- `/config set <provider> <key>` - Set API key (groq, openrouter)
+- `/provider <name>` - Switch provider (groq, openrouter)
+- `/save [name]` - Save current session
+- `/load <name>` - Load a saved session
+- `/sessions` - List saved sessions
+- `/reset` - Reset agent to Supervisor
+- `/exit` - Exit REPL
+
+> 💡 **Natural Language Access**: In REPL mode, you can also use natural language to access tools like email, calendar, contacts, and more. For example: "send an email to alice@example.com" or "what's the weather in San Francisco?"
 
 ## Demo
 
@@ -114,6 +126,8 @@ By default, data is stored in:
 Override with:
 ```bash
 export ASSISTANT_DATA_DIR=/path/to/data
+export ASSISTANT_CONFIG_DIR=/path/to/config  # Override config directory
+export ASSISTANT_PERMISSIONS_PATH=/path/to/permissions.json  # Override permissions file
 ```
 
 ## Troubleshooting
@@ -138,9 +152,25 @@ Create `~/.assistant-data/permissions.json`:
 npm run clean && npm install && npm run build
 ```
 
+## VS Code Extension
+
+Install the VS Code extension for inline commands:
+
+```bash
+cd vscode-extension
+npm install
+npm run compile
+# Press F5 in VS Code to debug
+```
+
+See [vscode-extension/README.md](../vscode-extension/README.md) for details.
+
 ## Next Steps
 
-- Read [ARCHITECTURE.md](../README.md) for system overview
-- Check [STACK_DECISION.md](./STACK_DECISION.md) for design rationale
+- Read [README.md](../README.md) for system overview
+- Check [docs/CONFIGURATION.md](./CONFIGURATION.md) for configuration options
+- See [docs/COMMANDS.md](./COMMANDS.md) for complete command reference
+- Explore [docs/PLUGINS.md](./PLUGINS.md) to create custom tools
+- Check [docs/STACK_DECISION.md](./STACK_DECISION.md) for design rationale
 - Run `npm test` to verify your setup
 
