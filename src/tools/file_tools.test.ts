@@ -8,7 +8,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import { handleDeleteFile, handleMoveFile } from './file_tools';
+import { handleDeleteFile, handleMoveFile, handleCopyFile } from './file_tools';
 import { createMockContext } from '../core/test_utils';
 import { ExecutorContext } from '../core/types';
 
@@ -464,6 +464,325 @@ try {
         context14
     );
     if (result14.ok || result14.error?.code !== 'DENIED_PATH_ALLOWLIST') {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: destination path outside baseDir\nexpected: ok false, error.code DENIED_PATH_ALLOWLIST\n\n',
+            process.stderr
+        );
+    } else {
+        logLine('PASS: destination path outside baseDir');
+    }
+
+    // ============================================
+    // COPY_FILE - SUCCESS CASES
+    // ============================================
+
+    // T15: Copy file successfully
+    const testFile15 = path.join(testRoot, 'source15.txt');
+    const testDest15 = path.join(testRoot, 'dest15.txt');
+    fs.writeFileSync(testFile15, 'test content');
+    const context15 = {
+        ...createMockContext({
+            baseDir: testRoot,
+            paths: {
+                resolve: (p: string) => path.resolve(testRoot, p),
+                assertAllowed: () => {},
+                resolveAllowed: (p: string) => path.resolve(testRoot, p),
+            },
+        }),
+        requiresConfirmation: () => false,
+    } as ExecutorContext;
+
+    const result15 = handleCopyFile(
+        { source: 'source15.txt', destination: 'dest15.txt', confirm: true },
+        context15
+    );
+    if (!result15.ok || !result15.result?.source || !result15.result?.destination) {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: copy file successfully\nexpected: ok true, result.source and result.destination\n\n',
+            process.stderr
+        );
+    } else if (!fs.existsSync(testFile15) || !fs.existsSync(testDest15)) {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: copy file successfully\nexpected: both source and destination should exist\n\n',
+            process.stderr
+        );
+    } else {
+        const sourceContent = fs.readFileSync(testFile15, 'utf8');
+        const destContent = fs.readFileSync(testDest15, 'utf8');
+        if (sourceContent !== destContent || sourceContent !== 'test content') {
+            failures += 1;
+            logLine(
+                'FAIL\ncase: copy file successfully\nexpected: source and destination have same content\n\n',
+                process.stderr
+            );
+        } else {
+            logLine('PASS: copy file successfully');
+        }
+    }
+
+    // T16: Copy file to new directory (create parent directories)
+    const testFile16 = path.join(testRoot, 'file16.txt');
+    const testDest16 = path.join(testRoot, 'subdir2', 'file16.txt');
+    fs.writeFileSync(testFile16, 'test content');
+    const context16 = {
+        ...createMockContext({
+            baseDir: testRoot,
+            paths: {
+                resolve: (p: string) => path.resolve(testRoot, p),
+                assertAllowed: () => {},
+                resolveAllowed: (p: string) => path.resolve(testRoot, p),
+            },
+        }),
+        requiresConfirmation: () => false,
+    } as ExecutorContext;
+
+    const result16 = handleCopyFile(
+        { source: 'file16.txt', destination: 'subdir2/file16.txt', confirm: true },
+        context16
+    );
+    if (!result16.ok || !fs.existsSync(testDest16) || !fs.existsSync(testFile16)) {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: copy file to new directory\nexpected: ok true, both files exist\n\n',
+            process.stderr
+        );
+    } else {
+        logLine('PASS: copy file to new directory');
+    }
+
+    // T17: Copy file overwriting existing file
+    const testFile17 = path.join(testRoot, 'source17.txt');
+    const testDest17 = path.join(testRoot, 'dest17.txt');
+    fs.writeFileSync(testFile17, 'source content');
+    fs.writeFileSync(testDest17, 'old content');
+    const context17 = {
+        ...createMockContext({
+            baseDir: testRoot,
+            paths: {
+                resolve: (p: string) => path.resolve(testRoot, p),
+                assertAllowed: () => {},
+                resolveAllowed: (p: string) => path.resolve(testRoot, p),
+            },
+        }),
+        requiresConfirmation: () => false,
+    } as ExecutorContext;
+
+    const result17 = handleCopyFile(
+        { source: 'source17.txt', destination: 'dest17.txt', confirm: true },
+        context17
+    );
+    if (!result17.ok) {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: copy file overwriting existing\nexpected: ok true\n\n',
+            process.stderr
+        );
+    } else {
+        const sourceContent = fs.readFileSync(testFile17, 'utf8');
+        const destContent = fs.readFileSync(testDest17, 'utf8');
+        if (
+            destContent !== 'source content' ||
+            sourceContent !== 'source content' ||
+            !fs.existsSync(testFile17)
+        ) {
+            failures += 1;
+            logLine(
+                'FAIL\ncase: copy file overwriting existing\nexpected: destination has source content, source still exists\n\n',
+                process.stderr
+            );
+        } else {
+            logLine('PASS: copy file overwriting existing');
+        }
+    }
+
+    // ============================================
+    // COPY_FILE - ERROR CASES
+    // ============================================
+
+    // T18: Require confirmation (no confirm flag)
+    const context18 = {
+        ...createMockContext({
+            baseDir: testRoot,
+            permissions: {
+                allow_paths: [],
+                allow_commands: [],
+                require_confirmation_for: ['copy_file'],
+                deny_tools: [],
+            },
+            permissionsPath: path.join(testRoot, 'permissions.json'),
+        }),
+        requiresConfirmation: (toolName: string) => toolName === 'copy_file',
+    } as ExecutorContext;
+
+    const result18 = handleCopyFile({ source: 'test18.txt', destination: 'dest18.txt' }, context18);
+    if (result18.ok || result18.error?.code !== 'CONFIRMATION_REQUIRED') {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: require confirmation\nexpected: ok false, error.code CONFIRMATION_REQUIRED\n\n',
+            process.stderr
+        );
+    } else {
+        logLine('PASS: require confirmation');
+    }
+
+    // T19: Source file not found
+    const context19 = {
+        ...createMockContext({
+            baseDir: testRoot,
+            paths: {
+                resolve: (p: string) => path.resolve(testRoot, p),
+                assertAllowed: () => {},
+                resolveAllowed: (p: string) => path.resolve(testRoot, p),
+            },
+        }),
+        requiresConfirmation: () => false,
+    } as ExecutorContext;
+
+    const result19 = handleCopyFile(
+        { source: 'nonexistent19.txt', destination: 'dest19.txt', confirm: true },
+        context19
+    );
+    if (result19.ok || result19.error?.code !== 'EXEC_ERROR') {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: source file not found\nexpected: ok false, error.code EXEC_ERROR\n\n',
+            process.stderr
+        );
+    } else {
+        logLine('PASS: source file not found');
+    }
+
+    // T20: Source is directory (not file)
+    const testDir20 = path.join(testRoot, 'sourcedir20');
+    fs.mkdirSync(testDir20, { recursive: true });
+    const context20 = {
+        ...createMockContext({
+            baseDir: testRoot,
+            paths: {
+                resolve: (p: string) => path.resolve(testRoot, p),
+                assertAllowed: () => {},
+                resolveAllowed: (p: string) => path.resolve(testRoot, p),
+            },
+        }),
+        requiresConfirmation: () => false,
+    } as ExecutorContext;
+
+    const result20 = handleCopyFile(
+        { source: 'sourcedir20', destination: 'destdir20', confirm: true },
+        context20
+    );
+    if (result20.ok || !result20.error?.message.includes('directory')) {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: source is directory\nexpected: ok false, error mentions directory\n\n',
+            process.stderr
+        );
+    } else {
+        logLine('PASS: source is directory');
+    }
+
+    // T21: Destination is directory (not file)
+    const testFile21 = path.join(testRoot, 'source21.txt');
+    const testDir21 = path.join(testRoot, 'destdir21');
+    fs.writeFileSync(testFile21, 'test content');
+    fs.mkdirSync(testDir21, { recursive: true });
+    const context21 = {
+        ...createMockContext({
+            baseDir: testRoot,
+            paths: {
+                resolve: (p: string) => path.resolve(testRoot, p),
+                assertAllowed: () => {},
+                resolveAllowed: (p: string) => path.resolve(testRoot, p),
+            },
+        }),
+        requiresConfirmation: () => false,
+    } as ExecutorContext;
+
+    const result21 = handleCopyFile(
+        { source: 'source21.txt', destination: 'destdir21', confirm: true },
+        context21
+    );
+    if (result21.ok || !result21.error?.message.includes('directory')) {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: destination is directory\nexpected: ok false, error mentions directory\n\n',
+            process.stderr
+        );
+    } else {
+        logLine('PASS: destination is directory');
+    }
+
+    // T22: Source path outside baseDir (security check)
+    const context22 = {
+        ...createMockContext({
+            baseDir: testRoot,
+            paths: {
+                resolve: (p: string) => {
+                    throw new Error('Path traversal detected');
+                },
+                assertAllowed: () => {
+                    throw new Error('Path not allowed');
+                },
+                resolveAllowed: () => {
+                    throw new Error('Path not allowed');
+                },
+            },
+        }),
+        requiresConfirmation: () => false,
+    } as ExecutorContext;
+
+    const result22 = handleCopyFile(
+        { source: '../../etc/passwd', destination: 'dest22.txt', confirm: true },
+        context22
+    );
+    if (result22.ok || result22.error?.code !== 'DENIED_PATH_ALLOWLIST') {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: source path outside baseDir\nexpected: ok false, error.code DENIED_PATH_ALLOWLIST\n\n',
+            process.stderr
+        );
+    } else {
+        logLine('PASS: source path outside baseDir');
+    }
+
+    // T23: Destination path outside baseDir (security check)
+    const testFile23 = path.join(testRoot, 'source23.txt');
+    fs.writeFileSync(testFile23, 'test content');
+    const context23 = {
+        ...createMockContext({
+            baseDir: testRoot,
+            paths: {
+                resolve: (p: string) => {
+                    if (p === 'source23.txt') {
+                        return path.resolve(testRoot, p);
+                    }
+                    throw new Error('Path traversal detected');
+                },
+                assertAllowed: (p: string) => {
+                    if (p === path.resolve(testRoot, 'source23.txt')) {
+                        return;
+                    }
+                    throw new Error('Path not allowed');
+                },
+                resolveAllowed: (p: string) => {
+                    if (p === 'source23.txt') {
+                        return path.resolve(testRoot, p);
+                    }
+                    throw new Error('Path not allowed');
+                },
+            },
+        }),
+        requiresConfirmation: () => false,
+    } as ExecutorContext;
+
+    const result23 = handleCopyFile(
+        { source: 'source23.txt', destination: '../../etc/passwd', confirm: true },
+        context23
+    );
+    if (result23.ok || result23.error?.code !== 'DENIED_PATH_ALLOWLIST') {
         failures += 1;
         logLine(
             'FAIL\ncase: destination path outside baseDir\nexpected: ok false, error.code DENIED_PATH_ALLOWLIST\n\n',

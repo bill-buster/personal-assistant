@@ -364,6 +364,13 @@ export const MoveFileSchema = z.object({
 });
 export type MoveFileArgs = z.infer<typeof MoveFileSchema>;
 
+export const CopyFileSchema = z.object({
+    source: z.string().min(1),
+    destination: z.string().min(1),
+    confirm: z.boolean().optional(),
+});
+export type CopyFileArgs = z.infer<typeof CopyFileSchema>;
+
 export const RunCmdSchema = z.object({
     command: z.string().min(1),
     confirm: z.boolean().optional(),
@@ -534,6 +541,7 @@ export const ToolSchemas: Record<string, z.ZodTypeAny> = {
     list_files: ListFilesSchema,
     delete_file: DeleteFileSchema,
     move_file: MoveFileSchema,
+    copy_file: CopyFileSchema,
     run_cmd: RunCmdSchema,
     remember: RememberSchema,
     recall: RecallSchema,

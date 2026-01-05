@@ -20,6 +20,7 @@ import {
     ListFilesArgs,
     DeleteFileArgs,
     MoveFileArgs,
+    CopyFileArgs,
 } from '../core/types';
 
 /**
@@ -704,6 +705,193 @@ export function handleMoveFile(args: MoveFileArgs, context: ExecutorContext): To
             ok: false,
             result: null,
             error: makeError(ErrorCode.EXEC_ERROR, `Failed to move file: ${err.message}`),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
+    }
+
+    return {
+        ok: true,
+        result: { source: args.source, destination: args.destination },
+        error: null,
+        _debug: makeDebug({
+            path: 'tool_json',
+            start,
+            model: null,
+            memory_read: false,
+            memory_write: false,
+        }),
+    };
+}
+
+/**
+ * Handle copy_file tool.
+ * @param args - Tool arguments containing source and destination paths.
+ * @param context - Execution context.
+ * @returns Result object with ok, result, error, debug.
+ */
+export function handleCopyFile(args: CopyFileArgs, context: ExecutorContext): ToolResult {
+    const { paths, requiresConfirmation, permissionsPath, start } = context;
+
+    // Check confirmation requirement BEFORE path check
+    if (requiresConfirmation('copy_file') && args.confirm !== true) {
+        return {
+            ok: false,
+            result: null,
+            error: makeConfirmationError('copy_file', permissionsPath),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
+    }
+
+    // Validate and resolve source path (requires read permission)
+    let sourcePath: string;
+    try {
+        sourcePath = paths.resolveAllowed(args.source, 'read');
+    } catch {
+        return {
+            ok: false,
+            result: null,
+            error: makePermissionError(
+                'copy_file',
+                args.source,
+                permissionsPath,
+                ErrorCode.DENIED_PATH_ALLOWLIST
+            ),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
+    }
+
+    // Validate and resolve destination path (requires write permission)
+    let destinationPath: string;
+    try {
+        destinationPath = paths.resolveAllowed(args.destination, 'write');
+    } catch {
+        return {
+            ok: false,
+            result: null,
+            error: makePermissionError(
+                'copy_file',
+                args.destination,
+                permissionsPath,
+                ErrorCode.DENIED_PATH_ALLOWLIST
+            ),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
+    }
+
+    // Check if source file exists and is not a directory
+    try {
+        const stats = fs.statSync(sourcePath);
+        if (stats.isDirectory()) {
+            return {
+                ok: false,
+                result: null,
+                error: makeError(
+                    ErrorCode.EXEC_ERROR,
+                    `Source path '${args.source}' is a directory, not a file.`
+                ),
+                _debug: makeDebug({
+                    path: 'tool_json',
+                    start,
+                    model: null,
+                    memory_read: false,
+                    memory_write: false,
+                }),
+            };
+        }
+    } catch (err: any) {
+        return {
+            ok: false,
+            result: null,
+            error: makeError(ErrorCode.EXEC_ERROR, `Source file not found: ${err.message}`),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
+    }
+
+    // Check if destination already exists
+    try {
+        const destStats = fs.statSync(destinationPath);
+        if (destStats.isDirectory()) {
+            return {
+                ok: false,
+                result: null,
+                error: makeError(
+                    ErrorCode.EXEC_ERROR,
+                    `Destination path '${args.destination}' is a directory, not a file.`
+                ),
+                _debug: makeDebug({
+                    path: 'tool_json',
+                    start,
+                    model: null,
+                    memory_read: false,
+                    memory_write: false,
+                }),
+            };
+        }
+        // If destination is a file, it will be overwritten (Node.js fs.copyFileSync behavior)
+    } catch {
+        // Destination doesn't exist, which is fine - we'll create it
+    }
+
+    // Ensure destination directory exists
+    try {
+        const destDir = path.dirname(destinationPath);
+        fs.mkdirSync(destDir, { recursive: true });
+    } catch (err: any) {
+        return {
+            ok: false,
+            result: null,
+            error: makeError(
+                ErrorCode.EXEC_ERROR,
+                `Failed to create destination directory: ${err.message}`
+            ),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
+    }
+
+    // Copy the file
+    try {
+        fs.copyFileSync(sourcePath, destinationPath);
+    } catch (err: any) {
+        return {
+            ok: false,
+            result: null,
+            error: makeError(ErrorCode.EXEC_ERROR, `Failed to copy file: ${err.message}`),
             _debug: makeDebug({
                 path: 'tool_json',
                 start,

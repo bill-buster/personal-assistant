@@ -15,7 +15,7 @@ Use this checklist to implement tools one by one. Copy the tool name and descrip
 
 - [x] `delete_file` - Delete a file (requires confirmation if configured). ✅ **DONE**
 - [x] `move_file` - Move or rename a file from one path to another. ✅ **DONE**
-- [ ] `copy_file` - Copy a file from source to destination path.
+- [x] `copy_file` - Copy a file from source to destination path. ✅ **DONE**
 - [ ] `file_info` - Get file metadata (size, modified date, permissions, type).
 - [ ] `create_directory` - Create a directory (with parent directories if needed).
 - [ ] `delete_directory` - Delete a directory and its contents (requires confirmation).
@@ -153,8 +153,8 @@ Use this checklist to implement tools one by one. Copy the tool name and descrip
 ## Progress Tracking
 
 **Total Tools:** ~100+
-**Completed:** 2 (`delete_file`, `move_file`)
-**Remaining:** ~98+
+**Completed:** 3 (`delete_file`, `move_file`, `copy_file`)
+**Remaining:** ~97+
 
 **Current Phase:** Phase 1 (Core File Operations)
 **Next Recommended:** `move_file` or `copy_file`
