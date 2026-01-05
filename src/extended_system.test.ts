@@ -5,7 +5,7 @@ import * as os from 'node:os';
 import { spawnSync } from 'node:child_process';
 
 import { Dispatcher } from './dispatcher';
-import { AGENTS } from './agents';
+import { AGENTS, SYSTEM } from './agents';
 import { route } from './app/router';
 
 // When running from dist/, use the compiled JS files directly
@@ -149,13 +149,14 @@ async function run() {
         );
 
         // Router surface
+        // Use SYSTEM agent to allow all tools (matches CLI behavior)
         const routerResult = await route(
             'remember: test note',
             'spike',
             null,
             [],
             false,
-            undefined,
+            SYSTEM, // Use SYSTEM agent (not undefined) to allow all tools
             undefined
         );
         if ('mode' in routerResult && routerResult.mode === 'tool_call') {

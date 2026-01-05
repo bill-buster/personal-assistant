@@ -668,13 +668,14 @@ if (require.main === module) {
         if (toolJsonOutput) {
             // Tool-json mode just parses commands - no runtime needed (no LLM, no executor)
             // Use default TOOL_SCHEMAS directly
+            // Use SYSTEM agent by default for tool-json mode (allows all tools for parsing)
             const result = await route(
                 content,
                 intent,
                 instruction,
                 [],
                 false,
-                undefined,
+                DEFAULT_SYSTEM_AGENT, // Use SYSTEM agent for tool-json mode
                 undefined,
                 { enableRegex: true, toolFormat: 'compact' },
                 resolvedConfig
