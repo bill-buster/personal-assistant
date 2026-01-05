@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CursorCommandEvalSchema } from '../tools/cursor_command_eval';
 
 /**
  * File operation size limits (in bytes).
@@ -381,6 +382,12 @@ export const CreateDirectorySchema = z.object({
 });
 export type CreateDirectoryArgs = z.infer<typeof CreateDirectorySchema>;
 
+export const DeleteDirectorySchema = z.object({
+    path: z.string().min(1),
+    confirm: z.boolean().optional(),
+});
+export type DeleteDirectoryArgs = z.infer<typeof DeleteDirectorySchema>;
+
 export const RunCmdSchema = z.object({
     command: z.string().min(1),
     confirm: z.boolean().optional(),
@@ -554,6 +561,7 @@ export const ToolSchemas: Record<string, z.ZodTypeAny> = {
     copy_file: CopyFileSchema,
     file_info: FileInfoSchema,
     create_directory: CreateDirectorySchema,
+    delete_directory: DeleteDirectorySchema,
     run_cmd: RunCmdSchema,
     remember: RememberSchema,
     recall: RecallSchema,
@@ -586,4 +594,5 @@ export const ToolSchemas: Record<string, z.ZodTypeAny> = {
     git_log: GitLogSchema,
     read_url: ReadUrlSchema,
     return_to_supervisor: ReturnToSupervisorSchema,
+    cursor_command_eval: CursorCommandEvalSchema,
 };

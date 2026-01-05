@@ -21,6 +21,7 @@ import {
     handleCopyFile,
     handleFileInfo,
     handleCreateDirectory,
+    handleDeleteDirectory,
     handleRunCmd,
     handleRemember,
     handleRecall,
@@ -57,6 +58,7 @@ import {
 } from '../tools/productivity_tools';
 import { handleGitStatus, handleGitDiff, handleGitLog } from '../tools/git_tools';
 import { handleReadUrl } from '../tools/fetch_tools';
+import { handleCursorCommandEval } from '../tools/cursor_command_eval';
 
 /**
  * Node.js implementation of ToolRegistry.
@@ -97,6 +99,7 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
     copy_file: handleCopyFile,
     file_info: handleFileInfo,
     create_directory: handleCreateDirectory,
+    delete_directory: handleDeleteDirectory,
     run_cmd: handleRunCmd,
     remember: handleRemember,
     recall: handleRecall,
@@ -128,6 +131,7 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
     git_diff: handleGitDiff,
     git_log: handleGitLog,
     read_url: handleReadUrl,
+    cursor_command_eval: handleCursorCommandEval,
 };
 
 /**

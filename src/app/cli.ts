@@ -36,6 +36,7 @@ import {
     loadAllPlugins,
     generateCorrelationId,
 } from '../core';
+import { CursorCommandLogger } from '../core/cursor_command_log';
 import type { ToolResult, CLIResult, ResolvedConfig } from '../core';
 import { route } from './router';
 import { isRouteError, isRouteToolCall, isRouteReply } from '../core';
@@ -75,6 +76,8 @@ Commands:
   git log [--limit N]          Show recent commits
   audit [--limit N]            View audit trail
   logs [recent|stats|errors]    Review command logs and metrics
+  cursor [stats|recent|errors|eval]  Review Cursor IDE command logs and metrics
+  cursor eval [--command NAME] [--project-only]  Evaluate Cursor custom commands
   cache clear                   Clear LLM response cache
   cache stats                   Show cache statistics
   cache test-clear              Clear test result cache
@@ -210,6 +213,14 @@ async function main() {
 
         case 'logs':
             result = handleLogs(subcommand, flags, runtime);
+            break;
+
+        case 'cursor':
+            if (subcommand === 'eval' || subcommand === 'commands') {
+                result = await handleCursorEval(flags, runtime);
+            } else {
+                result = handleCursor(subcommand, flags);
+            }
             break;
 
         case 'cache':
@@ -594,6 +605,113 @@ function handleLogs(
         }
     } catch (e: any) {
         return { ok: false, error: `Failed to read command logs: ${e.message}` };
+    }
+}
+
+function handleCursor(
+    subcommand: string | null,
+    flags: Record<string, string | boolean>
+): CLIResult {
+    const limit = flags['limit'] ? parseInt(flags['limit'] as string, 10) : 50;
+    const statsOnly = flags['stats'] === true;
+    const category = flags['category'] as string | undefined;
+    const command = flags['command'] as string | undefined;
+
+    try {
+        const logger = new CursorCommandLogger();
+        const entries = logger.readLogs();
+
+        // Filter entries
+        let filtered = entries;
+        if (category) {
+            filtered = filtered.filter(e => e.category === category);
+        }
+        if (command) {
+            filtered = filtered.filter(e => e.command_id === command);
+        }
+
+        // Limit results
+        const limited = filtered.slice(0, limit);
+
+        if (statsOnly || subcommand === 'stats') {
+            // Return statistics
+            const stats = logger.getStats(filtered);
+            return {
+                ok: true,
+                result: {
+                    summary: {
+                        total: stats.total,
+                        success: stats.success,
+                        error: stats.error,
+                        success_rate: stats.success_rate,
+                        avg_latency_ms: stats.avg_latency_ms,
+                    },
+                    by_category: stats.by_category,
+                    by_command: stats.by_command,
+                },
+            };
+        } else if (subcommand === 'recent' || !subcommand) {
+            // Return recent entries
+            return {
+                ok: true,
+                result: {
+                    count: limited.length,
+                    entries: limited.map(e => ({
+                        ts: e.ts,
+                        command_id: e.command_id,
+                        command_title: e.command_title,
+                        category: e.category,
+                        success: e.success,
+                        error: e.error,
+                        duration_ms: e.duration_ms,
+                        context: e.context,
+                    })),
+                },
+            };
+        } else if (subcommand === 'errors') {
+            // Return only errors
+            const errors = filtered.filter(e => !e.success).slice(0, limit);
+            return {
+                ok: true,
+                result: {
+                    count: errors.length,
+                    entries: errors.map(e => ({
+                        ts: e.ts,
+                        command_id: e.command_id,
+                        command_title: e.command_title,
+                        category: e.category,
+                        error: e.error,
+                        duration_ms: e.duration_ms,
+                    })),
+                },
+            };
+        } else {
+            return {
+                ok: false,
+                error: 'Usage: assistant cursor [recent|stats|errors] [--limit N] [--category CAT] [--command CMD] [--stats]',
+            };
+        }
+    } catch (e: any) {
+        return { ok: false, error: `Failed to read cursor command logs: ${e.message}` };
+    }
+}
+
+async function handleCursorEval(
+    flags: Record<string, string | boolean>,
+    runtime: Runtime
+): Promise<CLIResult> {
+    try {
+        const commandName = flags['command'] as string | undefined;
+        const projectOnly = flags['project-only'] === true;
+
+        const result = await runtime.executor.execute('cursor_command_eval', {
+            command_name: commandName,
+            project_only: projectOnly,
+        });
+
+        return toCliResult(result);
+    } catch (e: any) {
+        return { ok: false, error: `Failed to evaluate cursor commands: ${e.message}` };
     }
 }
 

@@ -24,6 +24,7 @@ import {
     CopyFileArgs,
     FileInfoArgs,
     CreateDirectoryArgs,
+    DeleteDirectoryArgs,
 } from '../core/types';
 
 /**
@@ -1095,4 +1096,123 @@ export function handleCreateDirectory(
             };
         }
     }
+}
+
+/**
+ * Handle delete_directory tool.
+ * @param args - Tool arguments containing path and optional confirm flag.
+ * @param context - Execution context.
+ * @returns Result object with ok, result, error, debug.
+ */
+export function handleDeleteDirectory(
+    args: DeleteDirectoryArgs,
+    context: ExecutorContext
+): ToolResult {
+    const { paths, requiresConfirmation, permissionsPath, start } = context;
+
+    // Check confirmation requirement BEFORE path check
+    if (requiresConfirmation('delete_directory') && args.confirm !== true) {
+        return {
+            ok: false,
+            result: null,
+            error: makeConfirmationError('delete_directory', permissionsPath),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
+    }
+
+    // Validate and resolve path
+    let targetPath: string;
+    try {
+        targetPath = paths.resolveAllowed(args.path, 'write'); // Delete requires write permission
+    } catch {
+        return {
+            ok: false,
+            result: null,
+            error: makePermissionError(
+                'delete_directory',
+                args.path,
+                permissionsPath,
+                ErrorCode.DENIED_PATH_ALLOWLIST
+            ),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
+    }
+
+    // Check if directory exists and is actually a directory (with caching)
+    const statCache = getStatCache();
+    const stats = statCache.get(targetPath);
+    if (!stats) {
+        return {
+            ok: false,
+            result: null,
+            error: makeError(ErrorCode.EXEC_ERROR, `Directory not found: ${args.path}`),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
+    }
+
+    if (!stats.isDirectory()) {
+        return {
+            ok: false,
+            result: null,
+            error: makeError(ErrorCode.EXEC_ERROR, `Path '${args.path}' is not a directory.`),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
+    }
+
+    // Delete the directory and its contents recursively
+    try {
+        fs.rmSync(targetPath, { recursive: true, force: true });
+        // Invalidate stat cache after delete
+        statCache.invalidate(targetPath);
+    } catch (err: any) {
+        return {
+            ok: false,
+            result: null,
+            error: makeError(ErrorCode.EXEC_ERROR, `Failed to delete directory: ${err.message}`),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
+    }
+
+    return {
+        ok: true,
+        result: { deleted: args.path },
+        error: null,
+        _debug: makeDebug({
+            path: 'tool_json',
+            start,
+            model: null,
+            memory_read: false,
+            memory_write: false,
+        }),
+    };
 }

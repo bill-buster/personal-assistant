@@ -14,6 +14,7 @@ import {
     handleCopyFile,
     handleFileInfo,
     handleCreateDirectory,
+    handleDeleteDirectory,
 } from './file_tools';
 import { createMockContext } from '../core/test_utils';
 import { ExecutorContext } from '../core/types';
@@ -1108,6 +1109,221 @@ try {
         );
     } else {
         logLine('PASS: path not allowed');
+    }
+
+    // ============================================
+    // DELETE_DIRECTORY - SUCCESS CASES
+    // ============================================
+
+    // T34: Delete directory successfully
+    const testDir34 = path.join(testRoot, 'testdir34');
+    fs.mkdirSync(testDir34, { recursive: true });
+    fs.writeFileSync(path.join(testDir34, 'file.txt'), 'content');
+    const context34 = {
+        ...createMockContext({
+            baseDir: testRoot,
+            paths: {
+                resolve: (p: string) => path.resolve(testRoot, p),
+                assertAllowed: () => {},
+                resolveAllowed: (p: string) => path.resolve(testRoot, p),
+            },
+        }),
+        requiresConfirmation: () => false,
+    } as ExecutorContext;
+
+    const result34 = handleDeleteDirectory({ path: 'testdir34', confirm: true }, context34);
+    if (!result34.ok || !result34.result?.deleted) {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: delete directory successfully\nexpected: ok true, result.deleted\n\n',
+            process.stderr
+        );
+    } else if (fs.existsSync(testDir34)) {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: delete directory successfully\nexpected: directory should not exist\n\n',
+            process.stderr
+        );
+    } else {
+        logLine('PASS: delete directory successfully');
+    }
+
+    // T35: Delete empty directory
+    const testDir35 = path.join(testRoot, 'testdir35');
+    fs.mkdirSync(testDir35, { recursive: true });
+    const context35 = {
+        ...createMockContext({
+            baseDir: testRoot,
+            paths: {
+                resolve: (p: string) => path.resolve(testRoot, p),
+                assertAllowed: () => {},
+                resolveAllowed: (p: string) => path.resolve(testRoot, p),
+            },
+        }),
+        requiresConfirmation: () => false,
+    } as ExecutorContext;
+
+    const result35 = handleDeleteDirectory({ path: 'testdir35', confirm: true }, context35);
+    if (!result35.ok || !result35.result?.deleted) {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: delete empty directory\nexpected: ok true, result.deleted\n\n',
+            process.stderr
+        );
+    } else if (fs.existsSync(testDir35)) {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: delete empty directory\nexpected: directory should not exist\n\n',
+            process.stderr
+        );
+    } else {
+        logLine('PASS: delete empty directory');
+    }
+
+    // T36: Delete nested directory with files
+    const testDir36 = path.join(testRoot, 'testdir36');
+    const nestedDir36 = path.join(testDir36, 'nested');
+    fs.mkdirSync(nestedDir36, { recursive: true });
+    fs.writeFileSync(path.join(testDir36, 'file1.txt'), 'content1');
+    fs.writeFileSync(path.join(nestedDir36, 'file2.txt'), 'content2');
+    const context36 = {
+        ...createMockContext({
+            baseDir: testRoot,
+            paths: {
+                resolve: (p: string) => path.resolve(testRoot, p),
+                assertAllowed: () => {},
+                resolveAllowed: (p: string) => path.resolve(testRoot, p),
+            },
+        }),
+        requiresConfirmation: () => false,
+    } as ExecutorContext;
+
+    const result36 = handleDeleteDirectory({ path: 'testdir36', confirm: true }, context36);
+    if (!result36.ok || !result36.result?.deleted) {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: delete nested directory\nexpected: ok true, result.deleted\n\n',
+            process.stderr
+        );
+    } else if (fs.existsSync(testDir36)) {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: delete nested directory\nexpected: directory should not exist\n\n',
+            process.stderr
+        );
+    } else {
+        logLine('PASS: delete nested directory');
+    }
+
+    // ============================================
+    // DELETE_DIRECTORY - ERROR CASES
+    // ============================================
+
+    // T37: Require confirmation (no confirm flag)
+    const context37 = {
+        ...createMockContext({
+            baseDir: testRoot,
+            permissions: {
+                allow_paths: [],
+                allow_commands: [],
+                require_confirmation_for: ['delete_directory'],
+                deny_tools: [],
+            },
+            permissionsPath: path.join(testRoot, 'permissions.json'),
+        }),
+        requiresConfirmation: (toolName: string) => toolName === 'delete_directory',
+    } as ExecutorContext;
+
+    const result37 = handleDeleteDirectory({ path: 'testdir37' }, context37);
+    if (result37.ok || result37.error?.code !== 'CONFIRMATION_REQUIRED') {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: require confirmation\nexpected: ok false, error.code CONFIRMATION_REQUIRED\n\n',
+            process.stderr
+        );
+    } else {
+        logLine('PASS: require confirmation');
+    }
+
+    // T38: Directory not found
+    const context38 = {
+        ...createMockContext({
+            baseDir: testRoot,
+            paths: {
+                resolve: (p: string) => path.resolve(testRoot, p),
+                assertAllowed: () => {},
+                resolveAllowed: (p: string) => path.resolve(testRoot, p),
+            },
+        }),
+        requiresConfirmation: () => false,
+    } as ExecutorContext;
+
+    const result38 = handleDeleteDirectory({ path: 'nonexistent38', confirm: true }, context38);
+    if (result38.ok || result38.error?.code !== 'EXEC_ERROR') {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: directory not found\nexpected: ok false, error.code EXEC_ERROR\n\n',
+            process.stderr
+        );
+    } else {
+        logLine('PASS: directory not found');
+    }
+
+    // T39: Path is file (not directory)
+    const testFile39 = path.join(testRoot, 'testfile39.txt');
+    fs.writeFileSync(testFile39, 'content');
+    const context39 = {
+        ...createMockContext({
+            baseDir: testRoot,
+            paths: {
+                resolve: (p: string) => path.resolve(testRoot, p),
+                assertAllowed: () => {},
+                resolveAllowed: (p: string) => path.resolve(testRoot, p),
+            },
+        }),
+        requiresConfirmation: () => false,
+    } as ExecutorContext;
+
+    const result39 = handleDeleteDirectory({ path: 'testfile39.txt', confirm: true }, context39);
+    if (result39.ok || !result39.error?.message.includes('not a directory')) {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: path is file\nexpected: ok false, error mentions not a directory\n\n',
+            process.stderr
+        );
+    } else {
+        logLine('PASS: path is file');
+    }
+
+    // T40: Path outside baseDir (security check)
+    const context40 = {
+        ...createMockContext({
+            baseDir: testRoot,
+            paths: {
+                resolve: (p: string) => {
+                    throw new Error('Path traversal detected');
+                },
+                assertAllowed: () => {
+                    throw new Error('Path not allowed');
+                },
+                resolveAllowed: () => {
+                    throw new Error('Path not allowed');
+                },
+            },
+            permissionsPath: path.join(testRoot, 'permissions.json'),
+        }),
+        requiresConfirmation: () => false,
+    } as ExecutorContext;
+
+    const result40 = handleDeleteDirectory({ path: '../../etc', confirm: true }, context40);
+    if (result40.ok || result40.error?.code !== 'DENIED_PATH_ALLOWLIST') {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: path outside baseDir\nexpected: ok false, error.code DENIED_PATH_ALLOWLIST\n\n',
+            process.stderr
+        );
+    } else {
+        logLine('PASS: path outside baseDir');
     }
 
     // ============================================
