@@ -3,9 +3,11 @@ You are the Implementer. Follow role.impl.mdc first, then project rules.
 # Note: @Docs mentions are optional if external docs aren't indexed
 @Docs Node.js @Docs Zod
 
-## Automatic Tool Selection
+## Tool Selection
 
-**FIRST**: Read `docs/TOOL_IMPLEMENTATION_CHECKLIST.md` and find the **first unchecked tool** (line starting with `- [ ]`).
+**Manual override**: If user specifies a tool name, use that tool instead of auto-selecting.
+
+**Automatic selection** (if no tool specified): Read `docs/TOOL_IMPLEMENTATION_CHECKLIST.md` and find the **first unchecked tool** (line starting with `- [ ]`).
 
 Extract:
 - **Tool name**: The text between backticks (e.g., `move_file` → `move_file`)
@@ -18,6 +20,16 @@ If no unchecked tools are found, inform the user that all tools are complete.
 **IMPORTANT**: Log each step clearly so the user can see progress. Use format: `[STEP X/12] Description...`
 
 Implement the selected tool end-to-end, then automatically review and test:
+
+**Baseline Check:**
+0. **[STEP 0/12]** Log: "Checking baseline repository state..."
+   - Run `npm run preflight` to check if repo is already in a broken state
+   - Record baseline status:
+     - If baseline passes: Continue normally
+     - If baseline fails: Log warning "Baseline check failed - repo is in broken state"
+       - **IMPORTANT**: Block Step 11 (commit) unless baseline is fixed or explicitly accepted
+       - This prevents claiming "ready to commit" when repo is already red
+   - Log: "Baseline check: [passed/failed]"
 
 **Implementation:**
 1. **[STEP 1/12]** Log: "Reading checklist to find next tool..."
@@ -55,10 +67,10 @@ Implement the selected tool end-to-end, then automatically review and test:
    - Log: "Checklist updated"
 
 **Automatic Quality Checks (after implementation):**
-8. **[STEP 8/12]** Log: "Running quality checks in parallel..."
-   - Run automated review and tests in parallel:
-     - Automated review: `npm run review src/tools/[tool_name]_tools.ts` (async)
-     - Tests: `npm test src/tools/[tool_name]_tools.test.ts` (async)
+8. **[STEP 8/12]** Log: "Running quality checks (order doesn't matter)..."
+   - Run automated review and tests (run both, order doesn't matter):
+     - Automated review: `npm run review src/tools/[tool_name]_tools.ts`
+     - Tests: `npm test src/tools/[tool_name]_tools.test.ts`
    - Wait for both to complete
    - Log: "Automated review complete: [score]/100, [issues] issues found"
    - Log: "Tests complete: [passed/failed], [N] tests"
@@ -79,6 +91,9 @@ Implement the selected tool end-to-end, then automatically review and test:
     - If critical issues remain after 2 fix attempts: Stop and report
 
 11. **[STEP 11/12]** Log: "Staging files and running preflight..."
+    - **CRITICAL**: If baseline check (Step 0) failed, do NOT commit unless:
+      - Baseline issues are fixed, OR
+      - User explicitly accepts committing with baseline failures
     - Follow commit workflow in git.mdc (see `.cursor/rules/git.mdc` for details):
       - Stage files: `git add [files]`
       - Run: `npm run preflight`
@@ -93,13 +108,14 @@ Implement the selected tool end-to-end, then automatically review and test:
 
 ## Step Structure
 
+- **Step 0**: Baseline check (1 step - NEW)
 - **Steps 1-7**: Implementation (7 steps)
-- **Steps 8-9**: Quality checks (2 steps - parallel execution in step 8)
+- **Steps 8-9**: Quality checks (2 steps - run both in step 8, order doesn't matter)
 - **Step 10**: Fix issues (1 step)
 - **Step 11**: Commit (1 step - follows git.mdc workflow, see `.cursor/rules/git.mdc`)
 - **Step 12**: Post-commit review (1 step)
 
-**Total**: 12 steps (optimized from 13 by parallelizing quality checks)
+**Total**: 13 steps (includes baseline check)
 
 Follow patterns in tools.mdc, errors.mdc, and testing.mdc.
 

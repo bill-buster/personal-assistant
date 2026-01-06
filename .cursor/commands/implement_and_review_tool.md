@@ -49,7 +49,7 @@ A single end-to-end workflow to add or update a tool: implement → tests → re
 
 ### [STEP 3/16] Define the schema + types (fail-closed)
 - Add/modify in `src/core/types.ts`:
-  - Create Zod schema: `export const [ToolName]Schema = z.object({ ... })`
+  - Create Zod schema: `export const [ToolName]Schema = z.object({ /* fields */ })`
   - Export type: `export type [ToolName]Args = z.infer<typeof [ToolName]Schema>`
   - Add to `ToolSchemas` export at bottom: `[tool_name]: [ToolName]Schema,`
 - Ensure:

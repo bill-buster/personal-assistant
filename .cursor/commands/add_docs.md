@@ -6,22 +6,47 @@ This command should only be used in trusted codebases. It will:
 - Modify source code files
 - Add documentation comments
 - Update README and documentation files
-- Execute git commands
-- Potentially commit changes
 
 Verify you're in the correct repository before proceeding.
 
-For all exported functions in the selected code:
-1. Add JSDoc comments following the pattern:
-   /**
-    * Brief description.
-    * @param args - Parameter description
-    * @param context - Execution context
-    * @returns Result object with ok, result, error, debug
-    */
-2. Update README.md if new tool/feature
-3. Update docs/COMMANDS.md if new CLI command
-4. Ensure all public APIs are documented
+## Inputs
+
+- Code to document: (selected file or specified path)
+
+## Steps
+
+### [STEP 1/4] Identify exported functions
+- Find all exported functions in the selected code
+- Prioritize: public APIs / exported functions first
+- Skip: trivial getters/setters unless non-obvious
+- Skip: internal/private functions (unless complex logic warrants documentation)
+
+### [STEP 2/4] Add JSDoc comments
+For each exported function, add JSDoc following the pattern:
+```typescript
+/**
+ * Brief description.
+ * @param args - Parameter description
+ * @param context - Execution context
+ * @returns Result object with ok, result, error, debug
+ */
+```
+
+**Don't over-document internals**:
+- Prioritize public APIs / exported functions
+- Skip trivial getters/setters unless non-obvious
+- Skip internal helpers unless they have non-obvious behavior
+
+### [STEP 3/4] Update external documentation
+- Update README.md if new tool/feature
+- Update docs/COMMANDS.md if new CLI command
+- Ensure all public APIs are documented
+
+### [STEP 4/4] Generate summary
+- Files modified
+- Functions documented (N functions)
+- External docs updated (list files)
+- Any skipped functions and why
 
 ## Edge Cases
 
@@ -37,7 +62,9 @@ If documentation fails:
 - **Complex functions**: Break down into smaller documented functions
 - **Ambiguous parameters**: Clarify with examples in JSDoc
 
-After completing changes:
-- Stage files, run preflight, and commit following git.mdc conventions
-- Automatically run review_pr command to review the committed changes
+## Stop Conditions
+
+- Documentation complete: Provide summary
+- Stop after summary - do not commit or stage files
+- Let the user decide whether to commit based on documentation changes
 

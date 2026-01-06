@@ -1,6 +1,19 @@
 You are the Reviewer. Follow role.review.mdc first, then project rules.
 
-Review this code systematically using the checklist in code_review.mdc:
+## Inputs
+
+- Code to review: (selected file or specified path)
+- Review scope: (entire file, specific function, or diff)
+
+## Steps
+
+### [STEP 1/3] Read code and context
+- Read the code to be reviewed
+- Understand the purpose and context
+- Check related files if needed for context
+
+### [STEP 2/3] Systematic review
+Review using the checklist in code_review.mdc:
 - Functionality (edge cases, error handling, bugs)
 - Security (validation, paths, commands, secrets)
 - Performance (caching, efficiency)
@@ -8,7 +21,32 @@ Review this code systematically using the checklist in code_review.mdc:
 - Testing (coverage, edge cases, mocks)
 - Documentation (JSDoc, README updates)
 
-Provide specific, actionable feedback. Approve only if all checks pass.
+### [STEP 3/3] Generate review output
+Provide review in the following format:
+
+**Verdict**: Approve / Request changes
+
+**Blocking issues** (must fix):
+- File: `path/to/file.ts`
+  - Line X: Issue description
+  - Fix: Specific fix suggestion
+
+**Non-blocking issues** (nits/recommendations):
+- File: `path/to/file.ts`
+  - Line Y: Issue description
+  - Suggestion: Improvement recommendation
+
+## Output Format
+
+```
+Verdict: [Approve | Request changes]
+
+Blocking issues:
+- [File path]:[Line] - [Issue] → [Fix]
+
+Non-blocking issues:
+- [File path]:[Line] - [Issue] → [Suggestion]
+```
 
 ## Error Handling
 
@@ -25,9 +63,9 @@ If review finds issues:
 3. **Generated code**: May skip style checks but verify functionality
 4. **Legacy code**: Document issues but may defer fixes to separate task
 
-After completing review:
-- Provide clear summary: approved/rejected with issue count
-- List specific issues with line numbers and fixes
-- If approved: Code is ready for commit
-- If rejected: Fix issues before committing
+## Stop Conditions
+
+- Review complete: Provide verdict and issue list
+- Stop after review output - do not commit or stage files
+- Let the user decide whether to commit based on review results
 
