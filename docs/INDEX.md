@@ -53,27 +53,9 @@
 - **[ANTIGRAVITY_OPTIMIZATION_GUIDE.md](ANTIGRAVITY_OPTIMIZATION_GUIDE.md)** - Antigravity tool guide
 - **[PARALLEL_TESTS.md](PARALLEL_TESTS.md)** - Parallel test execution
 
-### Historical/Evaluation Documents
-*These documents are kept for reference but may contain historical information.*
+### Reference Documents
+*These documents are kept for reference.*
 
-- **[AGENT_EVALUATION_COMPARISON.md](AGENT_EVALUATION_COMPARISON.md)** - Agent evaluation comparison (historical)
-- **[CURSOR_COMMAND_EVALUATION.md](CURSOR_COMMAND_EVALUATION.md)** - Cursor command evaluation (historical)
-- **[CURSOR_COMMAND_TRACKING.md](CURSOR_COMMAND_TRACKING.md)** - Command tracking (historical)
-- **[CURSOR_DOCS_EVALUATION_REPORT.md](CURSOR_DOCS_EVALUATION_REPORT.md)** - Docs evaluation (historical)
-- **[CURSOR_TRACKING_SUMMARY.md](CURSOR_TRACKING_SUMMARY.md)** - Tracking summary (historical)
-- **[COMMAND_EVALUATION.md](COMMAND_EVALUATION.md)** - Command evaluation (historical)
-- **[COMMAND_CHAINING_AND_EVALUATION.md](COMMAND_CHAINING_AND_EVALUATION.md)** - Command chaining evaluation (historical)
-- **[COMMAND_TESTING_SUMMARY.md](COMMAND_TESTING_SUMMARY.md)** - Command testing summary (historical)
-- **[TEST_RESULTS_COUNT_WORDS.md](TEST_RESULTS_COUNT_WORDS.md)** - Test results (historical)
-- **[CODEBASE_EXPLANATION.md](CODEBASE_EXPLANATION.md)** - Codebase explanation (historical)
-- **[REVIEW_STRATEGY.md](REVIEW_STRATEGY.md)** - Review strategy (historical)
-- **[REVIEW_TOOL_ENHANCEMENTS.md](REVIEW_TOOL_ENHANCEMENTS.md)** - Review tool enhancements (historical)
-- **[CLEANUP_SUMMARY.md](CLEANUP_SUMMARY.md)** - Cleanup summary (historical)
-- **[DOCUMENTATION_CLEANUP_PLAN.md](DOCUMENTATION_CLEANUP_PLAN.md)** - Documentation cleanup plan (historical)
-- **[CONSOLIDATION_PLAN.md](CONSOLIDATION_PLAN.md)** - Consolidation plan (historical)
-- **[SIMPLIFIED_STRUCTURE.md](SIMPLIFIED_STRUCTURE.md)** - Simplified structure (historical)
-- **[AUTOMATION_OPPORTUNITIES.md](AUTOMATION_OPPORTUNITIES.md)** - Automation opportunities (historical)
-- **[CONTINUOUS_IMPROVEMENT.md](CONTINUOUS_IMPROVEMENT.md)** - Continuous improvement plan (historical)
 - **[DOCUMENTATION_CHECKLIST.md](DOCUMENTATION_CHECKLIST.md)** - Documentation checklist (reference)
 
 ### Planning & Proposals

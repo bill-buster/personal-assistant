@@ -1,5 +1,9 @@
 # Task Log
 
+**Note**: This file tracks **project-level development tasks** (e.g., "implement feature X", "set up Docker"). 
+
+For **user todos** (e.g., "buy milk", "call mom"), use the `task_add` and `task_list` tools which store data in `tasks.jsonl`.
+
 This file tracks all instructions, tasks, and improvements to ensure nothing is forgotten.
 
 ## Format
