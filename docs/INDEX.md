@@ -17,6 +17,7 @@
 - **[HOW_WE_WORK.md](HOW_WE_WORK.md)** - Complete workflow: commands, rules, testing, git, branch/PR style
 - **[WORKFLOW.md](WORKFLOW.md)** - Daily development workflow and tooling
 - **[GIT.md](GIT.md)** - Git workflow, hooks, branching, commit conventions
+- **[RELEASE.md](RELEASE.md)** - Release process (semantic-release, versioning)
 - **[TESTING.md](TESTING.md)** - Complete testing guide (strategy, coverage, utilities)
 - **[CODE_REVIEW.md](CODE_REVIEW.md)** - Code review guide (best practices, workflow)
 
@@ -49,7 +50,6 @@
 
 ### Performance & Optimization
 - **[PERFORMANCE_OPTIMIZATIONS.md](PERFORMANCE_OPTIMIZATIONS.md)** - Performance optimization guide
-- **[ANTIGRAVITY_OPTIMIZATION_GUIDE.md](ANTIGRAVITY_OPTIMIZATION_GUIDE.md)** - Antigravity tool guide
 - **[PARALLEL_TESTS.md](PARALLEL_TESTS.md)** - Parallel test execution
 
 ### Reference Documents

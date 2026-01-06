@@ -119,7 +119,8 @@ Location: `~/.assistant/config.json`
 
 - **Type**: `string`
 - **Description**: Base directory for data storage
-- **Default**: `~/.assistant-data`
+- **Default**: `{project}/data/` when running from source
+- **Recommended**: Set `ASSISTANT_DATA_DIR=~/.assistant-data` for personal use
 - **Note**: Can be overridden with `ASSISTANT_DATA_DIR` environment variable
 
 ## Environment Variables
@@ -138,7 +139,7 @@ Environment variables override config file settings.
 
 | Variable                     | Description            | Default                         |
 | ---------------------------- | ---------------------- | ------------------------------- |
-| `ASSISTANT_DATA_DIR`         | Data storage directory | `~/.assistant-data`             |
+| `ASSISTANT_DATA_DIR`         | Data storage directory | `{project}/data/`               |
 | `ASSISTANT_CONFIG_DIR`       | Config directory       | `~/.assistant`                  |
 | `ASSISTANT_PERMISSIONS_PATH` | Permissions file path  | `~/.assistant/permissions.json` |
 

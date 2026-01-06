@@ -4,6 +4,26 @@
 
 This is a **local-first CLI assistant** that routes natural language commands to tools with optional LLM fallback. The system prioritizes security, performance, and maintainability through a multi-stage routing strategy and fail-closed security model.
 
+## Request Flow
+
+```mermaid
+flowchart TD
+    A[User Input] --> B[CLI/REPL/Web]
+    B --> C[Router]
+    C -->|Regex| D[Tool Call]
+    C -->|Heuristic| D
+    C -->|Parser| D
+    C -->|LLM Fallback| D
+    D --> E[Executor]
+    E --> S[Security / Permissions]
+    S --> F{Allowed?}
+    F -->|Yes| G[Tool Handler]
+    F -->|No| H[Structured Error]
+    G --> I[Result]
+    H --> I
+```
+
+
 ## Core Principles (Invariants)
 
 These are the "rules of the universe" for the codebase:
@@ -344,7 +364,7 @@ Use `--verbose` flag to see:
 
 ### Audit Trail
 
-All tool executions logged to `~/.assistant/data/audit.jsonl`:
+All tool executions logged to `${ASSISTANT_DATA_DIR}/audit.jsonl` (or `{project}/data/audit.jsonl` when running from source):
 ```json
 {
   "ts": "2024-01-01T12:00:00Z",

@@ -119,11 +119,15 @@ npm run web
 
 ## Data Location
 
-By default, data is stored in:
+By default:
 
-- `~/.assistant-data/memory.json` - Memories
-- `~/.assistant-data/tasks.jsonl` - Tasks
-- `~/.assistant-data/reminders.jsonl` - Reminders
+- When running from source without `ASSISTANT_DATA_DIR` set, data is stored in `{project}/data/`.
+- For personal use, set `ASSISTANT_DATA_DIR=~/.assistant-data`.
+
+Data files:
+- `memory.json` - Memories
+- `tasks.jsonl` - Tasks
+- `reminders.jsonl` - Reminders
 
 Override with:
 
@@ -141,7 +145,9 @@ Set `GROQ_API_KEY` or `OPENROUTER_API_KEY` env var, or use `--mock` for testing.
 
 ### "Command not allowed"
 
-Create `~/.assistant-data/permissions.json`:
+**Note**: By default, if no `permissions.json` exists, the assistant uses **DENY-ALL** mode for security. This means no commands or paths are allowed until you create a permissions file.
+
+Create `~/.assistant/permissions.json`:
 
 ```json
 {

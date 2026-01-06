@@ -123,17 +123,17 @@ if (verbose) {
 
 ## Inspecting Data Files
 
-Check stored data:
+Check stored data (paths depend on `ASSISTANT_DATA_DIR`; defaults to `{project}/data/`):
 
 ```bash
-# Memory
-cat ~/.assistant-data/memory.json | jq .
+# Memory (using ASSISTANT_DATA_DIR or project default)
+cat ${ASSISTANT_DATA_DIR:-./data}/memory.json | jq .
 
 # Tasks
-cat ~/.assistant-data/tasks.jsonl
+cat ${ASSISTANT_DATA_DIR:-./data}/tasks.jsonl
 
 # Audit log (last 10 entries)
-tail -10 ~/.assistant-data/audit.jsonl | jq .
+tail -10 ${ASSISTANT_DATA_DIR:-./data}/audit.jsonl | jq .
 ```
 
 ## Test Debugging

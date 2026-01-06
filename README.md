@@ -11,7 +11,7 @@ npm install
 # Build
 npm run build
 
-# Run CLI
+# Run CLI (requires build first)
 ./dist/app/cli.js --help
 
 # Or use npm scripts
@@ -112,9 +112,11 @@ Create `~/.assistant/config.json`:
 | `GROQ_API_KEY`               | Groq API key                        | -                               |
 | `OPENROUTER_API_KEY`         | OpenRouter API key                  | -                               |
 | `DEFAULT_PROVIDER`           | Default provider (groq, openrouter) | groq                            |
-| `ASSISTANT_DATA_DIR`         | Data storage directory              | `~/.assistant-data`             |
+| `ASSISTANT_DATA_DIR`         | Data storage directory              | `{project}/data/`               |
 | `ASSISTANT_CONFIG_DIR`       | Config directory                    | `~/.assistant`                  |
 | `ASSISTANT_PERMISSIONS_PATH` | Permissions file path               | `~/.assistant/permissions.json` |
+
+> **Note**: When running from source without `ASSISTANT_DATA_DIR` set, data is stored in `{project}/data/`. For personal use, set `export ASSISTANT_DATA_DIR=~/.assistant-data`.
 
 ### Configuration Options
 

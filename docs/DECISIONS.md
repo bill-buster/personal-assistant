@@ -44,16 +44,16 @@
 
 **Decision:**
 
-- Default data location: `~/.assistant-data/` (outside repo)
-- Configurable via `ASSISTANT_DATA_DIR` or `ASSISTANT_BASE_DIR` env vars
-- For development: allow `./.assistant-data/` via `ASSISTANT_BASE_DIR=.` (gitignored)
+- Source default: `{project}/data/` (project-relative, for dev simplicity)
+- Recommended for personal use: `ASSISTANT_DATA_DIR=~/.assistant-data` (outside repo)
+- Configurable via `ASSISTANT_DATA_DIR` env var
 - Never write data files to repo root or dist/
 
 **Consequences:**
 
-- ✅ No accidental data commits
+- ✅ No accidental data commits (when using recommended env var)
 - ✅ Repo can live anywhere without data pollution
-- ⚠️ Users must understand data is stored outside repo by default
+- ⚠️ New devs must set `ASSISTANT_DATA_DIR` for persistent personal data
 
 ---
 
