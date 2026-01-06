@@ -1,8 +1,15 @@
+**Status**: Reference-only (Review Report)  
+**Canonical**: [docs/CODE_REVIEW.md](docs/CODE_REVIEW.md) for code review guide
+
+---
+
 # Code Review Report
 
 **Date**: 2025-01-27  
 **Scope**: Full codebase review  
 **Reviewer**: AI Code Review
+
+*This is a review report. For the code review guide, see [docs/CODE_REVIEW.md](docs/CODE_REVIEW.md).*
 
 ## Executive Summary
 

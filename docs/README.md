@@ -94,7 +94,7 @@ This directory contains all project documentation. Use [INDEX.md](INDEX.md) to f
 | Document | Purpose | When to Read |
 |----------|---------|--------------|
 | [TASK_LOG.md](TASK_LOG.md) | Task tracking | Tracking tasks |
-| [10X_IMPROVEMENTS.md](10X_IMPROVEMENTS.md) | 10X improvements list | Improvement status |
+| [STATUS_SUMMARY.md](docs/STATUS_SUMMARY.md) | Project status | Current state |
 | [STATUS_SUMMARY.md](STATUS_SUMMARY.md) | Project status overview | Current project state |
 
 
@@ -115,7 +115,7 @@ This directory contains all project documentation. Use [INDEX.md](INDEX.md) to f
 - `COMMIT_STATUS.md` - Historical commit tracking (outdated)
 - `REVIEW_SUMMARY.md` - Historical review snapshot (outdated)
 - `TESTING_SUMMARY.md` - Redundant with `TESTING_COMPLETE.md`
-- `100X_IMPLEMENTATION_SUMMARY.md` - Redundant with `10X_IMPROVEMENTS.md`
+- `100X_IMPLEMENTATION_SUMMARY.md` - Redundant with `STATUS_SUMMARY.md`
 - `TESTING_100X_FEATURES.md` - Redundant with `TESTING_COMPLETE.md`
 - `TEST_GENERATION_FIX.md` - Historical fix documentation
 - `TEST_GENERATION_MULTIPLE_HANDLERS.md` - Historical implementation detail

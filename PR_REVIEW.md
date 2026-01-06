@@ -1,8 +1,15 @@
+**Status**: Reference-only (Review Report)  
+**Canonical**: [docs/CODE_REVIEW.md](docs/CODE_REVIEW.md) for code review guide
+
+---
+
 # PR Review Report
 
 **Date**: 2025-01-05  
 **Reviewer**: AI Code Reviewer  
 **Scope**: Uncommitted changes (stat_cache.ts, file_tools.ts modifications, git_tools.test.ts, CODE_REVIEW.md)
+
+*This is a review report. For the code review guide, see [docs/CODE_REVIEW.md](docs/CODE_REVIEW.md).*
 
 ## Executive Summary
 

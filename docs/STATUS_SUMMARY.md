@@ -50,7 +50,7 @@
 ## 📋 What's Left (Optional/Enhancement)
 
 ### Low Priority / Future
-1. **OpenTelemetry instrumentation** - Marked as low priority in `10X_IMPROVEMENTS.md`
+1. **OpenTelemetry instrumentation** - Low priority (see note below)
 2. **Test coverage improvements** - See `COVERAGE_IMPROVEMENT_PLAN.md` for details
    - 20 files with 0% coverage (mostly scripts and test tools)
    - 45 files below 80% coverage
