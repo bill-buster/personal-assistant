@@ -22,7 +22,8 @@ export type GrepArgs = z.infer<typeof GrepSchema>;
 
 export const GREP_TOOL_SPEC: ToolSpec = {
     status: 'ready',
-    description: 'Search for text patterns in files (fast regex search across files).',
+    description:
+        'Search for text patterns in files using regex. Supports case-sensitive/insensitive search, recursive directory traversal, and result limiting.',
     required: ['pattern', 'path'],
     parameters: {
         pattern: {
@@ -129,14 +130,10 @@ function searchInFile(
         const lines = content.split(/\r?\n/);
 
         // Create regex with flags
+        // Note: Pattern is validated in handleGrep before calling this function,
+        // so this should never fail. If it does, it will be caught by outer catch.
         const flags = caseSensitive ? 'g' : 'gi';
-        let regex: RegExp;
-        try {
-            regex = new RegExp(pattern, flags);
-        } catch (err: any) {
-            // Invalid regex pattern
-            throw new Error(`Invalid regex pattern: ${err.message}`);
-        }
+        const regex = new RegExp(pattern, flags);
 
         // Search each line
         for (let i = 0; i < lines.length; i++) {
@@ -207,7 +204,7 @@ export function handleGrep(args: GrepArgs, context: ExecutorContext): ToolResult
         return {
             ok: false,
             result: null,
-            error: makeError(ErrorCode.EXEC_ERROR, `Path not found: ${err.message}`),
+            error: makeError(ErrorCode.EXEC_ERROR, `Path not found: ${searchPath}`),
             _debug: makeDebug({
                 path: 'tool_json',
                 start,
@@ -264,6 +261,11 @@ export function handleGrep(args: GrepArgs, context: ExecutorContext): ToolResult
     const allMatches: Match[] = [];
     const skippedFiles: string[] = [];
     for (const filePath of filesToSearch) {
+        // Check if we've already reached max_results before processing this file
+        if (max_results && allMatches.length >= max_results) {
+            break;
+        }
+
         const matches = searchInFile(filePath, pattern, case_sensitive, maxFileSize);
 
         if (matches === null) {
@@ -272,12 +274,17 @@ export function handleGrep(args: GrepArgs, context: ExecutorContext): ToolResult
             continue;
         }
 
-        allMatches.push(...matches);
-
-        // Stop if we've reached max_results
-        if (max_results && allMatches.length >= max_results) {
-            allMatches.splice(max_results);
-            break;
+        // Calculate how many matches we can still add
+        if (max_results) {
+            const remaining = max_results - allMatches.length;
+            if (remaining <= 0) {
+                break;
+            }
+            // Only push the matches we need
+            allMatches.push(...matches.slice(0, remaining));
+        } else {
+            // No limit - push all matches
+            allMatches.push(...matches);
         }
     }
 
