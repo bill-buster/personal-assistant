@@ -374,7 +374,10 @@ export class Executor {
             size: number;
         }
 
-        const calculateSize = (dirPath: string, depth: number): { size: number; entries: SizeEntry[] } => {
+        const calculateSize = (
+            dirPath: string,
+            depth: number
+        ): { size: number; entries: SizeEntry[] } => {
             let totalSize = 0;
             const entries: SizeEntry[] = [];
 
@@ -459,9 +462,10 @@ export class Executor {
             : entries;
 
         // Filter by threshold if specified
-        const filteredEntries = options.threshold !== undefined
-            ? displayEntries.filter(e => e.size >= options.threshold!)
-            : displayEntries;
+        const filteredEntries =
+            options.threshold !== undefined
+                ? displayEntries.filter(e => e.size >= options.threshold!)
+                : displayEntries;
 
         // Format output
         const lines = filteredEntries.map(entry => {
@@ -503,9 +507,18 @@ export class Executor {
             const days = Math.floor(diff / (1000 * 60 * 60 * 24));
             if (days < 180) {
                 // Show time if within 6 months
-                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                return date.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                });
             }
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            return date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+            });
         };
 
         const getIndicator = (stat: fs.Stats, name: string): string => {
@@ -528,7 +541,7 @@ export class Executor {
             const lines: string[] = [];
             try {
                 const entries = fs.readdirSync(dirPath, { withFileTypes: true });
-                
+
                 // Filter entries based on flags
                 const filtered = entries.filter(entry => {
                     if (showAll) return true;
@@ -569,7 +582,12 @@ export class Executor {
                     }
 
                     // Handle recursive flag
-                    if (recursive && stat.isDirectory() && entry.name !== '.' && entry.name !== '..') {
+                    if (
+                        recursive &&
+                        stat.isDirectory() &&
+                        entry.name !== '.' &&
+                        entry.name !== '..'
+                    ) {
                         const subPrefix = prefix ? prefix + '  ' : '  ';
                         const subLines = listSingleDir(fullPath, subPrefix);
                         lines.push(...subLines);
