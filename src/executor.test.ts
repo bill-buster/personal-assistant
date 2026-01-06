@@ -1597,24 +1597,50 @@ try {
     }
 
     // JSONL recovery test
-    const corruptTasksPath = tasksPath;
-    const corruptQuarantinePath = path.join(testDataDir, 'tasks.jsonl.corrupt');
-
-    // Back up original file if it exists
-    let originalTasksContent: string | null = null;
-    if (fs.existsSync(corruptTasksPath)) {
-        originalTasksContent = fs.readFileSync(corruptTasksPath, 'utf8');
-    }
+    // Use a unique temp directory for this test to avoid parallel test collisions
+    const recoveryTestDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pa-jsonl-recovery-'));
+    const recoveryConfigDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pa-recovery-config-'));
+    const corruptTasksPath = path.join(recoveryTestDir, 'tasks.jsonl');
+    const corruptQuarantinePath = path.join(recoveryTestDir, 'tasks.jsonl.corrupt');
 
     try {
+        // Ensure directory exists
+        fs.mkdirSync(recoveryTestDir, { recursive: true });
+
+        // Clean up any existing quarantine file
         if (fs.existsSync(corruptQuarantinePath)) fs.unlinkSync(corruptQuarantinePath);
 
         // Write mixed content: valid line, corrupt line, valid line
+        // Note: Tasks require created_at field (per isTask validator)
+        const now = new Date().toISOString();
         fs.writeFileSync(
             corruptTasksPath,
-            '{"id":1,"text":"valid 1","done":false}\nTHIS IS NOT JSON\n{"id":2,"text":"valid 2","done":false}\n',
+            `{"id":1,"text":"valid 1","done":false,"created_at":"${now}"}\nTHIS IS NOT JSON\n{"id":2,"text":"valid 2","done":false,"created_at":"${now}"}\n`,
             'utf8'
         );
+
+        // Create a custom config for this test that points to the recovery test directory
+        const recoveryConfigFile = path.join(recoveryConfigDir, 'config.json');
+        fs.mkdirSync(recoveryConfigDir, { recursive: true });
+        fs.writeFileSync(
+            recoveryConfigFile,
+            JSON.stringify(
+                {
+                    version: 1,
+                    fileBaseDir: recoveryTestDir,
+                },
+                null,
+                2
+            ),
+            'utf8'
+        );
+
+        const recoveryEnv: NodeJS.ProcessEnv = {
+            ...testEnv,
+            ASSISTANT_CONFIG_DIR: recoveryConfigDir,
+            ASSISTANT_DATA_DIR: recoveryTestDir,
+        };
+        delete recoveryEnv.ASSISTANT_PERMISSIONS_PATH;
 
         const recoveryPayload = {
             mode: 'tool_call',
@@ -1624,7 +1650,16 @@ try {
             },
         };
 
-        const recoveryResult = runExecutor(recoveryPayload);
+        const recoverySpawnResult = spawnSync(process.execPath, baseArgs, {
+            input: JSON.stringify(recoveryPayload),
+            cwd: spikeDir,
+            encoding: 'utf8',
+            env: recoveryEnv,
+        });
+        const recoveryResult = {
+            status: recoverySpawnResult.status,
+            stdout: (recoverySpawnResult.stdout || '').trim(),
+        };
         const recoveryJson = parseOutput(recoveryResult.stdout);
 
         if (!recoveryJson || recoveryJson.ok !== true) {
@@ -1659,15 +1694,47 @@ try {
             }
         }
     } finally {
-        // Restore tasks.jsonl
-        if (originalTasksContent !== null) {
-            fs.writeFileSync(corruptTasksPath, originalTasksContent, 'utf8');
-        } else if (fs.existsSync(corruptTasksPath)) {
-            fs.unlinkSync(corruptTasksPath);
+        // Cleanup: remove entire recovery test directory and config directory
+        try {
+            if (fs.existsSync(corruptQuarantinePath)) fs.unlinkSync(corruptQuarantinePath);
+            if (fs.existsSync(corruptTasksPath)) fs.unlinkSync(corruptTasksPath);
+            if (fs.existsSync(recoveryTestDir)) {
+                try {
+                    // Try modern API first (Node 14.14+)
+                    if (typeof fs.rmSync === 'function') {
+                        fs.rmSync(recoveryTestDir, { recursive: true, force: true });
+                    } else {
+                        // Fallback: remove files then directory
+                        const files = fs.readdirSync(recoveryTestDir);
+                        for (const file of files) {
+                            fs.unlinkSync(path.join(recoveryTestDir, file));
+                        }
+                        fs.rmdirSync(recoveryTestDir);
+                    }
+                } catch {
+                    // Ignore cleanup errors
+                }
+            }
+            if (fs.existsSync(recoveryConfigDir)) {
+                try {
+                    // Try modern API first (Node 14.14+)
+                    if (typeof fs.rmSync === 'function') {
+                        fs.rmSync(recoveryConfigDir, { recursive: true, force: true });
+                    } else {
+                        // Fallback: remove files then directory
+                        const files = fs.readdirSync(recoveryConfigDir);
+                        for (const file of files) {
+                            fs.unlinkSync(path.join(recoveryConfigDir, file));
+                        }
+                        fs.rmdirSync(recoveryConfigDir);
+                    }
+                } catch {
+                    // Ignore cleanup errors
+                }
+            }
+        } catch {
+            // Ignore cleanup errors
         }
-
-        // Cleanup quarantine file
-        if (fs.existsSync(corruptQuarantinePath)) fs.unlinkSync(corruptQuarantinePath);
     }
 
     // Test read_file offset > size

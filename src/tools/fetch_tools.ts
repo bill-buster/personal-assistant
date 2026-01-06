@@ -1,24 +1,15 @@
-import { spawnSync } from 'node:child_process';
 import { ToolResult, ReadUrlArgs, ExecutorContext } from '../core/types';
 import { makeError, ErrorCode } from '../core/tool_contract';
 
 /**
- * Handle reading content from a URL using curl (sync).
- * Checks allow_commands before executing.
+ * Handle reading content from a URL using native fetch.
+ * Includes SSRF protection to block localhost and private IP ranges.
  */
-export function handleReadUrl(args: ReadUrlArgs, context: ExecutorContext): ToolResult {
+export async function handleReadUrl(
+    args: ReadUrlArgs,
+    context: ExecutorContext
+): Promise<ToolResult> {
     const { url } = args;
-
-    // Security: Check if curl is in the allowlist
-    if (!context.permissions.allow_commands.includes('curl')) {
-        return {
-            ok: false,
-            error: makeError(
-                ErrorCode.DENIED_COMMAND_ALLOWLIST,
-                `Command 'curl' is not allowed. Listed in permissions.json: ${context.permissions.allow_commands.join(', ')}`
-            ),
-        };
-    }
 
     // Security: Block file:// and only allow http/https
     try {
@@ -33,6 +24,48 @@ export function handleReadUrl(args: ReadUrlArgs, context: ExecutorContext): Tool
                 ),
             };
         }
+
+        // SSRF protection: Block localhost and private IP ranges
+        const hostname = urlObj.hostname.toLowerCase();
+
+        // Block localhost hostnames
+        const localhostPatterns = ['localhost', '127.0.0.1', '::1', '0.0.0.0', '[::]', '[::1]'];
+        if (localhostPatterns.includes(hostname)) {
+            return {
+                ok: false,
+                error: makeError(
+                    ErrorCode.VALIDATION_ERROR,
+                    'Access to localhost is not allowed (SSRF protection)'
+                ),
+            };
+        }
+
+        // Block private IP ranges (IPv4)
+        const privateIpv4Regex = /^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.)/;
+        if (privateIpv4Regex.test(hostname)) {
+            return {
+                ok: false,
+                error: makeError(
+                    ErrorCode.VALIDATION_ERROR,
+                    'Access to private IP ranges is not allowed (SSRF protection)'
+                ),
+            };
+        }
+
+        // Block link-local and multicast IPv6 ranges
+        if (
+            hostname.startsWith('fe80:') ||
+            hostname.startsWith('fc00:') ||
+            hostname.startsWith('fd00:')
+        ) {
+            return {
+                ok: false,
+                error: makeError(
+                    ErrorCode.VALIDATION_ERROR,
+                    'Access to private IPv6 ranges is not allowed (SSRF protection)'
+                ),
+            };
+        }
     } catch (err: any) {
         // Invalid URL format
         return {
@@ -42,33 +75,50 @@ export function handleReadUrl(args: ReadUrlArgs, context: ExecutorContext): Tool
     }
 
     try {
-        // Use curl to fetch the content synchronously
-        const result = spawnSync('curl', ['-s', '-L', url], {
-            encoding: 'utf8',
-            maxBuffer: 10 * 1024 * 1024,
-        });
+        // Use native fetch with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6000); // 6 second timeout
 
-        if (result.error) {
+        let response: Response;
+        try {
+            response = await fetch(url, {
+                signal: controller.signal,
+                redirect: 'follow',
+                headers: {
+                    'User-Agent': 'PersonalAssistant/1.0',
+                },
+            });
+            clearTimeout(timeoutId);
+        } catch (err: unknown) {
+            clearTimeout(timeoutId);
+            const message = err instanceof Error ? err.message : 'Unknown network error';
+            return {
+                ok: false,
+                error: makeError(ErrorCode.EXEC_ERROR, `Failed to fetch URL: ${message}`),
+            };
+        }
+
+        if (!response.ok) {
             return {
                 ok: false,
                 error: makeError(
                     ErrorCode.EXEC_ERROR,
-                    `Failed to execute curl: ${result.error.message}`
+                    `HTTP ${response.status}: ${response.statusText}`
                 ),
             };
         }
 
-        if (result.status !== 0) {
+        // Limit response size to 10MB
+        const MAX_SIZE = 10 * 1024 * 1024;
+        const contentLength = response.headers.get('content-length');
+        if (contentLength && parseInt(contentLength, 10) > MAX_SIZE) {
             return {
                 ok: false,
-                error: makeError(
-                    ErrorCode.EXEC_ERROR,
-                    `curl failed with status ${result.status}: ${result.stderr}`
-                ),
+                error: makeError(ErrorCode.EXEC_ERROR, 'Response too large (max 10MB)'),
             };
         }
 
-        const html = result.stdout;
+        const html = await response.text();
 
         // Basic HTML stripping to get text content
         // Security: Improved regex to handle edge cases (spaces, case variations)

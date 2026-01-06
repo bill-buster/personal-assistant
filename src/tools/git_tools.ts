@@ -107,6 +107,24 @@ export function handleGitDiff(args: GitDiffArgs, context: ExecutorContext): Tool
     gitArgs.push('--stat'); // Summary by default
 
     if (args.path) {
+        // Security: Reject paths starting with - to prevent flag injection
+        if (args.path.startsWith('-')) {
+            return {
+                ok: false,
+                error: makeError(
+                    ErrorCode.VALIDATION_ERROR,
+                    'Path cannot start with - (security: prevents flag injection)'
+                ),
+                _debug: makeDebug({
+                    path: 'git_diff',
+                    start,
+                    model: null,
+                    memory_read: false,
+                    memory_write: false,
+                }),
+            };
+        }
+
         // Validate path is within baseDir AND in the allowlist (blocks .git, .env, node_modules)
         try {
             context.paths.resolveAllowed(args.path, 'read');
@@ -126,6 +144,7 @@ export function handleGitDiff(args: GitDiffArgs, context: ExecutorContext): Tool
                 }),
             };
         }
+        // Always use -- before path args to prevent flag injection
         gitArgs.push('--', args.path);
     }
 

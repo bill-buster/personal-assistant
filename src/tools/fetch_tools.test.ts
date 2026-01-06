@@ -16,21 +16,11 @@ import { createMockContext } from '../core/test_utils';
 const testRootRaw = fs.mkdtempSync(path.join(os.tmpdir(), 'fetch-tools-test-'));
 const testRoot = fs.realpathSync(testRootRaw);
 
-// Create mock context with curl allowed for success tests
-const mockContextWithCurl = createMockContext({
+// Create mock context (no longer needs curl allowlist since we use native fetch)
+const mockContext = createMockContext({
     permissions: {
         allow_paths: [],
-        allow_commands: ['curl'], // Allow curl for success tests
-        require_confirmation_for: [],
-        deny_tools: [],
-    },
-});
-
-// Create mock context without curl for allowlist tests
-const mockContextWithoutCurl = createMockContext({
-    permissions: {
-        allow_paths: [],
-        allow_commands: [], // No curl allowed
+        allow_commands: [],
         require_confirmation_for: [],
         deny_tools: [],
     },
@@ -61,20 +51,21 @@ function parseOutput(output: string) {
     }
 }
 
-try {
-    // ============================================
-    // SUCCESS CASES
-    // ============================================
+(async () => {
+    try {
+        // ============================================
+        // SUCCESS CASES
+        // ============================================
 
-    // T1: Valid HTTP URL
-    const result1 = handleReadUrl({ url: 'https://example.com' }, mockContextWithCurl);
-    if (!result1.ok) {
-        failures += 1;
-        logLine('FAIL\ncase: valid HTTP URL should succeed\nexpected: ok true\n\n', process.stderr);
-    }
+        // T1: Valid HTTP URL
+        const result1 = await handleReadUrl({ url: 'https://example.com' }, mockContext);
+        if (!result1.ok) {
+            failures += 1;
+            logLine('FAIL\ncase: valid HTTP URL should succeed\nexpected: ok true\n\n', process.stderr);
+        }
 
-    // T2: Valid HTTPS URL
-    const result2 = handleReadUrl({ url: 'https://www.google.com' }, mockContextWithCurl);
+        // T2: Valid HTTPS URL
+        const result2 = await handleReadUrl({ url: 'https://www.google.com' }, mockContext);
     if (!result2.ok) {
         failures += 1;
         logLine(
@@ -84,16 +75,16 @@ try {
     }
 
     // T3: URL with path
-    const result3 = handleReadUrl({ url: 'https://example.com/path/to/page' }, mockContextWithCurl);
+    const result3 = await handleReadUrl({ url: 'https://example.com/path/to/page' }, mockContext);
     if (!result3.ok) {
         failures += 1;
         logLine('FAIL\ncase: URL with path should succeed\nexpected: ok true\n\n', process.stderr);
     }
 
     // T4: URL with query parameters
-    const result4 = handleReadUrl(
+    const result4 = await handleReadUrl(
         { url: 'https://example.com?foo=bar&baz=qux' },
-        mockContextWithCurl
+        mockContext
     );
     if (!result4.ok) {
         failures += 1;
@@ -120,7 +111,7 @@ try {
     // ============================================
 
     // T6: Invalid URL format
-    const result6 = handleReadUrl({ url: 'not-a-url' }, mockContextWithCurl);
+    const result6 = await handleReadUrl({ url: 'not-a-url' }, mockContext);
     if (result6.ok || result6.error?.code !== 'VALIDATION_ERROR') {
         failures += 1;
         logLine(
@@ -130,7 +121,7 @@ try {
     }
 
     // T7: File protocol (blocked)
-    const result7 = handleReadUrl({ url: 'file:///etc/passwd' }, mockContextWithCurl);
+    const result7 = await handleReadUrl({ url: 'file:///etc/passwd' }, mockContext);
     if (result7.ok || result7.error?.code !== 'VALIDATION_ERROR') {
         failures += 1;
         logLine(
@@ -140,7 +131,7 @@ try {
     }
 
     // T8: FTP protocol (blocked)
-    const result8 = handleReadUrl({ url: 'ftp://example.com/file.txt' }, mockContextWithCurl);
+    const result8 = await handleReadUrl({ url: 'ftp://example.com/file.txt' }, mockContext);
     if (result8.ok || result8.error?.code !== 'VALIDATION_ERROR') {
         failures += 1;
         logLine(
@@ -150,7 +141,7 @@ try {
     }
 
     // T9: Data URL (blocked)
-    const result9 = handleReadUrl({ url: 'data:text/plain,hello' }, mockContextWithCurl);
+    const result9 = await handleReadUrl({ url: 'data:text/plain,hello' }, mockContext);
     if (result9.ok || result9.error?.code !== 'VALIDATION_ERROR') {
         failures += 1;
         logLine(
@@ -160,7 +151,7 @@ try {
     }
 
     // T10: JavaScript URL (blocked)
-    const result10 = handleReadUrl({ url: 'javascript:alert(1)' }, mockContextWithCurl);
+    const result10 = await handleReadUrl({ url: 'javascript:alert(1)' }, mockContext);
     if (result10.ok || result10.error?.code !== 'VALIDATION_ERROR') {
         failures += 1;
         logLine(
@@ -170,7 +161,7 @@ try {
     }
 
     // T11: Empty URL
-    const result11 = handleReadUrl({ url: '' }, mockContextWithCurl);
+    const result11 = await handleReadUrl({ url: '' }, mockContext);
     if (result11.ok || result11.error?.code !== 'VALIDATION_ERROR') {
         failures += 1;
         logLine(
@@ -180,7 +171,7 @@ try {
     }
 
     // T12: URL with only scheme
-    const result12 = handleReadUrl({ url: 'https://' }, mockContextWithCurl);
+    const result12 = await handleReadUrl({ url: 'https://' }, mockContext);
     if (result12.ok || result12.error?.code !== 'VALIDATION_ERROR') {
         failures += 1;
         logLine(
@@ -194,7 +185,7 @@ try {
     // ============================================
 
     // T13: URL with port
-    const result13 = handleReadUrl({ url: 'https://example.com:8080/path' }, mockContextWithCurl);
+    const result13 = await handleReadUrl({ url: 'https://example.com:8080/path' }, mockContext);
     if (!result13.ok && result13.error?.code === 'VALIDATION_ERROR') {
         // Port should be allowed in URL validation
         failures += 1;
@@ -205,7 +196,7 @@ try {
     }
 
     // T14: URL with fragment
-    const result14 = handleReadUrl({ url: 'https://example.com#section' }, mockContextWithCurl);
+    const result14 = await handleReadUrl({ url: 'https://example.com#section' }, mockContext);
     if (!result14.ok && result14.error?.code === 'VALIDATION_ERROR') {
         failures += 1;
         logLine(
@@ -216,7 +207,7 @@ try {
 
     // T15: Very long URL (should pass validation, may fail at execution)
     const longPath = '/path/' + 'x'.repeat(1000);
-    const result15 = handleReadUrl({ url: `https://example.com${longPath}` }, mockContextWithCurl);
+    const result15 = await handleReadUrl({ url: `https://example.com${longPath}` }, mockContext);
     if (!result15.ok && result15.error?.code === 'VALIDATION_ERROR') {
         failures += 1;
         logLine(
@@ -226,9 +217,9 @@ try {
     }
 
     // T16: URL with special characters (encoded)
-    const result16 = handleReadUrl(
+    const result16 = await handleReadUrl(
         { url: 'https://example.com/path%20with%20spaces' },
-        mockContextWithCurl
+        mockContext
     );
     if (!result16.ok && result16.error?.code === 'VALIDATION_ERROR') {
         failures += 1;
@@ -275,7 +266,7 @@ try {
     // ============================================
 
     // T19: HTTP (lowercase) should work
-    const result19 = handleReadUrl({ url: 'http://example.com' }, mockContextWithCurl);
+    const result19 = await handleReadUrl({ url: 'http://example.com' }, mockContext);
     if (!result19.ok && result19.error?.code === 'VALIDATION_ERROR') {
         failures += 1;
         logLine(
@@ -285,7 +276,7 @@ try {
     }
 
     // T20: HTTPS (lowercase) should work
-    const result20 = handleReadUrl({ url: 'https://example.com' }, mockContextWithCurl);
+    const result20 = await handleReadUrl({ url: 'https://example.com' }, mockContext);
     if (!result20.ok && result20.error?.code === 'VALIDATION_ERROR') {
         failures += 1;
         logLine(
@@ -295,7 +286,7 @@ try {
     }
 
     // T21: HTTP (uppercase) should work
-    const result21 = handleReadUrl({ url: 'HTTP://EXAMPLE.COM' }, mockContextWithCurl);
+    const result21 = await handleReadUrl({ url: 'HTTP://EXAMPLE.COM' }, mockContext);
     if (!result21.ok && result21.error?.code === 'VALIDATION_ERROR') {
         failures += 1;
         logLine(
@@ -305,7 +296,7 @@ try {
     }
 
     // T22: Mixed case scheme should work
-    const result22 = handleReadUrl({ url: 'HtTpS://example.com' }, mockContextWithCurl);
+    const result22 = await handleReadUrl({ url: 'HtTpS://example.com' }, mockContext);
     if (!result22.ok && result22.error?.code === 'VALIDATION_ERROR') {
         failures += 1;
         logLine(
@@ -323,7 +314,7 @@ try {
     // Skip - TypeScript prevents null
 
     // T24: Whitespace-only URL
-    const result24 = handleReadUrl({ url: '   ' }, mockContextWithCurl);
+    const result24 = await handleReadUrl({ url: '   ' }, mockContext);
     if (result24.ok || result24.error?.code !== 'VALIDATION_ERROR') {
         failures += 1;
         logLine(
@@ -333,7 +324,7 @@ try {
     }
 
     // T25: URL with only spaces
-    const result25 = handleReadUrl({ url: ' https://example.com ' }, mockContextWithCurl);
+    const result25 = await handleReadUrl({ url: ' https://example.com ' }, mockContext);
     // URL constructor should handle this, but test it
     if (!result25.ok && result25.error?.code === 'VALIDATION_ERROR') {
         // This might be valid after trimming, so allow EXEC_ERROR
@@ -355,7 +346,7 @@ try {
     // T26: Verify result content is truncated at 8000 chars
     // Note: This requires a URL that returns >8000 chars of text
     // We'll test the truncation logic by checking the result structure
-    const result26 = handleReadUrl({ url: 'https://example.com' }, mockContextWithCurl);
+    const result26 = await handleReadUrl({ url: 'https://example.com' }, mockContext);
     if (result26.ok && result26.result) {
         const result = result26.result as Record<string, unknown>;
         if (typeof result.length !== 'number' || !('content' in result) || !result.url) {
@@ -378,7 +369,7 @@ try {
 
     // T27: URL with maximum valid length (before hitting system limits)
     const maxPath = '/path/' + 'x'.repeat(2000);
-    const result27 = handleReadUrl({ url: `https://example.com${maxPath}` }, mockContextWithCurl);
+    const result27 = await handleReadUrl({ url: `https://example.com${maxPath}` }, mockContext);
     if (!result27.ok && result27.error?.code === 'VALIDATION_ERROR') {
         // Very long URLs should still pass validation (may fail at execution)
         failures += 1;
@@ -393,7 +384,7 @@ try {
     // ============================================
 
     // T28: URL with null bytes (should be rejected)
-    const result28 = handleReadUrl({ url: 'https://example.com\0test' }, mockContextWithCurl);
+    const result28 = await handleReadUrl({ url: 'https://example.com\0test' }, mockContext);
     if (result28.ok || result28.error?.code !== 'VALIDATION_ERROR') {
         failures += 1;
         logLine(
@@ -403,7 +394,7 @@ try {
     }
 
     // T29: URL with control characters
-    const result29 = handleReadUrl({ url: 'https://example.com\n\ttest' }, mockContextWithCurl);
+    const result29 = await handleReadUrl({ url: 'https://example.com\n\ttest' }, mockContext);
     if (result29.ok || result29.error?.code !== 'VALIDATION_ERROR') {
         failures += 1;
         logLine(
@@ -413,7 +404,7 @@ try {
     }
 
     // T30: URL with invalid encoding
-    const result30 = handleReadUrl({ url: 'https://example.com/test%ZZ' }, mockContextWithCurl);
+    const result30 = await handleReadUrl({ url: 'https://example.com/test%ZZ' }, mockContext);
     // Invalid percent encoding should fail validation
     if (result30.ok || result30.error?.code !== 'VALIDATION_ERROR') {
         failures += 1;
@@ -424,7 +415,7 @@ try {
     }
 
     // T31: URL with only hostname (no path, no scheme validation issue)
-    const result31 = handleReadUrl({ url: 'example.com' }, mockContextWithCurl);
+    const result31 = await handleReadUrl({ url: 'example.com' }, mockContext);
     if (result31.ok || result31.error?.code !== 'VALIDATION_ERROR') {
         failures += 1;
         logLine(
@@ -438,7 +429,7 @@ try {
     // ============================================
 
     // T32: URL with unicode characters (should be encoded)
-    const result32 = handleReadUrl({ url: 'https://example.com/test/测试' }, mockContextWithCurl);
+    const result32 = await handleReadUrl({ url: 'https://example.com/test/测试' }, mockContext);
     // Unicode should be handled (either encoded or rejected)
     if (!result32.ok && result32.error?.code === 'VALIDATION_ERROR') {
         // Check if it's a proper validation error about encoding
@@ -452,7 +443,7 @@ try {
     }
 
     // T33: URL with emoji (should be encoded or rejected)
-    const result33 = handleReadUrl({ url: 'https://example.com/test/🚀' }, mockContextWithCurl);
+    const result33 = await handleReadUrl({ url: 'https://example.com/test/🚀' }, mockContext);
     if (!result33.ok && result33.error?.code === 'VALIDATION_ERROR') {
         // Should have proper error message
         if (!result33.error.message.includes('Invalid URL format')) {
@@ -465,9 +456,9 @@ try {
     }
 
     // T34: URL with query parameters containing special chars
-    const result34 = handleReadUrl(
+    const result34 = await handleReadUrl(
         { url: 'https://example.com?foo=bar&baz=qux&test=hello+world' },
-        mockContextWithCurl
+        mockContext
     );
     if (!result34.ok && result34.error?.code === 'VALIDATION_ERROR') {
         failures += 1;
@@ -482,7 +473,7 @@ try {
     // ============================================
 
     // T35: Verify result structure on success
-    const result35 = handleReadUrl({ url: 'https://example.com' }, mockContextWithCurl);
+    const result35 = await handleReadUrl({ url: 'https://example.com' }, mockContext);
     if (result35.ok) {
         if (
             !result35.result ||
@@ -499,7 +490,7 @@ try {
     }
 
     // T36: Verify error structure on failure
-    const result36 = handleReadUrl({ url: 'not-a-url' }, mockContextWithCurl);
+    const result36 = await handleReadUrl({ url: 'not-a-url' }, mockContext);
     if (!result36.ok) {
         if (
             !result36.error ||
@@ -523,7 +514,7 @@ try {
     // by checking the code path handles it
 
     // T38: URL with port 0 (edge case)
-    const result38 = handleReadUrl({ url: 'https://example.com:0' }, mockContextWithCurl);
+    const result38 = await handleReadUrl({ url: 'https://example.com:0' }, mockContext);
     if (!result38.ok && result38.error?.code === 'VALIDATION_ERROR') {
         // Port 0 might be invalid, but should pass URL validation
         failures += 1;
@@ -534,7 +525,7 @@ try {
     }
 
     // T39: URL with port 65535 (max port)
-    const result39 = handleReadUrl({ url: 'https://example.com:65535' }, mockContextWithCurl);
+    const result39 = await handleReadUrl({ url: 'https://example.com:65535' }, mockContext);
     if (!result39.ok && result39.error?.code === 'VALIDATION_ERROR') {
         failures += 1;
         logLine(
@@ -544,12 +535,12 @@ try {
     }
 
     // T40: URL with port 65536 (over max - should fail validation)
-    const result40 = handleReadUrl({ url: 'https://example.com:65536' }, mockContextWithCurl);
+    const result40 = await handleReadUrl({ url: 'https://example.com:65536' }, mockContext);
     // Port over 65535 might be rejected by URL parser
     // Accept either validation error or execution error
 
     // T41: URL with IPv6 address (should pass validation)
-    const result41 = handleReadUrl({ url: 'https://[2001:db8::1]' }, mockContextWithCurl);
+    const result41 = await handleReadUrl({ url: 'https://[2001:db8::1]' }, mockContext);
     if (!result41.ok && result41.error?.code === 'VALIDATION_ERROR') {
         // IPv6 should be valid URL format
         failures += 1;
@@ -560,7 +551,7 @@ try {
     }
 
     // T42: URL with IPv4 address
-    const result42 = handleReadUrl({ url: 'https://192.168.1.1' }, mockContextWithCurl);
+    const result42 = await handleReadUrl({ url: 'https://192.168.1.1' }, mockContext);
     if (!result42.ok && result42.error?.code === 'VALIDATION_ERROR') {
         failures += 1;
         logLine(
@@ -574,7 +565,7 @@ try {
     // ============================================
 
     // T43: URL as number (should fail validation)
-    const result43 = handleReadUrl({ url: 123 as any }, mockContextWithCurl);
+    const result43 = await handleReadUrl({ url: 123 as any }, mockContext);
     if (result43.ok || result43.error?.code !== 'VALIDATION_ERROR') {
         failures += 1;
         logLine(
@@ -584,7 +575,7 @@ try {
     }
 
     // T44: URL as null (should fail validation)
-    const result44 = handleReadUrl({ url: null as any }, mockContextWithCurl);
+    const result44 = await handleReadUrl({ url: null as any }, mockContext);
     if (result44.ok || result44.error?.code !== 'VALIDATION_ERROR') {
         failures += 1;
         logLine(
@@ -594,7 +585,7 @@ try {
     }
 
     // T45: URL as undefined (should fail validation)
-    const result45 = handleReadUrl({ url: undefined as any }, mockContextWithCurl);
+    const result45 = await handleReadUrl({ url: undefined as any }, mockContext);
     if (result45.ok || result45.error?.code !== 'VALIDATION_ERROR') {
         failures += 1;
         logLine(
@@ -604,7 +595,7 @@ try {
     }
 
     // T46: URL as object (should fail validation)
-    const result46 = handleReadUrl({ url: {} as any }, mockContextWithCurl);
+    const result46 = await handleReadUrl({ url: {} as any }, mockContext);
     if (result46.ok || result46.error?.code !== 'VALIDATION_ERROR') {
         failures += 1;
         logLine(
@@ -614,7 +605,7 @@ try {
     }
 
     // T47: URL as array (should fail validation)
-    const result47 = handleReadUrl({ url: [] as any }, mockContextWithCurl);
+    const result47 = await handleReadUrl({ url: [] as any }, mockContext);
     if (result47.ok || result47.error?.code !== 'VALIDATION_ERROR') {
         failures += 1;
         logLine(
@@ -628,7 +619,7 @@ try {
     // ============================================
 
     // T48: HTTP with mixed case (already tested, but verify consistency)
-    const result48 = handleReadUrl({ url: 'HtTp://example.com' }, mockContextWithCurl);
+    const result48 = await handleReadUrl({ url: 'HtTp://example.com' }, mockContext);
     if (!result48.ok && result48.error?.code === 'VALIDATION_ERROR') {
         failures += 1;
         logLine(
@@ -638,7 +629,7 @@ try {
     }
 
     // T49: HTTPS with mixed case
-    const result49 = handleReadUrl({ url: 'HtTpS://example.com' }, mockContextWithCurl);
+    const result49 = await handleReadUrl({ url: 'HtTpS://example.com' }, mockContext);
     if (!result49.ok && result49.error?.code === 'VALIDATION_ERROR') {
         failures += 1;
         logLine(
@@ -652,7 +643,7 @@ try {
     // ============================================
 
     // T50: Verify error messages are descriptive
-    const result50 = handleReadUrl({ url: 'file:///etc/passwd' }, mockContextWithCurl);
+    const result50 = await handleReadUrl({ url: 'file:///etc/passwd' }, mockContext);
     if (!result50.ok && result50.error) {
         if (!result50.error.message || result50.error.message.length === 0) {
             failures += 1;
@@ -664,7 +655,7 @@ try {
     }
 
     // T51: Test allowlist check - curl not allowed
-    const result51 = handleReadUrl({ url: 'https://example.com' }, mockContextWithoutCurl);
+    const result51 = await handleReadUrl({ url: 'https://example.com' }, mockContext);
     if (result51.ok || result51.error?.code !== 'DENIED_COMMAND_ALLOWLIST') {
         failures += 1;
         logLine(
@@ -673,15 +664,25 @@ try {
         );
     }
 
-    logLine(`Ran 51 test cases, ${failures} failures`);
-} finally {
-    // Cleanup
-    fs.rmSync(testRoot, { recursive: true, force: true });
-}
+        logLine(`Ran 51 test cases, ${failures} failures`);
+    } catch (err: any) {
+        failures += 1;
+        logLine(`FAIL: ${err.message}\n`, process.stderr);
+    } finally {
+        // Cleanup
+        try {
+            if (fs.existsSync(testRoot)) {
+                fs.rmSync(testRoot, { recursive: true, force: true });
+            }
+        } catch {
+            // Ignore cleanup errors
+        }
+    }
 
-if (failures > 0) {
-    process.exit(1);
-}
+    if (failures > 0) {
+        process.exit(1);
+    }
 
-logLine('RESULT\nstatus: OK\n', process.stdout);
+    logLine('RESULT\nstatus: OK\n', process.stdout);
+})();
 export {};
