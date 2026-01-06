@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CursorCommandEvalSchema } from '../tools/cursor_command_eval';
+import { GrepSchema } from '../tools/grep_tools';
 
 /**
  * File operation size limits (in bytes).
@@ -377,6 +378,11 @@ export const FileInfoSchema = z.object({
 });
 export type FileInfoArgs = z.infer<typeof FileInfoSchema>;
 
+export const CountWordsSchema = z.object({
+    path: z.string().min(1),
+});
+export type CountWordsArgs = z.infer<typeof CountWordsSchema>;
+
 export const CreateDirectorySchema = z.object({
     path: z.string().min(1),
 });
@@ -560,6 +566,7 @@ export const ToolSchemas: Record<string, z.ZodTypeAny> = {
     move_file: MoveFileSchema,
     copy_file: CopyFileSchema,
     file_info: FileInfoSchema,
+    count_words: CountWordsSchema,
     create_directory: CreateDirectorySchema,
     delete_directory: DeleteDirectorySchema,
     run_cmd: RunCmdSchema,
@@ -595,4 +602,5 @@ export const ToolSchemas: Record<string, z.ZodTypeAny> = {
     read_url: ReadUrlSchema,
     return_to_supervisor: ReturnToSupervisorSchema,
     cursor_command_eval: CursorCommandEvalSchema,
+    grep: GrepSchema,
 };

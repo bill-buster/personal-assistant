@@ -22,7 +22,7 @@ Use this checklist to implement tools one by one. Copy the tool name and descrip
 
 ## Phase 2: Search and Discovery (Priority: High)
 
-- [ ] `grep` - Search for text patterns in files (fast regex search across files).
+- [x] `grep` - Search for text patterns in files (fast regex search across files). ✅ **DONE**
 - [ ] `fuzzy_find` - Fuzzy file search (like fzf - finds files by name pattern).
 - [ ] `find_files` - Search for files by name pattern (supports glob patterns).
 - [ ] `find_by_content` - Find files containing specific text content.
@@ -39,7 +39,7 @@ Use this checklist to implement tools one by one. Copy the tool name and descrip
 
 ## Phase 4: Text Processing (Priority: Medium)
 
-- [ ] `count_words` - Count words, lines, and characters in a file.
+- [x] `count_words` - Count words, lines, and characters in a file. ✅ **DONE**
 - [ ] `format_json` - Format and validate JSON content.
 - [ ] `extract_lines` - Extract specific line ranges from a file.
 - [ ] `search_replace` - Find and replace text across multiple files (requires confirmation).

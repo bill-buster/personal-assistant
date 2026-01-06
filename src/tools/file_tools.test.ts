@@ -13,6 +13,7 @@ import {
     handleMoveFile,
     handleCopyFile,
     handleFileInfo,
+    handleCountWords,
     handleCreateDirectory,
     handleDeleteDirectory,
 } from './file_tools';
@@ -1340,6 +1341,198 @@ try {
     if (failures > 0) {
         logLine(`\n${failures} test(s) failed\n`, process.stderr);
         process.exit(1);
+    }
+
+    // ============================================
+    // COUNT_WORDS - SUCCESS CASES
+    // ============================================
+
+    // T41: Count words in a simple file
+    const testFile41 = path.join(testRoot, 'count_test1.txt');
+    fs.writeFileSync(testFile41, 'hello world\nthis is a test');
+    const context41 = {
+        ...createMockContext({
+            baseDir: testRoot,
+            paths: {
+                resolve: (p: string) => path.resolve(testRoot, p),
+                assertAllowed: () => {},
+                resolveAllowed: (p: string) => path.resolve(testRoot, p),
+            },
+        }),
+        requiresConfirmation: () => false,
+    } as ExecutorContext;
+
+    const result41 = handleCountWords({ path: 'count_test1.txt' }, context41);
+    if (!result41.ok || result41.result?.words !== 6 || result41.result?.lines !== 2 || result41.result?.characters !== 28) {
+        failures += 1;
+        logLine(
+            `FAIL\ncase: count words in file\nexpected: ok true, words=6, lines=2, characters=28\ngot: ok=${result41.ok}, words=${result41.result?.words}, lines=${result41.result?.lines}, characters=${result41.result?.characters}\n`,
+            process.stderr
+        );
+    } else {
+        logLine('OK: count words in file\n');
+    }
+
+    // T42: Count words in empty file
+    const testFile42 = path.join(testRoot, 'count_test2.txt');
+    fs.writeFileSync(testFile42, '');
+    const result42 = handleCountWords({ path: 'count_test2.txt' }, context41);
+    if (!result42.ok || result42.result?.words !== 0 || result42.result?.lines !== 0 || result42.result?.characters !== 0) {
+        failures += 1;
+        logLine(
+            `FAIL\ncase: count words in empty file\nexpected: ok true, words=0, lines=0, characters=0\ngot: ok=${result42.ok}, words=${result42.result?.words}, lines=${result42.result?.lines}, characters=${result42.result?.characters}\n`,
+            process.stderr
+        );
+    } else {
+        logLine('OK: count words in empty file\n');
+    }
+
+    // T43: Count words with unicode
+    const testFile43 = path.join(testRoot, 'count_test3.txt');
+    fs.writeFileSync(testFile43, 'hello 世界 🌍\n测试');
+    const result43 = handleCountWords({ path: 'count_test3.txt' }, context41);
+    if (!result43.ok || result43.result?.words !== 4 || result43.result?.lines !== 2) {
+        failures += 1;
+        logLine(
+            `FAIL\ncase: count words with unicode\nexpected: ok true, words=4, lines=2\ngot: ok=${result43.ok}, words=${result43.result?.words}, lines=${result43.result?.lines}\n`,
+            process.stderr
+        );
+    } else {
+        logLine('OK: count words with unicode\n');
+    }
+
+    // ============================================
+    // COUNT_WORDS - ERROR CASES
+    // ============================================
+
+    // T44: File not found
+    const result44 = handleCountWords({ path: 'nonexistent.txt' }, context41);
+    if (result44.ok || result44.error?.code !== 'EXEC_ERROR') {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: file not found\nexpected: ok false, error.code EXEC_ERROR\n\n',
+            process.stderr
+        );
+    } else {
+        logLine('OK: file not found error\n');
+    }
+
+    // T45: Directory instead of file
+    const result45 = handleCountWords({ path: 'subdir' }, context41);
+    if (result45.ok || result45.error?.code !== 'EXEC_ERROR') {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: directory instead of file\nexpected: ok false, error.code EXEC_ERROR\n\n',
+            process.stderr
+        );
+    } else {
+        logLine('OK: directory instead of file error\n');
+    }
+
+    // T46: Path outside allowlist
+    const context46 = {
+        ...createMockContext({
+            baseDir: testRoot,
+            paths: {
+                resolve: (p: string) => {
+                    throw new Error('Path traversal detected');
+                },
+                assertAllowed: () => {
+                    throw new Error('Path not allowed');
+                },
+                resolveAllowed: () => {
+                    throw new Error('Path not allowed');
+                },
+            },
+            permissionsPath: path.join(testRoot, 'permissions.json'),
+        }),
+        requiresConfirmation: () => false,
+    } as ExecutorContext;
+
+    const result46 = handleCountWords({ path: '../../etc/passwd' }, context46);
+    if (result46.ok || result46.error?.code !== 'DENIED_PATH_ALLOWLIST') {
+        failures += 1;
+        logLine(
+            'FAIL\ncase: path outside allowlist\nexpected: ok false, error.code DENIED_PATH_ALLOWLIST\n\n',
+            process.stderr
+        );
+    } else {
+        logLine('OK: path outside allowlist error\n');
+    }
+
+    // ============================================
+    // COUNT_WORDS - JULES ADVERSARIAL TESTS (Edge Cases)
+    // ============================================
+
+    // T47: File with only whitespace (boundary condition)
+    const testFile47 = path.join(testRoot, 'count_test4.txt');
+    fs.writeFileSync(testFile47, '   \n\t\n  \n');
+    const result47 = handleCountWords({ path: 'count_test4.txt' }, context41);
+    if (!result47.ok || result47.result?.words !== 0 || result47.result?.lines !== 4) {
+        failures += 1;
+        logLine(
+            `FAIL\ncase: file with only whitespace\nexpected: ok true, words=0, lines=4\ngot: ok=${result47.ok}, words=${result47.result?.words}, lines=${result47.result?.lines}\n`,
+            process.stderr
+        );
+    } else {
+        logLine('OK: file with only whitespace\n');
+    }
+
+    // T48: File with multiple consecutive spaces (word boundary edge case)
+    const testFile48 = path.join(testRoot, 'count_test5.txt');
+    fs.writeFileSync(testFile48, 'word1    word2     word3');
+    const result48 = handleCountWords({ path: 'count_test5.txt' }, context41);
+    if (!result48.ok || result48.result?.words !== 3) {
+        failures += 1;
+        logLine(
+            `FAIL\ncase: multiple consecutive spaces\nexpected: ok true, words=3\ngot: ok=${result48.ok}, words=${result48.result?.words}\n`,
+            process.stderr
+        );
+    } else {
+        logLine('OK: multiple consecutive spaces\n');
+    }
+
+    // T49: File with tabs and mixed whitespace
+    const testFile49 = path.join(testRoot, 'count_test6.txt');
+    fs.writeFileSync(testFile49, 'word1\tword2\nword3\r\nword4');
+    const result49 = handleCountWords({ path: 'count_test6.txt' }, context41);
+    if (!result49.ok || result49.result?.words !== 4 || result49.result?.lines !== 3) {
+        failures += 1;
+        logLine(
+            `FAIL\ncase: tabs and mixed whitespace\nexpected: ok true, words=4, lines=3\ngot: ok=${result49.ok}, words=${result49.result?.words}, lines=${result49.result?.lines}\n`,
+            process.stderr
+        );
+    } else {
+        logLine('OK: tabs and mixed whitespace\n');
+    }
+
+    // T50: Very large file (stress test - but keep it reasonable for test speed)
+    const testFile50 = path.join(testRoot, 'count_test7.txt');
+    const largeContent = 'word '.repeat(1000) + '\n' + 'test '.repeat(500);
+    fs.writeFileSync(testFile50, largeContent);
+    const result50 = handleCountWords({ path: 'count_test7.txt' }, context41);
+    if (!result50.ok || result50.result?.words !== 1500 || result50.result?.lines !== 2) {
+        failures += 1;
+        logLine(
+            `FAIL\ncase: large file stress test\nexpected: ok true, words=1500, lines=2\ngot: ok=${result50.ok}, words=${result50.result?.words}, lines=${result50.result?.lines}\n`,
+            process.stderr
+        );
+    } else {
+        logLine('OK: large file stress test\n');
+    }
+
+    // T51: File with no newline at end (common edge case)
+    const testFile51 = path.join(testRoot, 'count_test8.txt');
+    fs.writeFileSync(testFile51, 'line1\nline2\nline3');
+    const result51 = handleCountWords({ path: 'count_test8.txt' }, context41);
+    if (!result51.ok || result51.result?.lines !== 3) {
+        failures += 1;
+        logLine(
+            `FAIL\ncase: file with no trailing newline\nexpected: ok true, lines=3\ngot: ok=${result51.ok}, lines=${result51.result?.lines}\n`,
+            process.stderr
+        );
+    } else {
+        logLine('OK: file with no trailing newline\n');
     }
 
     logLine('RESULT\nstatus: OK\n');

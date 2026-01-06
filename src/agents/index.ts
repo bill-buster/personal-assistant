@@ -9,6 +9,7 @@ const READY_TOOLS = [
     'move_file',
     'copy_file',
     'file_info',
+    'count_words',
     'create_directory',
     'delete_directory',
     'run_cmd',
@@ -26,6 +27,7 @@ const READY_TOOLS = [
     'git_log',
     'read_url',
     'cursor_command_eval',
+    'grep',
 ];
 
 // Experimental tools - partial functionality
@@ -119,6 +121,7 @@ Strictly adhere to the tool schemas for arguments.`,
         'return_to_supervisor',
         'read_url',
         'cursor_command_eval',
+        'grep',
     ],
 };
 

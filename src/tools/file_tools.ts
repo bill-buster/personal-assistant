@@ -23,6 +23,7 @@ import {
     MoveFileArgs,
     CopyFileArgs,
     FileInfoArgs,
+    CountWordsArgs,
     CreateDirectoryArgs,
     DeleteDirectoryArgs,
 } from '../core/types';
@@ -1206,6 +1207,122 @@ export function handleDeleteDirectory(
     return {
         ok: true,
         result: { deleted: args.path },
+        error: null,
+        _debug: makeDebug({
+            path: 'tool_json',
+            start,
+            model: null,
+            memory_read: false,
+            memory_write: false,
+        }),
+    };
+}
+
+/**
+ * Handle count_words tool.
+ * Counts words, lines, and characters in a file.
+ * @param args - Tool arguments containing path.
+ * @param context - Execution context.
+ * @returns Result object with ok, result, error, debug.
+ */
+export function handleCountWords(args: CountWordsArgs, context: ExecutorContext): ToolResult {
+    const { paths, permissionsPath, start } = context;
+
+    // Validate and resolve path (requires read permission)
+    let targetPath: string;
+    try {
+        targetPath = paths.resolveAllowed(args.path, 'read');
+    } catch {
+        return {
+            ok: false,
+            result: null,
+            error: makePermissionError(
+                'count_words',
+                args.path,
+                permissionsPath,
+                ErrorCode.DENIED_PATH_ALLOWLIST
+            ),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
+    }
+
+    // Get file stats (with caching)
+    const statCache = getStatCache();
+    const stats = statCache.get(targetPath);
+    if (!stats) {
+        return {
+            ok: false,
+            result: null,
+            error: makeError(ErrorCode.EXEC_ERROR, `File not found: ${args.path}`),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
+    }
+    if (stats.isDirectory()) {
+        return {
+            ok: false,
+            result: null,
+            error: makeError(
+                ErrorCode.EXEC_ERROR,
+                `Path '${args.path}' is a directory, not a file.`
+            ),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
+    }
+
+    // Read file content
+    let content: string;
+    try {
+        content = fs.readFileSync(targetPath, 'utf8');
+    } catch (err: any) {
+        return {
+            ok: false,
+            result: null,
+            error: makeError(ErrorCode.EXEC_ERROR, `Failed to read file: ${err.message}`),
+            _debug: makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            }),
+        };
+    }
+
+    // Count characters (including newlines and spaces)
+    const characters = content.length;
+
+    // Count lines (split by newline, empty file = 0 lines, file with content but no newline = 1 line)
+    const lines = content.length === 0 ? 0 : content.split('\n').length;
+
+    // Count words (split by whitespace, filter empty strings)
+    const words = content.trim().length === 0 ? 0 : content.trim().split(/\s+/).filter(w => w.length > 0).length;
+
+    return {
+        ok: true,
+        result: {
+            path: args.path,
+            characters,
+            words,
+            lines,
+        },
         error: null,
         _debug: makeDebug({
             path: 'tool_json',
