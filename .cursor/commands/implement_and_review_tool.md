@@ -151,15 +151,20 @@ Checklist:
 ## Phase 5 — Commit + summary
 
 ### [STEP 15/16] Commit + post-commit sanity check
-- **CRITICAL**: If baseline check (Step 0) failed, do NOT commit unless:
-  - Baseline issues are fixed, OR
-  - User explicitly accepts committing with baseline failures
+- **CRITICAL**: No commit if baseline preflight was red unless user explicitly accepts.
+  - If baseline check (Step 0) failed, do NOT commit unless:
+    - Baseline issues are fixed, OR
+    - User explicitly accepts committing with baseline failures
 - Write a conventional commit message (or repo standard).
 - Confirm working tree is clean.
 - Do a final quick scan for:
   - stray debug prints
   - temporary files
   - TODOs introduced
+- Stage files: `git add [files]`
+- Run preflight: `npm run preflight`
+- If preflight passes, commit: `git commit -m "feat(tools): add [tool_name] tool"`
+- Log: "Committed: [commit_hash]"
 
 ### [STEP 16/16] Produce a short summary (Agent 3 UX improvement)
 Include:

@@ -139,17 +139,26 @@ All commands follow a consistent structure:
 3. **Process**: Step-by-step instructions
 4. **Edge Cases**: Handling of special situations
 5. **Error Handling**: What to do when errors occur
-6. **Completion**: Standard workflow (stage, preflight, commit, review)
+6. **Completion**: Summary (commit behavior depends on command type)
 
-## Standard Workflow
+## Command Hierarchy
 
-All commands that modify code follow this workflow:
+**Composite commands** (allowed to commit):
+- `/implement_and_review_tool` - Complete tool implementation workflow
+- `/fix_all_issues` - Batch-fix multiple issues
 
-```markdown
-After completing changes:
-- Stage files, run preflight, and commit following git.mdc conventions
-- Automatically run review_pr command to review the committed changes
-```
+**Atomic commands** (do NOT commit unless user asks):
+- `/type_safety` - Improve TypeScript type safety
+- `/security_audit` - Security-focused code review
+- `/review_pr` - Systematic code review
+- `/jules_test` - Comprehensive test writing
+- `/fix_todos` - Fix or remove TODO comments
+- `/fix_errors` - Convert throw to structured errors
+- `/add_docs` - Add JSDoc comments
+- `/safe_refactor` - Create refactoring plan
+- `/perf_fix_spawn` - Convert spawn-based tests
+
+**Important**: Atomic commands stop after providing summary. They do not auto-commit. If you want commit behavior, use a composite command like `/fix_all_issues` or `/implement_and_review_tool`.
 
 ## Usage
 

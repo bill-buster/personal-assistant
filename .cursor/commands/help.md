@@ -2,12 +2,13 @@
 Lists available project slash commands and suggests which one to run next.
 
 ## Instructions
-1) Read the directory: `.cursor/commands/`
-2) Print a categorized list of commands (name → 1-line description).
-3) For each command, include:
+1) Try to read the directory: `.cursor/commands/`
+2) If directory listing fails, fall back to reading `.cursor/commands/README.md` for the canonical command list
+3) Print a categorized list of commands (name → 1-line description).
+4) For each command, include:
    - When to use it
    - What it outputs/changes
-4) Suggest the "next best command" based on the user's last message.
+5) Suggest the "next best command" based on the user's last message.
 
 ## Output format
 ### Commands
