@@ -202,7 +202,13 @@ export function handleMemorySearch(args: MemorySearchArgs, context: ExecutorCont
 
     const entries = readJsonl<MemoryEntry>(
         memoryLogPath,
-        (entry: unknown) => typeof entry === 'object' && entry !== null && 'text' in entry && 'ts' in entry && typeof (entry as { text: unknown }).text === 'string' && typeof (entry as { ts: unknown }).ts === 'string'
+        (entry: unknown): entry is MemoryEntry =>
+            typeof entry === 'object' &&
+            entry !== null &&
+            'text' in entry &&
+            'ts' in entry &&
+            typeof (entry as { text: unknown }).text === 'string' &&
+            typeof (entry as { ts: unknown }).ts === 'string'
     );
 
     const needle = query.toLowerCase();

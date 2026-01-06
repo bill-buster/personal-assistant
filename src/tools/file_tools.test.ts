@@ -51,7 +51,7 @@ try {
     } as ExecutorContext;
 
     const result1 = handleDeleteFile({ path: 'test1.txt', confirm: true }, context1);
-    if (!result1.ok || !result1.result?.deleted) {
+    if (!result1.ok || !(result1.result as Record<string, unknown>)?.deleted) {
         failures += 1;
         logLine(
             'FAIL\ncase: delete file successfully\nexpected: ok true, result.deleted\n\n',
@@ -201,7 +201,11 @@ try {
         { source: 'source.txt', destination: 'dest.txt', confirm: true },
         context6
     );
-    if (!result6.ok || !result6.result?.source || !result6.result?.destination) {
+    if (
+        !result6.ok ||
+        !(result6.result as Record<string, unknown>)?.source ||
+        !(result6.result as Record<string, unknown>)?.destination
+    ) {
         failures += 1;
         logLine(
             'FAIL\ncase: move file successfully\nexpected: ok true, result.source and result.destination\n\n',
@@ -505,7 +509,11 @@ try {
         { source: 'source15.txt', destination: 'dest15.txt', confirm: true },
         context15
     );
-    if (!result15.ok || !result15.result?.source || !result15.result?.destination) {
+    if (
+        !result15.ok ||
+        !(result15.result as Record<string, unknown>)?.source ||
+        !(result15.result as Record<string, unknown>)?.destination
+    ) {
         failures += 1;
         logLine(
             'FAIL\ncase: copy file successfully\nexpected: ok true, result.source and result.destination\n\n',
@@ -820,13 +828,20 @@ try {
     } as ExecutorContext;
 
     const result24 = handleFileInfo({ path: 'test24.txt' }, context24);
-    if (!result24.ok || !result24.result?.type || !result24.result?.size) {
+    if (
+        !result24.ok ||
+        !(result24.result as Record<string, unknown>)?.type ||
+        !(result24.result as Record<string, unknown>)?.size
+    ) {
         failures += 1;
         logLine(
             'FAIL\ncase: get file info for file\nexpected: ok true, result.type and result.size\n\n',
             process.stderr
         );
-    } else if (result24.result.type !== 'file' || !result24.result.isFile) {
+    } else if (
+        (result24.result as Record<string, unknown>).type !== 'file' ||
+        !(result24.result as Record<string, unknown>).isFile
+    ) {
         failures += 1;
         logLine(
             'FAIL\ncase: get file info for file\nexpected: type is file, isFile is true\n\n',
@@ -852,7 +867,11 @@ try {
     } as ExecutorContext;
 
     const result25 = handleFileInfo({ path: 'testdir25' }, context25);
-    if (!result25.ok || result25.result?.type !== 'directory' || !result25.result?.isDirectory) {
+    if (
+        !result25.ok ||
+        (result25.result as Record<string, unknown>)?.type !== 'directory' ||
+        !(result25.result as Record<string, unknown>)?.isDirectory
+    ) {
         failures += 1;
         logLine(
             'FAIL\ncase: get file info for directory\nexpected: ok true, type is directory, isDirectory is true\n\n',
@@ -980,7 +999,7 @@ try {
 
     const result29 = handleCreateDirectory({ path: 'newdir29' }, context29);
     const newDir29 = path.join(testRoot, 'newdir29');
-    if (!result29.ok || !result29.result?.created) {
+    if (!result29.ok || !(result29.result as Record<string, unknown>)?.created) {
         failures += 1;
         logLine(
             'FAIL\ncase: create directory successfully\nexpected: ok true, result.created true\n\n',
@@ -1011,7 +1030,7 @@ try {
 
     const result30 = handleCreateDirectory({ path: 'parent30/child30/grandchild30' }, context30);
     const nestedDir30 = path.join(testRoot, 'parent30', 'child30', 'grandchild30');
-    if (!result30.ok || !result30.result?.created) {
+    if (!result30.ok || !(result30.result as Record<string, unknown>)?.created) {
         failures += 1;
         logLine(
             'FAIL\ncase: create nested directory\nexpected: ok true, result.created true\n\n',
@@ -1043,7 +1062,7 @@ try {
     } as ExecutorContext;
 
     const result31 = handleCreateDirectory({ path: 'existingdir31' }, context31);
-    if (!result31.ok || result31.result?.created !== false) {
+    if (!result31.ok || (result31.result as Record<string, unknown>)?.created !== false) {
         failures += 1;
         logLine(
             'FAIL\ncase: directory already exists\nexpected: ok true, result.created false\n\n',
@@ -1133,7 +1152,7 @@ try {
     } as ExecutorContext;
 
     const result34 = handleDeleteDirectory({ path: 'testdir34', confirm: true }, context34);
-    if (!result34.ok || !result34.result?.deleted) {
+    if (!result34.ok || !(result34.result as Record<string, unknown>)?.deleted) {
         failures += 1;
         logLine(
             'FAIL\ncase: delete directory successfully\nexpected: ok true, result.deleted\n\n',
@@ -1165,7 +1184,7 @@ try {
     } as ExecutorContext;
 
     const result35 = handleDeleteDirectory({ path: 'testdir35', confirm: true }, context35);
-    if (!result35.ok || !result35.result?.deleted) {
+    if (!result35.ok || !(result35.result as Record<string, unknown>)?.deleted) {
         failures += 1;
         logLine(
             'FAIL\ncase: delete empty directory\nexpected: ok true, result.deleted\n\n',
@@ -1200,7 +1219,7 @@ try {
     } as ExecutorContext;
 
     const result36 = handleDeleteDirectory({ path: 'testdir36', confirm: true }, context36);
-    if (!result36.ok || !result36.result?.deleted) {
+    if (!result36.ok || !(result36.result as Record<string, unknown>)?.deleted) {
         failures += 1;
         logLine(
             'FAIL\ncase: delete nested directory\nexpected: ok true, result.deleted\n\n',
@@ -1365,13 +1384,13 @@ try {
     const result41 = handleCountWords({ path: 'count_test1.txt' }, context41);
     if (
         !result41.ok ||
-        result41.result?.words !== 6 ||
-        result41.result?.lines !== 2 ||
-        result41.result?.characters !== 28
+        (result41.result as Record<string, unknown>)?.words !== 6 ||
+        (result41.result as Record<string, unknown>)?.lines !== 2 ||
+        (result41.result as Record<string, unknown>)?.characters !== 28
     ) {
         failures += 1;
         logLine(
-            `FAIL\ncase: count words in file\nexpected: ok true, words=6, lines=2, characters=28\ngot: ok=${result41.ok}, words=${result41.result?.words}, lines=${result41.result?.lines}, characters=${result41.result?.characters}\n`,
+            `FAIL\ncase: count words in file\nexpected: ok true, words=6, lines=2, characters=28\ngot: ok=${result41.ok}, words=${(result41.result as Record<string, unknown>)?.words}, lines=${(result41.result as Record<string, unknown>)?.lines}, characters=${(result41.result as Record<string, unknown>)?.characters}\n`,
             process.stderr
         );
     } else {
@@ -1384,13 +1403,13 @@ try {
     const result42 = handleCountWords({ path: 'count_test2.txt' }, context41);
     if (
         !result42.ok ||
-        result42.result?.words !== 0 ||
-        result42.result?.lines !== 0 ||
-        result42.result?.characters !== 0
+        (result42.result as Record<string, unknown>)?.words !== 0 ||
+        (result42.result as Record<string, unknown>)?.lines !== 0 ||
+        (result42.result as Record<string, unknown>)?.characters !== 0
     ) {
         failures += 1;
         logLine(
-            `FAIL\ncase: count words in empty file\nexpected: ok true, words=0, lines=0, characters=0\ngot: ok=${result42.ok}, words=${result42.result?.words}, lines=${result42.result?.lines}, characters=${result42.result?.characters}\n`,
+            `FAIL\ncase: count words in empty file\nexpected: ok true, words=0, lines=0, characters=0\ngot: ok=${result42.ok}, words=${(result42.result as Record<string, unknown>)?.words}, lines=${(result42.result as Record<string, unknown>)?.lines}, characters=${(result42.result as Record<string, unknown>)?.characters}\n`,
             process.stderr
         );
     } else {
@@ -1401,10 +1420,14 @@ try {
     const testFile43 = path.join(testRoot, 'count_test3.txt');
     fs.writeFileSync(testFile43, 'hello 世界 🌍\n测试');
     const result43 = handleCountWords({ path: 'count_test3.txt' }, context41);
-    if (!result43.ok || result43.result?.words !== 4 || result43.result?.lines !== 2) {
+    if (
+        !result43.ok ||
+        (result43.result as Record<string, unknown>)?.words !== 4 ||
+        (result43.result as Record<string, unknown>)?.lines !== 2
+    ) {
         failures += 1;
         logLine(
-            `FAIL\ncase: count words with unicode\nexpected: ok true, words=4, lines=2\ngot: ok=${result43.ok}, words=${result43.result?.words}, lines=${result43.result?.lines}\n`,
+            `FAIL\ncase: count words with unicode\nexpected: ok true, words=4, lines=2\ngot: ok=${result43.ok}, words=${(result43.result as Record<string, unknown>)?.words}, lines=${(result43.result as Record<string, unknown>)?.lines}\n`,
             process.stderr
         );
     } else {
@@ -1478,10 +1501,14 @@ try {
     const testFile47 = path.join(testRoot, 'count_test4.txt');
     fs.writeFileSync(testFile47, '   \n\t\n  \n');
     const result47 = handleCountWords({ path: 'count_test4.txt' }, context41);
-    if (!result47.ok || result47.result?.words !== 0 || result47.result?.lines !== 4) {
+    if (
+        !result47.ok ||
+        (result47.result as Record<string, unknown>)?.words !== 0 ||
+        (result47.result as Record<string, unknown>)?.lines !== 4
+    ) {
         failures += 1;
         logLine(
-            `FAIL\ncase: file with only whitespace\nexpected: ok true, words=0, lines=4\ngot: ok=${result47.ok}, words=${result47.result?.words}, lines=${result47.result?.lines}\n`,
+            `FAIL\ncase: file with only whitespace\nexpected: ok true, words=0, lines=4\ngot: ok=${result47.ok}, words=${(result47.result as Record<string, unknown>)?.words}, lines=${(result47.result as Record<string, unknown>)?.lines}\n`,
             process.stderr
         );
     } else {
@@ -1492,10 +1519,10 @@ try {
     const testFile48 = path.join(testRoot, 'count_test5.txt');
     fs.writeFileSync(testFile48, 'word1    word2     word3');
     const result48 = handleCountWords({ path: 'count_test5.txt' }, context41);
-    if (!result48.ok || result48.result?.words !== 3) {
+    if (!result48.ok || (result48.result as Record<string, unknown>)?.words !== 3) {
         failures += 1;
         logLine(
-            `FAIL\ncase: multiple consecutive spaces\nexpected: ok true, words=3\ngot: ok=${result48.ok}, words=${result48.result?.words}\n`,
+            `FAIL\ncase: multiple consecutive spaces\nexpected: ok true, words=3\ngot: ok=${result48.ok}, words=${(result48.result as Record<string, unknown>)?.words}\n`,
             process.stderr
         );
     } else {
@@ -1506,10 +1533,14 @@ try {
     const testFile49 = path.join(testRoot, 'count_test6.txt');
     fs.writeFileSync(testFile49, 'word1\tword2\nword3\r\nword4');
     const result49 = handleCountWords({ path: 'count_test6.txt' }, context41);
-    if (!result49.ok || result49.result?.words !== 4 || result49.result?.lines !== 3) {
+    if (
+        !result49.ok ||
+        (result49.result as Record<string, unknown>)?.words !== 4 ||
+        (result49.result as Record<string, unknown>)?.lines !== 3
+    ) {
         failures += 1;
         logLine(
-            `FAIL\ncase: tabs and mixed whitespace\nexpected: ok true, words=4, lines=3\ngot: ok=${result49.ok}, words=${result49.result?.words}, lines=${result49.result?.lines}\n`,
+            `FAIL\ncase: tabs and mixed whitespace\nexpected: ok true, words=4, lines=3\ngot: ok=${result49.ok}, words=${(result49.result as Record<string, unknown>)?.words}, lines=${(result49.result as Record<string, unknown>)?.lines}\n`,
             process.stderr
         );
     } else {
@@ -1521,10 +1552,14 @@ try {
     const largeContent = 'word '.repeat(1000) + '\n' + 'test '.repeat(500);
     fs.writeFileSync(testFile50, largeContent);
     const result50 = handleCountWords({ path: 'count_test7.txt' }, context41);
-    if (!result50.ok || result50.result?.words !== 1500 || result50.result?.lines !== 2) {
+    if (
+        !result50.ok ||
+        (result50.result as Record<string, unknown>)?.words !== 1500 ||
+        (result50.result as Record<string, unknown>)?.lines !== 2
+    ) {
         failures += 1;
         logLine(
-            `FAIL\ncase: large file stress test\nexpected: ok true, words=1500, lines=2\ngot: ok=${result50.ok}, words=${result50.result?.words}, lines=${result50.result?.lines}\n`,
+            `FAIL\ncase: large file stress test\nexpected: ok true, words=1500, lines=2\ngot: ok=${result50.ok}, words=${(result50.result as Record<string, unknown>)?.words}, lines=${(result50.result as Record<string, unknown>)?.lines}\n`,
             process.stderr
         );
     } else {
@@ -1535,10 +1570,10 @@ try {
     const testFile51 = path.join(testRoot, 'count_test8.txt');
     fs.writeFileSync(testFile51, 'line1\nline2\nline3');
     const result51 = handleCountWords({ path: 'count_test8.txt' }, context41);
-    if (!result51.ok || result51.result?.lines !== 3) {
+    if (!result51.ok || (result51.result as Record<string, unknown>)?.lines !== 3) {
         failures += 1;
         logLine(
-            `FAIL\ncase: file with no trailing newline\nexpected: ok true, lines=3\ngot: ok=${result51.ok}, lines=${result51.result?.lines}\n`,
+            `FAIL\ncase: file with no trailing newline\nexpected: ok true, lines=3\ngot: ok=${result51.ok}, lines=${(result51.result as Record<string, unknown>)?.lines}\n`,
             process.stderr
         );
     } else {

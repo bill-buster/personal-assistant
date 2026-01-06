@@ -43,10 +43,18 @@ try {
         { pattern: 'test', path: 'test1.txt', case_sensitive: false },
         context1
     );
-    if (!result1.ok || !result1.result?.matches || result1.result.matches.length !== 2) {
+    if (
+        !result1.ok ||
+        !(
+            result1.result as {
+                matches: Array<{ file: string; line: number; text: string; match: string }>;
+            }
+        )?.matches ||
+        (result1.result as { matches: Array<unknown> }).matches.length !== 2
+    ) {
         failures += 1;
         logLine(
-            `FAIL\ncase: search in file (case-insensitive)\nexpected: 2 matches\ngot: ${result1.result?.matches?.length || 0}\n\n`,
+            `FAIL\ncase: search in file (case-insensitive)\nexpected: 2 matches\ngot: ${(result1.result as { matches: Array<{ file: string; line: number; text: string; match: string }> })?.matches?.length || 0}\n\n`,
             process.stderr
         );
     } else {
@@ -58,10 +66,18 @@ try {
         { pattern: 'Test', path: 'test1.txt', case_sensitive: true },
         context1
     );
-    if (!result2.ok || !result2.result?.matches || result2.result.matches.length !== 1) {
+    if (
+        !result2.ok ||
+        !(
+            result2.result as {
+                matches: Array<{ file: string; line: number; text: string; match: string }>;
+            }
+        )?.matches ||
+        (result2.result as { matches: Array<unknown> }).matches.length !== 1
+    ) {
         failures += 1;
         logLine(
-            `FAIL\ncase: search in file (case-sensitive)\nexpected: 1 match\ngot: ${result2.result?.matches?.length || 0}\n\n`,
+            `FAIL\ncase: search in file (case-sensitive)\nexpected: 1 match\ngot: ${(result2.result as { matches: Array<{ file: string; line: number; text: string; match: string }> })?.matches?.length || 0}\n\n`,
             process.stderr
         );
     } else {
@@ -77,10 +93,18 @@ try {
     fs.writeFileSync(testFile3, 'Find me too\n');
 
     const result3 = handleGrep({ pattern: 'Find me', path: '.', case_sensitive: false }, context1);
-    if (!result3.ok || !result3.result?.matches || result3.result.matches.length !== 2) {
+    if (
+        !result3.ok ||
+        !(
+            result3.result as {
+                matches: Array<{ file: string; line: number; text: string; match: string }>;
+            }
+        )?.matches ||
+        (result3.result as { matches: Array<unknown> }).matches.length !== 2
+    ) {
         failures += 1;
         logLine(
-            `FAIL\ncase: search in directory (recursive)\nexpected: 2 matches\ngot: ${result3.result?.matches?.length || 0}\n\n`,
+            `FAIL\ncase: search in directory (recursive)\nexpected: 2 matches\ngot: ${(result3.result as { matches: Array<{ file: string; line: number; text: string; match: string }> })?.matches?.length || 0}\n\n`,
             process.stderr
         );
     } else {
@@ -94,10 +118,18 @@ try {
         { pattern: 'match', path: 'test4.txt', case_sensitive: false, max_results: 3 },
         context1
     );
-    if (!result4.ok || !result4.result?.matches || result4.result.matches.length !== 3) {
+    if (
+        !result4.ok ||
+        !(
+            result4.result as {
+                matches: Array<{ file: string; line: number; text: string; match: string }>;
+            }
+        )?.matches ||
+        (result4.result as { matches: Array<unknown> }).matches.length !== 3
+    ) {
         failures += 1;
         logLine(
-            `FAIL\ncase: max results limit\nexpected: 3 matches\ngot: ${result4.result?.matches?.length || 0}\n\n`,
+            `FAIL\ncase: max results limit\nexpected: 3 matches\ngot: ${(result4.result as { matches: Array<{ file: string; line: number; text: string; match: string }> })?.matches?.length || 0}\n\n`,
             process.stderr
         );
     } else {
@@ -109,10 +141,18 @@ try {
         { pattern: 'nonexistent', path: 'test1.txt', case_sensitive: false },
         context1
     );
-    if (!result5.ok || !result5.result?.matches || result5.result.matches.length !== 0) {
+    if (
+        !result5.ok ||
+        !(
+            result5.result as {
+                matches: Array<{ file: string; line: number; text: string; match: string }>;
+            }
+        )?.matches ||
+        (result5.result as { matches: Array<unknown> }).matches.length !== 0
+    ) {
         failures += 1;
         logLine(
-            `FAIL\ncase: no matches found\nexpected: 0 matches\ngot: ${result5.result?.matches?.length || 0}\n\n`,
+            `FAIL\ncase: no matches found\nexpected: 0 matches\ngot: ${(result5.result as { matches: Array<{ file: string; line: number; text: string; match: string }> })?.matches?.length || 0}\n\n`,
             process.stderr
         );
     } else {
@@ -126,10 +166,18 @@ try {
         { pattern: '\\$\\d+', path: 'test6.txt', case_sensitive: false },
         context1
     );
-    if (!result6.ok || !result6.result?.matches || result6.result.matches.length !== 2) {
+    if (
+        !result6.ok ||
+        !(
+            result6.result as {
+                matches: Array<{ file: string; line: number; text: string; match: string }>;
+            }
+        )?.matches ||
+        (result6.result as { matches: Array<unknown> }).matches.length !== 2
+    ) {
         failures += 1;
         logLine(
-            `FAIL\ncase: regex pattern with special characters\nexpected: 2 matches\ngot: ${result6.result?.matches?.length || 0}\n\n`,
+            `FAIL\ncase: regex pattern with special characters\nexpected: 2 matches\ngot: ${(result6.result as { matches: Array<{ file: string; line: number; text: string; match: string }> })?.matches?.length || 0}\n\n`,
             process.stderr
         );
     } else {
@@ -222,10 +270,18 @@ try {
         { pattern: 'test', path: 'empty.txt', case_sensitive: false },
         context1
     );
-    if (!result11.ok || !result11.result?.matches || result11.result.matches.length !== 0) {
+    if (
+        !result11.ok ||
+        !(
+            result11.result as {
+                matches: Array<{ file: string; line: number; text: string; match: string }>;
+            }
+        )?.matches ||
+        (result11.result as { matches: Array<unknown> }).matches.length !== 0
+    ) {
         failures += 1;
         logLine(
-            `FAIL\ncase: search in empty file\nexpected: 0 matches\ngot: ${result11.result?.matches?.length || 0}\n\n`,
+            `FAIL\ncase: search in empty file\nexpected: 0 matches\ngot: ${(result11.result as { matches: Array<{ file: string; line: number; text: string; match: string }> })?.matches?.length || 0}\n\n`,
             process.stderr
         );
     } else {
@@ -239,10 +295,18 @@ try {
         { pattern: 'test', path: 'multimatch.txt', case_sensitive: false },
         context1
     );
-    if (!result12.ok || !result12.result?.matches || result12.result.matches.length !== 3) {
+    if (
+        !result12.ok ||
+        !(
+            result12.result as {
+                matches: Array<{ file: string; line: number; text: string; match: string }>;
+            }
+        )?.matches ||
+        (result12.result as { matches: Array<unknown> }).matches.length !== 3
+    ) {
         failures += 1;
         logLine(
-            `FAIL\ncase: multiple matches on same line\nexpected: 3 matches\ngot: ${result12.result?.matches?.length || 0}\n\n`,
+            `FAIL\ncase: multiple matches on same line\nexpected: 3 matches\ngot: ${(result12.result as { matches: Array<{ file: string; line: number; text: string; match: string }> })?.matches?.length || 0}\n\n`,
             process.stderr
         );
     } else {
@@ -256,8 +320,17 @@ try {
     fs.writeFileSync(hiddenFile, 'hidden content\n');
     const result13 = handleGrep({ pattern: 'hidden', path: '.', case_sensitive: false }, context1);
     // Should not find matches in .hidden directory
-    if (result13.ok && result13.result?.matches) {
-        const foundHidden = result13.result.matches.some((m: any) => m.file.includes('.hidden'));
+    if (
+        result13.ok &&
+        (
+            result13.result as {
+                matches: Array<{ file: string; line: number; text: string; match: string }>;
+            }
+        )?.matches
+    ) {
+        const foundHidden = (result13.result as { matches: Array<unknown> }).matches.some(
+            (m: any) => m.file.includes('.hidden')
+        );
         if (foundHidden) {
             failures += 1;
             logLine(
@@ -282,10 +355,18 @@ try {
         { pattern: '世界', path: 'unicode.txt', case_sensitive: false },
         context1
     );
-    if (!result14.ok || !result14.result?.matches || result14.result.matches.length !== 1) {
+    if (
+        !result14.ok ||
+        !(
+            result14.result as {
+                matches: Array<{ file: string; line: number; text: string; match: string }>;
+            }
+        )?.matches ||
+        (result14.result as { matches: Array<unknown> }).matches.length !== 1
+    ) {
         failures += 1;
         logLine(
-            `FAIL\ncase: unicode content\nexpected: 1 match\ngot: ${result14.result?.matches?.length || 0}\n\n`,
+            `FAIL\ncase: unicode content\nexpected: 1 match\ngot: ${(result14.result as { matches: Array<{ file: string; line: number; text: string; match: string }> })?.matches?.length || 0}\n\n`,
             process.stderr
         );
     } else {
@@ -301,10 +382,18 @@ try {
         { pattern: 'target', path: 'longline.txt', case_sensitive: false },
         context1
     );
-    if (!result15.ok || !result15.result?.matches || result15.result.matches.length !== 1) {
+    if (
+        !result15.ok ||
+        !(
+            result15.result as {
+                matches: Array<{ file: string; line: number; text: string; match: string }>;
+            }
+        )?.matches ||
+        (result15.result as { matches: Array<unknown> }).matches.length !== 1
+    ) {
         failures += 1;
         logLine(
-            `FAIL\ncase: very long line\nexpected: 1 match\ngot: ${result15.result?.matches?.length || 0}\n\n`,
+            `FAIL\ncase: very long line\nexpected: 1 match\ngot: ${(result15.result as { matches: Array<{ file: string; line: number; text: string; match: string }> })?.matches?.length || 0}\n\n`,
             process.stderr
         );
     } else {
@@ -339,10 +428,18 @@ try {
         { pattern: 'test', path: 'emptydir', case_sensitive: false },
         context1
     );
-    if (!result17.ok || !result17.result?.matches || result17.result.matches.length !== 0) {
+    if (
+        !result17.ok ||
+        !(
+            result17.result as {
+                matches: Array<{ file: string; line: number; text: string; match: string }>;
+            }
+        )?.matches ||
+        (result17.result as { matches: Array<unknown> }).matches.length !== 0
+    ) {
         failures += 1;
         logLine(
-            `FAIL\ncase: empty directory\nexpected: 0 matches\ngot: ${result17.result?.matches?.length || 0}\n\n`,
+            `FAIL\ncase: empty directory\nexpected: 0 matches\ngot: ${(result17.result as { matches: Array<{ file: string; line: number; text: string; match: string }> })?.matches?.length || 0}\n\n`,
             process.stderr
         );
     } else {
@@ -356,10 +453,18 @@ try {
         { pattern: 'content', path: 'file with spaces.txt', case_sensitive: false },
         context1
     );
-    if (!result18.ok || !result18.result?.matches || result18.result.matches.length !== 1) {
+    if (
+        !result18.ok ||
+        !(
+            result18.result as {
+                matches: Array<{ file: string; line: number; text: string; match: string }>;
+            }
+        )?.matches ||
+        (result18.result as { matches: Array<unknown> }).matches.length !== 1
+    ) {
         failures += 1;
         logLine(
-            `FAIL\ncase: file with special characters in name\nexpected: 1 match\ngot: ${result18.result?.matches?.length || 0}\n\n`,
+            `FAIL\ncase: file with special characters in name\nexpected: 1 match\ngot: ${(result18.result as { matches: Array<{ file: string; line: number; text: string; match: string }> })?.matches?.length || 0}\n\n`,
             process.stderr
         );
     } else {
@@ -373,10 +478,18 @@ try {
         { pattern: 'match', path: 'manymatches.txt', case_sensitive: false, max_results: 10 },
         context1
     );
-    if (!result19.ok || !result19.result?.matches || result19.result.matches.length !== 10) {
+    if (
+        !result19.ok ||
+        !(
+            result19.result as {
+                matches: Array<{ file: string; line: number; text: string; match: string }>;
+            }
+        )?.matches ||
+        (result19.result as { matches: Array<unknown> }).matches.length !== 10
+    ) {
         failures += 1;
         logLine(
-            `FAIL\ncase: max results stops early\nexpected: exactly 10 matches\ngot: ${result19.result?.matches?.length || 0}\n\n`,
+            `FAIL\ncase: max results stops early\nexpected: exactly 10 matches\ngot: ${(result19.result as { matches: Array<{ file: string; line: number; text: string; match: string }> })?.matches?.length || 0}\n\n`,
             process.stderr
         );
     } else {
@@ -391,7 +504,15 @@ try {
         context1
     );
     // Should not match newlines (they're line separators, not part of line content)
-    if (!result20.ok || !result20.result?.matches || result20.result.matches.length !== 0) {
+    if (
+        !result20.ok ||
+        !(
+            result20.result as {
+                matches: Array<{ file: string; line: number; text: string; match: string }>;
+            }
+        )?.matches ||
+        (result20.result as { matches: Array<unknown> }).matches.length !== 0
+    ) {
         // This is expected - newlines are line separators, not matched
         logLine('PASS: pattern matching newlines (correctly ignored)');
     } else {
@@ -406,10 +527,18 @@ try {
         context1
     );
     // Should match both (case-insensitive)
-    if (!result21.ok || !result21.result?.matches || result21.result.matches.length < 1) {
+    if (
+        !result21.ok ||
+        !(
+            result21.result as {
+                matches: Array<{ file: string; line: number; text: string; match: string }>;
+            }
+        )?.matches ||
+        (result21.result as { matches: Array<unknown> }).matches.length < 1
+    ) {
         failures += 1;
         logLine(
-            `FAIL\ncase: case sensitivity with unicode\nexpected: at least 1 match\ngot: ${result21.result?.matches?.length || 0}\n\n`,
+            `FAIL\ncase: case sensitivity with unicode\nexpected: at least 1 match\ngot: ${(result21.result as { matches: Array<{ file: string; line: number; text: string; match: string }> })?.matches?.length || 0}\n\n`,
             process.stderr
         );
     } else {
@@ -429,10 +558,18 @@ try {
         context1
     );
     // Should find 25 matches (every other file)
-    if (!result22.ok || !result22.result?.matches || result22.result.matches.length !== 25) {
+    if (
+        !result22.ok ||
+        !(
+            result22.result as {
+                matches: Array<{ file: string; line: number; text: string; match: string }>;
+            }
+        )?.matches ||
+        (result22.result as { matches: Array<unknown> }).matches.length !== 25
+    ) {
         failures += 1;
         logLine(
-            `FAIL\ncase: large directory structure\nexpected: 25 matches\ngot: ${result22.result?.matches?.length || 0}\n\n`,
+            `FAIL\ncase: large directory structure\nexpected: 25 matches\ngot: ${(result22.result as { matches: Array<{ file: string; line: number; text: string; match: string }> })?.matches?.length || 0}\n\n`,
             process.stderr
         );
     } else {
@@ -456,16 +593,26 @@ try {
             `FAIL\ncase: skip huge file\nexpected: ok true (file skipped)\ngot: ok false\n\n`,
             process.stderr
         );
-    } else if (result23.result?.matches && result23.result.matches.length > 0) {
+    } else if (
+        (
+            result23.result as {
+                matches: Array<{ file: string; line: number; text: string; match: string }>;
+            }
+        )?.matches &&
+        (result23.result as { matches: Array<unknown> }).matches.length > 0
+    ) {
         failures += 1;
         logLine(
-            `FAIL\ncase: skip huge file\nexpected: 0 matches (file skipped)\ngot: ${result23.result.matches.length} matches\n\n`,
+            `FAIL\ncase: skip huge file\nexpected: 0 matches (file skipped)\ngot: ${(result23.result as { matches: Array<unknown> }).matches.length} matches\n\n`,
             process.stderr
         );
     } else {
         // File was skipped (0 matches) - this is correct
         // Check if skipped_files info is present (optional but nice to have)
-        if (result23.result?.skipped_count !== undefined && result23.result.skipped_count > 0) {
+        if (
+            (result23.result as { skipped_count?: number })?.skipped_count !== undefined &&
+            result23.result.skipped_count > 0
+        ) {
             logLine('PASS: skip huge file (with skipped_files info)');
         } else {
             // File was skipped silently (also acceptable)

@@ -23,7 +23,7 @@ git diff --name-only HEAD
 ### Step 2: Check Existing Test Results
 
 ```bash
-# Read latest test summary
+# Read latest test summary (if it exists)
 cat .test-results/latest.json 2>/dev/null
 ```
 
@@ -38,7 +38,7 @@ cat .test-results/latest.json 2>/dev/null
 
 **If tests are needed:**
 
-1. **Prefer targeted runs:**
+1. **Prefer targeted runs (if `npm run test:single` exists):**
    ```bash
    # If you changed src/tools/memory_tools.ts, run only:
    npm run build && npm run test:single memory_store
@@ -57,8 +57,9 @@ cat .test-results/latest.json 2>/dev/null
 - You made additional code changes after the first run
 
 **After a failure:**
-- Rerun only the failed test: `npm run test:single <test-name>`
-- Do NOT rerun the full suite unless multiple tests failed
+- Rerun only the failed test: `npm run test:single <test-name>` (if available)
+- Otherwise rerun the full suite: `npm test`
+- Do NOT rerun the full suite multiple times unless multiple tests failed
 
 ## How Test Caching Works
 
@@ -72,13 +73,13 @@ The test runner (`src/run_tests.ts`) uses `TestCache` (`src/core/test_cache.ts`)
 
 ## Test Result Files
 
-The test runner automatically creates:
+**If the test runner creates these files:**
 
 - `.test-results/latest.json` - Summary of last full run (written by `testCache.updateSummary()`)
 - `.test-results/results.jsonl` - Append-only log of individual test results
 - `.test-results/checksums.json` - File hashes for change detection
 
-**Do not manually write to these files.** The test runner manages them.
+**Do not manually write to these files.** The test runner manages them if they exist.
 
 ## Anti-Thrash Rules
 
@@ -96,13 +97,13 @@ The test runner automatically creates:
 ## Quick Reference
 
 ```bash
-# Check if tests needed
-cat .test-results/latest.json
+# Check if tests needed (if .test-results/latest.json exists)
+cat .test-results/latest.json 2>/dev/null
 
 # Check what changed
 git diff --name-only HEAD
 
-# Run single test (preferred)
+# Run single test (preferred, if npm run test:single exists)
 npm run test:single <test-name>
 
 # Run full suite (only if needed)

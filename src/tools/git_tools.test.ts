@@ -54,7 +54,7 @@ try {
     if (initGitRepo(gitDir1)) {
         const context1 = createMockContext({ baseDir: gitDir1 });
         const result1 = handleGitStatus({}, context1);
-        if (!result1.ok || !result1.result?.clean) {
+        if (!result1.ok || !(result1.result as Record<string, unknown>)?.clean) {
             failures += 1;
             logLine(
                 'FAIL\ncase: git_status on clean repo should return clean=true\nexpected: ok true, result.clean true\n\n',
@@ -69,7 +69,7 @@ try {
         fs.writeFileSync(path.join(gitDir2, 'test.txt'), 'content');
         const context2 = createMockContext({ baseDir: gitDir2 });
         const result2 = handleGitStatus({}, context2);
-        if (!result2.ok || result2.result?.clean !== false) {
+        if (!result2.ok || (result2.result as Record<string, unknown>)?.clean !== false) {
             failures += 1;
             logLine(
                 'FAIL\ncase: git_status on repo with changes should return clean=false\nexpected: ok true, result.clean false\n\n',
@@ -86,9 +86,9 @@ try {
         if (result3.ok) {
             if (
                 !result3.result ||
-                typeof result3.result.clean !== 'boolean' ||
-                !Array.isArray(result3.result.files) ||
-                typeof result3.result.summary !== 'string'
+                typeof (result3.result as Record<string, unknown>).clean !== 'boolean' ||
+                !Array.isArray((result3.result as Record<string, unknown>).files) ||
+                typeof (result3.result as Record<string, unknown>).summary !== 'string'
             ) {
                 failures += 1;
                 logLine(
@@ -194,7 +194,7 @@ try {
         }
         const context10 = createMockContext({ baseDir: gitDir10 });
         const result10 = handleGitStatus({}, context10);
-        if (!result10.ok || result10.result?.files.length !== 100) {
+        if (!result10.ok || (result10.result as Record<string, unknown>)?.files.length !== 100) {
             failures += 1;
             logLine(
                 'FAIL\ncase: git_status with 100 files should work\nexpected: ok true, result.files.length 100\n\n',
@@ -214,7 +214,7 @@ try {
         fs.writeFileSync(path.join(gitDir11, 'test.txt'), 'modified');
         const context11 = createMockContext({ baseDir: gitDir11 });
         const result11 = handleGitDiff({}, context11);
-        if (!result11.ok || result11.result?.staged !== false) {
+        if (!result11.ok || (result11.result as Record<string, unknown>)?.staged !== false) {
             failures += 1;
             logLine(
                 'FAIL\ncase: git_diff unstaged should return staged=false\nexpected: ok true, result.staged false\n\n',
@@ -231,7 +231,7 @@ try {
         spawnSync('git', ['add', 'test.txt'], { cwd: gitDir12 });
         const context12 = createMockContext({ baseDir: gitDir12 });
         const result12 = handleGitDiff({ staged: true }, context12);
-        if (!result12.ok || result12.result?.staged !== true) {
+        if (!result12.ok || (result12.result as Record<string, unknown>)?.staged !== true) {
             failures += 1;
             logLine(
                 'FAIL\ncase: git_diff staged should return staged=true\nexpected: ok true, result.staged true\n\n',
@@ -262,7 +262,7 @@ try {
         createTestFileAndCommit(gitDir14, 'test.txt', 'content');
         const context14 = createMockContext({ baseDir: gitDir14 });
         const result14 = handleGitDiff({}, context14);
-        if (!result14.ok || result14.result?.empty !== true) {
+        if (!result14.ok || (result14.result as Record<string, unknown>)?.empty !== true) {
             failures += 1;
             logLine(
                 'FAIL\ncase: git_diff on clean repo should return empty=true\nexpected: ok true, result.empty true\n\n',
@@ -318,7 +318,7 @@ try {
         const context17 = createMockContext({ baseDir: gitDir17 });
         const result17 = handleGitDiff({ path: 'nonexistent.txt' }, context17);
         // Should succeed but return empty diff
-        if (!result17.ok || result17.result?.empty !== true) {
+        if (!result17.ok || (result17.result as Record<string, unknown>)?.empty !== true) {
             failures += 1;
             logLine(
                 'FAIL\ncase: git_diff with non-existent path should return empty diff\nexpected: ok true, result.empty true\n\n',
@@ -351,7 +351,7 @@ try {
     if (initGitRepo(gitDir19)) {
         const context19 = createMockContext({ baseDir: gitDir19 });
         const result19 = handleGitDiff({ staged: undefined }, context19);
-        if (!result19.ok || result19.result?.staged !== false) {
+        if (!result19.ok || (result19.result as Record<string, unknown>)?.staged !== false) {
             failures += 1;
             logLine(
                 'FAIL\ncase: git_diff with undefined staged should default to false\nexpected: ok true, result.staged false\n\n',
@@ -365,7 +365,7 @@ try {
     if (initGitRepo(gitDir20)) {
         const context20 = createMockContext({ baseDir: gitDir20 });
         const result20 = handleGitDiff({ staged: null as any }, context20);
-        if (!result20.ok || result20.result?.staged !== false) {
+        if (!result20.ok || (result20.result as Record<string, unknown>)?.staged !== false) {
             failures += 1;
             logLine(
                 'FAIL\ncase: git_diff with null staged should default to false\nexpected: ok true, result.staged false\n\n',
@@ -402,7 +402,7 @@ try {
         const result22 = handleGitDiff({ staged: 'true' as any }, context22);
         // TypeScript would catch this, but test runtime behavior
         // Should work (string 'true' is truthy) or fail validation
-        if (result22.ok && result22.result?.staged !== true) {
+        if (result22.ok && (result22.result as Record<string, unknown>)?.staged !== true) {
             // If it works, staged should be true (truthy)
         }
     }
@@ -433,7 +433,11 @@ try {
         createTestFileAndCommit(gitDir24, 'test.txt', 'content');
         const context24 = createMockContext({ baseDir: gitDir24 });
         const result24 = handleGitLog({}, context24);
-        if (!result24.ok || !result24.result?.commits || result24.result.count !== 1) {
+        if (
+            !result24.ok ||
+            !(result24.result as Record<string, unknown>)?.commits ||
+            (result24.result as Record<string, unknown>).count !== 1
+        ) {
             failures += 1;
             logLine(
                 'FAIL\ncase: git_log with default limit should return 1 commit\nexpected: ok true, result.count 1\n\n',
@@ -450,7 +454,7 @@ try {
         createTestFileAndCommit(gitDir25, 'test3.txt', 'content3');
         const context25 = createMockContext({ baseDir: gitDir25 });
         const result25 = handleGitLog({ limit: 2 }, context25);
-        if (!result25.ok || result25.result?.count !== 2) {
+        if (!result25.ok || (result25.result as Record<string, unknown>)?.count !== 2) {
             failures += 1;
             logLine(
                 'FAIL\ncase: git_log with limit 2 should return 2 commits\nexpected: ok true, result.count 2\n\n',
@@ -468,16 +472,16 @@ try {
         if (result26.ok) {
             if (
                 !result26.result ||
-                typeof result26.result.count !== 'number' ||
-                !Array.isArray(result26.result.commits)
+                typeof (result26.result as Record<string, unknown>).count !== 'number' ||
+                !Array.isArray((result26.result as Record<string, unknown>).commits)
             ) {
                 failures += 1;
                 logLine(
                     'FAIL\ncase: git_log result should have count and commits\nexpected: result with count (number), commits (array)\n\n',
                     process.stderr
                 );
-            } else if (result26.result.commits.length > 0) {
-                const commit = result26.result.commits[0];
+            } else if ((result26.result as Record<string, unknown>).commits.length > 0) {
+                const commit = (result26.result as Record<string, unknown>).commits[0];
                 if (!commit.hash || !commit.message || !commit.author || !commit.date) {
                     failures += 1;
                     logLine(
@@ -494,7 +498,7 @@ try {
     if (initGitRepo(gitDir27)) {
         const context27 = createMockContext({ baseDir: gitDir27 });
         const result27 = handleGitLog({}, context27);
-        if (!result27.ok || result27.result?.count !== 0) {
+        if (!result27.ok || (result27.result as Record<string, unknown>)?.count !== 0) {
             failures += 1;
             logLine(
                 'FAIL\ncase: git_log on empty repo should return count 0\nexpected: ok true, result.count 0\n\n',
@@ -529,7 +533,7 @@ try {
         createTestFileAndCommit(gitDir29, 'test.txt', 'content');
         const context29 = createMockContext({ baseDir: gitDir29 });
         const result29 = handleGitLog({ limit: 0 }, context29);
-        if (!result29.ok || result29.result?.count !== 0) {
+        if (!result29.ok || (result29.result as Record<string, unknown>)?.count !== 0) {
             failures += 1;
             logLine(
                 'FAIL\ncase: git_log with limit 0 should return count 0\nexpected: ok true, result.count 0\n\n',
@@ -545,7 +549,7 @@ try {
         createTestFileAndCommit(gitDir30, 'test2.txt', 'content2');
         const context30 = createMockContext({ baseDir: gitDir30 });
         const result30 = handleGitLog({ limit: 1 }, context30);
-        if (!result30.ok || result30.result?.count !== 1) {
+        if (!result30.ok || (result30.result as Record<string, unknown>)?.count !== 1) {
             failures += 1;
             logLine(
                 'FAIL\ncase: git_log with limit 1 should return count 1\nexpected: ok true, result.count 1\n\n',
@@ -563,7 +567,7 @@ try {
         }
         const context31 = createMockContext({ baseDir: gitDir31 });
         const result31 = handleGitLog({ limit: 50 }, context31);
-        if (!result31.ok || result31.result?.count !== 50) {
+        if (!result31.ok || (result31.result as Record<string, unknown>)?.count !== 50) {
             failures += 1;
             logLine(
                 'FAIL\ncase: git_log with limit 50 should return count 50 (capped)\nexpected: ok true, result.count 50\n\n',
@@ -581,7 +585,7 @@ try {
         }
         const context32 = createMockContext({ baseDir: gitDir32 });
         const result32 = handleGitLog({ limit: 100 }, context32);
-        if (!result32.ok || result32.result?.count !== 50) {
+        if (!result32.ok || (result32.result as Record<string, unknown>)?.count !== 50) {
             failures += 1;
             logLine(
                 'FAIL\ncase: git_log with limit 100 should cap at 50\nexpected: ok true, result.count 50\n\n',
@@ -597,9 +601,9 @@ try {
         const context33 = createMockContext({ baseDir: gitDir33 });
         const result33 = handleGitLog({ limit: -1 }, context33);
         // Should either fail or use default (10)
-        if (result33.ok && result33.result?.count !== 10) {
+        if (result33.ok && (result33.result as Record<string, unknown>)?.count !== 10) {
             // If it works, should use default
-            if (result33.result?.count === undefined) {
+            if ((result33.result as Record<string, unknown>)?.count === undefined) {
                 failures += 1;
                 logLine(
                     'FAIL\ncase: git_log with negative limit should handle gracefully\nexpected: ok true with default limit or error\n\n',
@@ -615,7 +619,7 @@ try {
         createTestFileAndCommit(gitDir34, 'test.txt', 'content');
         const context34 = createMockContext({ baseDir: gitDir34 });
         const result34 = handleGitLog({ limit: undefined }, context34);
-        if (!result34.ok || result34.result?.count !== 1) {
+        if (!result34.ok || (result34.result as Record<string, unknown>)?.count !== 1) {
             failures += 1;
             logLine(
                 'FAIL\ncase: git_log with undefined limit should use default\nexpected: ok true, result.count 1\n\n',
@@ -630,7 +634,7 @@ try {
         createTestFileAndCommit(gitDir35, 'test.txt', 'content');
         const context35 = createMockContext({ baseDir: gitDir35 });
         const result35 = handleGitLog({ limit: null as any }, context35);
-        if (!result35.ok || result35.result?.count !== 1) {
+        if (!result35.ok || (result35.result as Record<string, unknown>)?.count !== 1) {
             failures += 1;
             logLine(
                 'FAIL\ncase: git_log with null limit should use default\nexpected: ok true, result.count 1\n\n',

@@ -1,114 +1,10 @@
----
-description: Error handling patterns and error code conventions
-globs: []
-alwaysApply: false
----
+# Error Handling Examples & Patterns
 
-# Error Handling Patterns
+**This is a reference guide. For essential conventions, see `.cursor/rules/errors.mdc`.**
 
-**This is a reference-only rule. For detailed examples, see `docs/ERRORS.md`.**
+## Detailed Examples
 
-## Essential Conventions
-
-### Error Code System
-
-All errors use structured error codes defined in `src/core/tool_contract.ts`:
-
-```typescript
-export enum ErrorCode {
-    // Permission Errors (4xx-like)
-    DENIED_COMMAND_ALLOWLIST = 'DENIED_COMMAND_ALLOWLIST',
-    DENIED_PATH_ALLOWLIST = 'DENIED_PATH_ALLOWLIST',
-    DENIED_TOOL_BLOCKLIST = 'DENIED_TOOL_BLOCKLIST',
-    DENIED_AGENT_TOOLSET = 'DENIED_AGENT_TOOLSET',
-    CONFIRMATION_REQUIRED = 'CONFIRMATION_REQUIRED',
-    
-    // Validation Errors (4xx-like)
-    VALIDATION_ERROR = 'VALIDATION_ERROR',
-    INVALID_ARGUMENT = 'INVALID_ARGUMENT',
-    MISSING_ARGUMENT = 'MISSING_ARGUMENT',
-    UNKNOWN_TOOL = 'UNKNOWN_TOOL',
-    
-    // Execution Errors (5xx-like)
-    EXEC_ERROR = 'EXEC_ERROR',
-    TIMEOUT = 'TIMEOUT',
-}
-```
-
-### Creating Errors
-
-Always use `makeError()` helper:
-
-```typescript
-import { makeError } from '../core';
-
-// ✅ Good - Structured error
-return {
-    ok: false,
-    error: makeError('VALIDATION_ERROR', 'Text cannot be empty'),
-};
-
-// ❌ Bad - Plain string
-return {
-    ok: false,
-    error: 'Text cannot be empty', // Missing code
-};
-```
-
-### Never Throw
-
-Tool handlers should never throw - always return errors:
-
-```typescript
-// ✅ Good - Return error
-export function handleTool(args: Args, context: Context): ToolResult {
-    try {
-        const result = riskyOperation();
-        return { ok: true, result };
-    } catch (err: any) {
-        return {
-            ok: false,
-            error: makeError('EXEC_ERROR', err.message),
-        };
-    }
-}
-
-// ❌ Bad - Throws
-export function handleTool(args: Args, context: Context): ToolResult {
-    const result = riskyOperation(); // May throw
-    return { ok: true, result };
-}
-```
-
-## Error Checklist
-
-When adding error handling:
-
-- [ ] Use `makeError()` helper
-- [ ] Include specific error code
-- [ ] Provide helpful error message
-- [ ] Include relevant details
-- [ ] Never throw from tool handlers
-- [ ] Log errors appropriately (no secrets)
-- [ ] Map to appropriate exit codes
-- [ ] Consider error recovery suggestions
-
-## Full Examples
-
-See `docs/ERRORS.md` for:
-- Error propagation patterns
-- Validation error examples
-- Permission error examples
-- Error message best practices
-- Error recovery patterns
-- Error logging patterns
-- Exit code mapping
-- Error type guards
-- Context-specific patterns
-
-## Error Propagation
-
-Propagate errors with context:
+### Error Propagation
 
 ```typescript
 // ✅ Good - Preserve context
@@ -142,9 +38,7 @@ async function processFile(path: string): Promise<ToolResult> {
 }
 ```
 
-## Validation Errors
-
-Use specific validation error codes:
+### Validation Errors
 
 ```typescript
 // ✅ Good - Specific error code
@@ -174,9 +68,7 @@ if (!args.text) {
 }
 ```
 
-## Permission Errors
-
-Use specific permission error codes:
+### Permission Errors
 
 ```typescript
 // ✅ Good - Specific permission error
@@ -199,9 +91,7 @@ if (!context.agent.tools.includes(toolName)) {
 }
 ```
 
-## Error Messages
-
-Write helpful error messages:
+### Error Messages
 
 ```typescript
 // ✅ Good - Actionable message
@@ -223,9 +113,7 @@ makeError('EXEC_ERROR', 'Error occurred')
 makeError('EXEC_ERROR', 'EACCES: permission denied, open')
 ```
 
-## Error Recovery
-
-When possible, provide recovery suggestions:
+### Error Recovery
 
 ```typescript
 // ✅ Good - Suggests fix
@@ -249,9 +137,7 @@ if (!apiKey) {
 }
 ```
 
-## Error Logging
-
-Log errors appropriately:
+### Error Logging
 
 ```typescript
 // ✅ Good - Log with context
@@ -266,9 +152,7 @@ if (verbose) {
 console.error(`[Error] API key: ${apiKey}`); // Never log secrets
 ```
 
-## Exit Codes
-
-Map error codes to exit codes:
+### Exit Codes
 
 ```typescript
 // In CLI/app layer
@@ -289,9 +173,7 @@ function exitCodeForError(error: ToolError | null): number {
 }
 ```
 
-## Error Type Guards
-
-Use type guards for error handling:
+### Error Type Guards
 
 ```typescript
 // ✅ Good - Type-safe error checking
@@ -315,9 +197,9 @@ if (result.error) {
 }
 ```
 
-## Error Patterns by Context
+### Error Patterns by Context
 
-### Tool Handlers
+#### Tool Handlers
 
 ```typescript
 export function handleTool(args: Args, context: Context): ToolResult {
@@ -351,7 +233,7 @@ export function handleTool(args: Args, context: Context): ToolResult {
 }
 ```
 
-### Providers
+#### Providers
 
 ```typescript
 async function chat(request: ChatRequest): Promise<ChatResponse> {
@@ -374,19 +256,6 @@ async function chat(request: ChatRequest): Promise<ChatResponse> {
     }
 }
 ```
-
-## Error Checklist
-
-When adding error handling:
-
-- [ ] Use `makeError()` helper
-- [ ] Include specific error code
-- [ ] Provide helpful error message
-- [ ] Include relevant details
-- [ ] Never throw from tool handlers
-- [ ] Log errors appropriately (no secrets)
-- [ ] Map to appropriate exit codes
-- [ ] Consider error recovery suggestions
 
 ## Common Mistakes
 
@@ -429,8 +298,3 @@ catch (err: any) {
 }
 ```
 
-## Integration with Other Rules
-
-- **Security Rule**: See `.cursor/rules/security.mdc` for permission error patterns
-- **Validation Rule**: See `src/core/validation.ts` for validation error helpers
-- **Tools Rule**: See `.cursor/rules/tools.mdc` for tool handler error patterns

@@ -24,7 +24,15 @@ export function handleEmailList(args: EmailListArgs, context: ExecutorContext): 
         from: string;
         subject: string;
         snippet: string;
-    }>(emailsPath, (e: unknown) => typeof e === 'object' && e !== null && 'id' in e && typeof (e as { id: unknown }).id === 'string' && (e as { id: string }).id.length > 0);
+    }>(
+        emailsPath,
+        (e: unknown): e is { id: string; from: string; subject: string; snippet: string } =>
+            typeof e === 'object' &&
+            e !== null &&
+            'id' in e &&
+            typeof (e as { id: unknown }).id === 'string' &&
+            (e as { id: string }).id.length > 0
+    );
     return { ok: true, result: emails.slice(-limit).reverse() };
 }
 
@@ -68,7 +76,17 @@ export function handleEmailGetDetails(
         subject: string;
         body: string;
         ts: string;
-    }>(emailsPath, (e: unknown) => typeof e === 'object' && e !== null && 'id' in e && typeof (e as { id: unknown }).id === 'string' && (e as { id: string }).id.length > 0);
+    }>(
+        emailsPath,
+        (
+            e: unknown
+        ): e is { id: string; from: string; subject: string; body: string; ts: string } =>
+            typeof e === 'object' &&
+            e !== null &&
+            'id' in e &&
+            typeof (e as { id: unknown }).id === 'string' &&
+            (e as { id: string }).id.length > 0
+    );
     const email = emails.find(e => e.id === id);
 
     if (!email)
@@ -93,7 +111,14 @@ export function handleMessageList(args: MessageListArgs, context: ExecutorContex
         body: string;
         ts: string;
         sent_via?: string;
-    }>(messagesPath, (m: unknown) => typeof m === 'object' && m !== null && 'ts' in m && typeof (m as { ts: unknown }).ts === 'string');
+    }>(
+        messagesPath,
+        (m: unknown): m is { to: string; body: string; ts: string; sent_via?: string } =>
+            typeof m === 'object' &&
+            m !== null &&
+            'ts' in m &&
+            typeof (m as { ts: unknown }).ts === 'string'
+    );
     return { ok: true, result: messages.slice(-limit).reverse() };
 }
 

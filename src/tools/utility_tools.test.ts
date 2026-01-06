@@ -34,7 +34,7 @@ try {
 
     // T1: Simple addition
     const result1 = handleCalculate({ expression: '2 + 3' });
-    if (!result1.ok || result1.result?.value !== 5) {
+    if (!result1.ok || (result1.result as { value: number })?.value !== 5) {
         failures += 1;
         logLine(
             'FAIL\ncase: simple addition 2+3\nexpected: ok true, result.value 5\n\n',
@@ -44,7 +44,7 @@ try {
 
     // T2: Simple subtraction
     const result2 = handleCalculate({ expression: '10 - 4' });
-    if (!result2.ok || result2.result?.value !== 6) {
+    if (!result2.ok || (result2.result as { value: number })?.value !== 6) {
         failures += 1;
         logLine(
             'FAIL\ncase: simple subtraction 10-4\nexpected: ok true, result.value 6\n\n',
@@ -54,7 +54,7 @@ try {
 
     // T3: Simple multiplication
     const result3 = handleCalculate({ expression: '3 * 4' });
-    if (!result3.ok || result3.result?.value !== 12) {
+    if (!result3.ok || (result3.result as { value: number })?.value !== 12) {
         failures += 1;
         logLine(
             'FAIL\ncase: simple multiplication 3*4\nexpected: ok true, result.value 12\n\n',
@@ -64,7 +64,7 @@ try {
 
     // T4: Simple division
     const result4 = handleCalculate({ expression: '15 / 3' });
-    if (!result4.ok || result4.result?.value !== 5) {
+    if (!result4.ok || (result4.result as { value: number })?.value !== 5) {
         failures += 1;
         logLine(
             'FAIL\ncase: simple division 15/3\nexpected: ok true, result.value 5\n\n',
@@ -74,14 +74,14 @@ try {
 
     // T5: Modulo
     const result5 = handleCalculate({ expression: '10 % 3' });
-    if (!result5.ok || result5.result?.value !== 1) {
+    if (!result5.ok || (result5.result as { value: number })?.value !== 1) {
         failures += 1;
         logLine('FAIL\ncase: modulo 10%3\nexpected: ok true, result.value 1\n\n', process.stderr);
     }
 
     // T6: Exponentiation
     const result6 = handleCalculate({ expression: '2 ^ 3' });
-    if (!result6.ok || result6.result?.value !== 8) {
+    if (!result6.ok || (result6.result as { value: number })?.value !== 8) {
         failures += 1;
         logLine(
             'FAIL\ncase: exponentiation 2^3\nexpected: ok true, result.value 8\n\n',
@@ -91,7 +91,7 @@ try {
 
     // T7: Parentheses
     const result7 = handleCalculate({ expression: '(2 + 3) * 4' });
-    if (!result7.ok || result7.result?.value !== 20) {
+    if (!result7.ok || (result7.result as { value: number })?.value !== 20) {
         failures += 1;
         logLine(
             'FAIL\ncase: parentheses (2+3)*4\nexpected: ok true, result.value 20\n\n',
@@ -101,7 +101,7 @@ try {
 
     // T8: Decimal numbers
     const result8 = handleCalculate({ expression: '3.5 + 2.5' });
-    if (!result8.ok || result8.result?.value !== 6) {
+    if (!result8.ok || (result8.result as { value: number })?.value !== 6) {
         failures += 1;
         logLine(
             'FAIL\ncase: decimal numbers 3.5+2.5\nexpected: ok true, result.value 6\n\n',
@@ -111,7 +111,7 @@ try {
 
     // T9: Negative numbers
     const result9 = handleCalculate({ expression: '-5 + 3' });
-    if (!result9.ok || result9.result?.value !== -2) {
+    if (!result9.ok || (result9.result as { value: number })?.value !== -2) {
         failures += 1;
         logLine(
             'FAIL\ncase: negative numbers -5+3\nexpected: ok true, result.value -2\n\n',
@@ -121,7 +121,10 @@ try {
 
     // T10: Math constants - PI
     const result10 = handleCalculate({ expression: 'PI' });
-    if (!result10.ok || Math.abs(result10.result?.value - Math.PI) > 0.0001) {
+    if (
+        !result10.ok ||
+        Math.abs((result10.result as { value: number })?.value - Math.PI) > 0.0001
+    ) {
         failures += 1;
         logLine(
             'FAIL\ncase: PI constant\nexpected: ok true, result.value approximately Math.PI\n\n',
@@ -131,7 +134,7 @@ try {
 
     // T11: Math constants - E
     const result11 = handleCalculate({ expression: 'E' });
-    if (!result11.ok || Math.abs(result11.result?.value - Math.E) > 0.0001) {
+    if (!result11.ok || Math.abs((result11.result as { value: number })?.value - Math.E) > 0.0001) {
         failures += 1;
         logLine(
             'FAIL\ncase: E constant\nexpected: ok true, result.value approximately Math.E\n\n',
@@ -141,7 +144,7 @@ try {
 
     // T12: Math functions - sqrt
     const result12 = handleCalculate({ expression: 'sqrt(16)' });
-    if (!result12.ok || result12.result?.value !== 4) {
+    if (!result12.ok || (result12.result as { value: number })?.value !== 4) {
         failures += 1;
         logLine(
             'FAIL\ncase: sqrt function sqrt(16)\nexpected: ok true, result.value 4\n\n',
@@ -151,7 +154,7 @@ try {
 
     // T13: Math functions - abs
     const result13 = handleCalculate({ expression: 'abs(-5)' });
-    if (!result13.ok || result13.result?.value !== 5) {
+    if (!result13.ok || (result13.result as { value: number })?.value !== 5) {
         failures += 1;
         logLine(
             'FAIL\ncase: abs function abs(-5)\nexpected: ok true, result.value 5\n\n',
@@ -161,7 +164,7 @@ try {
 
     // T14: Math functions - pow
     const result14 = handleCalculate({ expression: 'pow(2, 3)' });
-    if (!result14.ok || result14.result?.value !== 8) {
+    if (!result14.ok || (result14.result as { value: number })?.value !== 8) {
         failures += 1;
         logLine(
             'FAIL\ncase: pow function pow(2,3)\nexpected: ok true, result.value 8\n\n',
@@ -171,7 +174,7 @@ try {
 
     // T15: Math functions - min
     const result15 = handleCalculate({ expression: 'min(5, 3)' });
-    if (!result15.ok || result15.result?.value !== 3) {
+    if (!result15.ok || (result15.result as { value: number })?.value !== 3) {
         failures += 1;
         logLine(
             'FAIL\ncase: min function min(5,3)\nexpected: ok true, result.value 3\n\n',
@@ -181,7 +184,7 @@ try {
 
     // T16: Math functions - max
     const result16 = handleCalculate({ expression: 'max(5, 3)' });
-    if (!result16.ok || result16.result?.value !== 5) {
+    if (!result16.ok || (result16.result as { value: number })?.value !== 5) {
         failures += 1;
         logLine(
             'FAIL\ncase: max function max(5,3)\nexpected: ok true, result.value 5\n\n',
@@ -191,7 +194,7 @@ try {
 
     // T17: Complex expression
     const result17 = handleCalculate({ expression: 'sqrt(16) + pow(2, 3) * 2' });
-    if (!result17.ok || result17.result?.value !== 20) {
+    if (!result17.ok || (result17.result as { value: number })?.value !== 20) {
         failures += 1;
         logLine(
             'FAIL\ncase: complex expression sqrt(16)+pow(2,3)*2\nexpected: ok true, result.value 20\n\n',
@@ -245,7 +248,7 @@ try {
 
     // T22: Division by zero
     const result22 = handleCalculate({ expression: '5 / 0' });
-    if (result22.ok || !Number.isFinite(result22.result?.value)) {
+    if (result22.ok || !Number.isFinite((result22.result as { value: number })?.value)) {
         // Division by zero results in Infinity, which should be caught
         if (result22.ok || result22.error?.code !== 'EXEC_ERROR') {
             failures += 1;
@@ -282,7 +285,11 @@ try {
 
     // T25: Default format
     const result25 = handleGetTime({});
-    if (!result25.ok || !result25.result?.time || !result25.result?.timestamp) {
+    if (
+        !result25.ok ||
+        !(result25.result as Record<string, unknown>)?.time ||
+        !(result25.result as Record<string, unknown>)?.timestamp
+    ) {
         failures += 1;
         logLine(
             'FAIL\ncase: getTime default format should return time and timestamp\nexpected: ok true, result.time and result.timestamp\n\n',
@@ -292,7 +299,11 @@ try {
 
     // T26: ISO format
     const result26 = handleGetTime({ format: 'iso' });
-    if (!result26.ok || !result26.result?.time || !result26.result?.time.includes('T')) {
+    if (
+        !result26.ok ||
+        !(result26.result as Record<string, unknown>)?.time ||
+        !(result26.result as Record<string, unknown>)?.time.includes('T')
+    ) {
         failures += 1;
         logLine(
             'FAIL\ncase: getTime iso format should return ISO string\nexpected: ok true, result.time contains T\n\n',
@@ -302,7 +313,7 @@ try {
 
     // T27: Local format
     const result27 = handleGetTime({ format: 'local' });
-    if (!result27.ok || !result27.result?.time) {
+    if (!result27.ok || !(result27.result as Record<string, unknown>)?.time) {
         failures += 1;
         logLine(
             'FAIL\ncase: getTime local format should return time\nexpected: ok true, result.time\n\n',
@@ -338,7 +349,7 @@ try {
 
     // T30: Unknown format (should use default)
     const result30 = handleGetTime({ format: 'unknown' });
-    if (!result30.ok || !result30.result?.time) {
+    if (!result30.ok || !(result30.result as Record<string, unknown>)?.time) {
         failures += 1;
         logLine(
             'FAIL\ncase: unknown format should use default\nexpected: ok true, result.time\n\n',
@@ -348,7 +359,7 @@ try {
 
     // T31: Empty format string
     const result31 = handleGetTime({ format: '' });
-    if (!result31.ok || !result31.result?.time) {
+    if (!result31.ok || !(result31.result as Record<string, unknown>)?.time) {
         failures += 1;
         logLine(
             'FAIL\ncase: empty format should use default\nexpected: ok true, result.time\n\n',
@@ -362,7 +373,7 @@ try {
 
     // T32: Delegate to coder
     const result32 = handleDelegateToCoder({ task: 'Write a function' });
-    if (!result32.ok || result32.result?.delegated_to !== 'coder') {
+    if (!result32.ok || (result32.result as Record<string, unknown>)?.delegated_to !== 'coder') {
         failures += 1;
         logLine(
             'FAIL\ncase: delegate to coder should succeed\nexpected: ok true, result.delegated_to coder\n\n',
@@ -372,7 +383,10 @@ try {
 
     // T33: Delegate to organizer
     const result33 = handleDelegateToOrganizer({ task: 'Organize files' });
-    if (!result33.ok || result33.result?.delegated_to !== 'organizer') {
+    if (
+        !result33.ok ||
+        (result33.result as Record<string, unknown>)?.delegated_to !== 'organizer'
+    ) {
         failures += 1;
         logLine(
             'FAIL\ncase: delegate to organizer should succeed\nexpected: ok true, result.delegated_to organizer\n\n',
@@ -382,7 +396,10 @@ try {
 
     // T34: Delegate to assistant
     const result34 = handleDelegateToAssistant({ task: 'Help with task' });
-    if (!result34.ok || result34.result?.delegated_to !== 'assistant') {
+    if (
+        !result34.ok ||
+        (result34.result as Record<string, unknown>)?.delegated_to !== 'assistant'
+    ) {
         failures += 1;
         logLine(
             'FAIL\ncase: delegate to assistant should succeed\nexpected: ok true, result.delegated_to assistant\n\n',
@@ -391,7 +408,7 @@ try {
     }
 
     // T35: Delegate should include task
-    if (result32.ok && result32.result?.task !== 'Write a function') {
+    if (result32.ok && (result32.result as Record<string, unknown>)?.task !== 'Write a function') {
         failures += 1;
         logLine(
             'FAIL\ncase: delegate result should include task\nexpected: result.task matches input\n\n',
@@ -410,7 +427,10 @@ try {
         .then(result36 => {
             if (result36.ok) {
                 // Success case - verify structure
-                if (!result36.result?.location || !result36.result?.temperature_c) {
+                if (
+                    !(result36.result as Record<string, unknown>)?.location ||
+                    !(result36.result as Record<string, unknown>)?.temperature_c
+                ) {
                     failures += 1;
                     logLine(
                         'FAIL\ncase: getWeather should return location and temperature\nexpected: result.location and result.temperature_c\n\n',
@@ -460,7 +480,7 @@ try {
 
     // T40: Very small number
     const result40 = handleCalculate({ expression: '0.0000001' });
-    if (!result40.ok || result40.result?.value !== 0.0000001) {
+    if (!result40.ok || (result40.result as { value: number })?.value !== 0.0000001) {
         failures += 1;
         logLine(
             'FAIL\ncase: very small number should work\nexpected: ok true, result.value 0.0000001\n\n',
@@ -470,7 +490,7 @@ try {
 
     // T41: Expression with only spaces
     const result41 = handleCalculate({ expression: '2 + 3' });
-    if (!result41.ok || result41.result?.value !== 5) {
+    if (!result41.ok || (result41.result as { value: number })?.value !== 5) {
         failures += 1;
         logLine(
             'FAIL\ncase: expression with spaces should work\nexpected: ok true, result.value 5\n\n',
@@ -480,14 +500,14 @@ try {
 
     // T42: Unary plus
     const result42 = handleCalculate({ expression: '+5' });
-    if (!result42.ok || result42.result?.value !== 5) {
+    if (!result42.ok || (result42.result as { value: number })?.value !== 5) {
         failures += 1;
         logLine('FAIL\ncase: unary plus +5\nexpected: ok true, result.value 5\n\n', process.stderr);
     }
 
     // T43: Nested parentheses
     const result43 = handleCalculate({ expression: '((2 + 3) * 4)' });
-    if (!result43.ok || result43.result?.value !== 20) {
+    if (!result43.ok || (result43.result as { value: number })?.value !== 20) {
         failures += 1;
         logLine(
             'FAIL\ncase: nested parentheses ((2+3)*4)\nexpected: ok true, result.value 20\n\n',
@@ -498,7 +518,7 @@ try {
     // T44: Right-associative exponentiation
     const result44 = handleCalculate({ expression: '2 ^ 3 ^ 2' });
     // Should be 2^(3^2) = 2^9 = 512, not (2^3)^2 = 64
-    if (!result44.ok || result44.result?.value !== 512) {
+    if (!result44.ok || (result44.result as { value: number })?.value !== 512) {
         failures += 1;
         logLine(
             'FAIL\ncase: right-associative exponentiation 2^3^2\nexpected: ok true, result.value 512\n\n',
@@ -508,7 +528,7 @@ try {
 
     // T45: Math functions - sin, cos, tan
     const result45 = handleCalculate({ expression: 'sin(0)' });
-    if (!result45.ok || Math.abs(result45.result?.value - 0) > 0.0001) {
+    if (!result45.ok || Math.abs((result45.result as { value: number })?.value - 0) > 0.0001) {
         failures += 1;
         logLine(
             'FAIL\ncase: sin(0) should be 0\nexpected: ok true, result.value approximately 0\n\n',
@@ -522,7 +542,7 @@ try {
 
     // T46: Math functions - cos
     const result46 = handleCalculate({ expression: 'cos(0)' });
-    if (!result46.ok || Math.abs(result46.result?.value - 1) > 0.0001) {
+    if (!result46.ok || Math.abs((result46.result as { value: number })?.value - 1) > 0.0001) {
         failures += 1;
         logLine(
             'FAIL\ncase: cos(0) should be 1\nexpected: ok true, result.value approximately 1\n\n',
@@ -532,7 +552,7 @@ try {
 
     // T47: Math functions - tan
     const result47 = handleCalculate({ expression: 'tan(0)' });
-    if (!result47.ok || Math.abs(result47.result?.value - 0) > 0.0001) {
+    if (!result47.ok || Math.abs((result47.result as { value: number })?.value - 0) > 0.0001) {
         failures += 1;
         logLine(
             'FAIL\ncase: tan(0) should be 0\nexpected: ok true, result.value approximately 0\n\n',
@@ -542,7 +562,7 @@ try {
 
     // T48: Math functions - log
     const result48 = handleCalculate({ expression: 'log(E)' });
-    if (!result48.ok || Math.abs(result48.result?.value - 1) > 0.0001) {
+    if (!result48.ok || Math.abs((result48.result as { value: number })?.value - 1) > 0.0001) {
         failures += 1;
         logLine(
             'FAIL\ncase: log(E) should be 1\nexpected: ok true, result.value approximately 1\n\n',
@@ -552,7 +572,7 @@ try {
 
     // T49: Math functions - log10
     const result49 = handleCalculate({ expression: 'log10(100)' });
-    if (!result49.ok || Math.abs(result49.result?.value - 2) > 0.0001) {
+    if (!result49.ok || Math.abs((result49.result as { value: number })?.value - 2) > 0.0001) {
         failures += 1;
         logLine(
             'FAIL\ncase: log10(100) should be 2\nexpected: ok true, result.value approximately 2\n\n',
@@ -562,7 +582,7 @@ try {
 
     // T50: Math functions - exp
     const result50 = handleCalculate({ expression: 'exp(0)' });
-    if (!result50.ok || Math.abs(result50.result?.value - 1) > 0.0001) {
+    if (!result50.ok || Math.abs((result50.result as { value: number })?.value - 1) > 0.0001) {
         failures += 1;
         logLine(
             'FAIL\ncase: exp(0) should be 1\nexpected: ok true, result.value approximately 1\n\n',
@@ -572,7 +592,7 @@ try {
 
     // T51: Math functions - floor
     const result51 = handleCalculate({ expression: 'floor(3.7)' });
-    if (!result51.ok || result51.result?.value !== 3) {
+    if (!result51.ok || (result51.result as { value: number })?.value !== 3) {
         failures += 1;
         logLine(
             'FAIL\ncase: floor(3.7) should be 3\nexpected: ok true, result.value 3\n\n',

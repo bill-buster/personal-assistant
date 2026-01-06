@@ -1,6 +1,6 @@
 ---
 description: Documentation requirements and patterns to ensure all features are documented
-globs: ["**/*.ts", "**/*.md", "docs/**/*.md", "README.md", "CONTRIBUTING.md"]
+globs: ["docs/**/*.md", "README.md", "CONTRIBUTING.md"]
 alwaysApply: false
 ---
 

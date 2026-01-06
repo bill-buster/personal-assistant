@@ -16,6 +16,7 @@ import {
     ReminderAddArgs,
     ReminderListArgs,
 } from '../core/types';
+import { isTask, isReminder } from '../core/type_guards';
 
 /**
  * Generate a unique task ID.
@@ -61,14 +62,7 @@ export function handleTaskAdd(args: TaskAddArgs, context: ExecutorContext): Tool
 
     // Priority enum check is handled by Zod
 
-    const tasks = readJsonl<Task>(
-        tasksPath,
-        entry =>
-            entry &&
-            typeof entry.id === 'number' &&
-            typeof entry.text === 'string' &&
-            typeof entry.done === 'boolean'
-    );
+    const tasks = readJsonl<Task>(tasksPath, isTask);
 
     const task: Task = {
         id: generateTaskId(tasks),
@@ -83,11 +77,14 @@ export function handleTaskAdd(args: TaskAddArgs, context: ExecutorContext): Tool
 
     try {
         writeJsonl(tasksPath, tasks);
-    } catch (err: any) {
+    } catch (err: unknown) {
         return {
             ok: false,
             result: null,
-            error: makeError('EXEC_ERROR', `Failed to write tasks: ${err.message}`),
+            error: makeError(
+                'EXEC_ERROR',
+                `Failed to write tasks: ${err instanceof Error ? err.message : String(err)}`
+            ),
             _debug: makeDebug({
                 path: 'tool_json',
                 start,
@@ -122,15 +119,7 @@ export function handleReminderList(args: ReminderListArgs, context: ExecutorCont
     const { readJsonl, remindersPath, start } = context;
     const startTime = args.start_time;
 
-    const reminders = readJsonl<Reminder>(
-        remindersPath,
-        entry =>
-            entry &&
-            typeof entry.id === 'number' &&
-            typeof entry.text === 'string' &&
-            typeof entry.due_at === 'string' &&
-            typeof entry.done === 'boolean'
-    );
+    const reminders = readJsonl<Reminder>(remindersPath, isReminder);
 
     const filtered = reminders.filter(reminder => {
         if (startTime) {
@@ -165,14 +154,7 @@ export function handleTaskList(args: TaskListArgs, context: ExecutorContext): To
 
     // Status enum check is handled by Zod
 
-    const tasks = readJsonl<Task>(
-        tasksPath,
-        entry =>
-            entry &&
-            typeof entry.id === 'number' &&
-            typeof entry.text === 'string' &&
-            typeof entry.done === 'boolean'
-    );
+    const tasks = readJsonl<Task>(tasksPath, isTask);
 
     const filtered = tasks.filter(task => {
         if (status === 'open') return !task.done;
@@ -204,14 +186,7 @@ export function handleTaskDone(args: TaskDoneArgs, context: ExecutorContext): To
     const { readJsonl, writeJsonl, tasksPath, start } = context;
     const id = args.id;
 
-    const tasks = readJsonl<Task>(
-        tasksPath,
-        entry =>
-            entry &&
-            typeof entry.id === 'number' &&
-            typeof entry.text === 'string' &&
-            typeof entry.done === 'boolean'
-    );
+    const tasks = readJsonl<Task>(tasksPath, isTask);
 
     const task = tasks.find(entry => entry.id === id);
     if (!task) {
@@ -236,11 +211,14 @@ export function handleTaskDone(args: TaskDoneArgs, context: ExecutorContext): To
 
     try {
         writeJsonl(tasksPath, tasks);
-    } catch (err: any) {
+    } catch (err: unknown) {
         return {
             ok: false,
             result: null,
-            error: makeError('EXEC_ERROR', `Failed to update task: ${err.message}`),
+            error: makeError(
+                'EXEC_ERROR',
+                `Failed to update task: ${err instanceof Error ? err.message : String(err)}`
+            ),
             _debug: makeDebug({
                 path: 'tool_json',
                 start,
@@ -278,15 +256,7 @@ export function handleReminderAdd(args: ReminderAddArgs, context: ExecutorContex
 
     // Validation handled by Zod
 
-    const reminders = readJsonl<Reminder>(
-        remindersPath,
-        entry =>
-            entry &&
-            typeof entry.id === 'number' &&
-            typeof entry.text === 'string' &&
-            typeof entry.due_at === 'string' &&
-            typeof entry.done === 'boolean'
-    );
+    const reminders = readJsonl<Reminder>(remindersPath, isReminder);
 
     const entry = {
         id: generateReminderId(reminders),
@@ -299,11 +269,14 @@ export function handleReminderAdd(args: ReminderAddArgs, context: ExecutorContex
 
     try {
         writeJsonl(remindersPath, reminders);
-    } catch (err: any) {
+    } catch (err: unknown) {
         return {
             ok: false,
             result: null,
-            error: makeError('EXEC_ERROR', `Failed to write reminder: ${err.message}`),
+            error: makeError(
+                'EXEC_ERROR',
+                `Failed to write reminder: ${err instanceof Error ? err.message : String(err)}`
+            ),
             _debug: makeDebug({
                 path: 'tool_json',
                 start,

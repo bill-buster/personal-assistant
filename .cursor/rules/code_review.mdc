@@ -1,6 +1,6 @@
 ---
 description: Code review patterns and quality checks
-globs: ["**/*.ts"]
+globs: []
 alwaysApply: false
 ---
 

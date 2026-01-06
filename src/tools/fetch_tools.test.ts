@@ -105,7 +105,11 @@ try {
 
     // T5: Result should contain url, content, and length
     if (result1.ok) {
-        if (!result1.result || !result1.result.url || !('content' in result1.result)) {
+        if (
+            !result1.result ||
+            !(result1.result as Record<string, unknown>).url ||
+            !('content' in result1.result)
+        ) {
             failures += 1;
             logLine(
                 'FAIL\ncase: result should contain url and content\nexpected: result.url and result.content\n\n',
@@ -357,9 +361,9 @@ try {
     const result26 = handleReadUrl({ url: 'https://example.com' }, mockContextWithCurl);
     if (result26.ok && result26.result) {
         if (
-            typeof result26.result.length !== 'number' ||
+            typeof (result26.result as Record<string, unknown>).length !== 'number' ||
             !('content' in result26.result) ||
-            !result26.result.url
+            !(result26.result as Record<string, unknown>).url
         ) {
             failures += 1;
             logLine(
@@ -368,7 +372,10 @@ try {
             );
         }
         // Check truncation marker if content is long
-        if (result26.result.length > 8000 && !result26.result.content.includes('...[truncated]')) {
+        if (
+            (result26.result as Record<string, unknown>).length > 8000 &&
+            !(result26.result as Record<string, unknown>).content.includes('...[truncated]')
+        ) {
             failures += 1;
             logLine(
                 'FAIL\ncase: content over 8000 chars should be truncated with marker\nexpected: content includes ...[truncated]\n\n',
@@ -487,9 +494,9 @@ try {
     if (result35.ok) {
         if (
             !result35.result ||
-            typeof result35.result.url !== 'string' ||
-            typeof result35.result.content !== 'string' ||
-            typeof result35.result.length !== 'number'
+            typeof (result35.result as Record<string, unknown>).url !== 'string' ||
+            typeof (result35.result as Record<string, unknown>).content !== 'string' ||
+            typeof (result35.result as Record<string, unknown>).length !== 'number'
         ) {
             failures += 1;
             logLine(

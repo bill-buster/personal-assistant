@@ -9,6 +9,7 @@ import {
     CalendarEventUpdateArgs,
 } from '../core/types';
 import { makeError } from '../core/tool_contract';
+import { isContact, isCalendarEvent, type Contact, type CalendarEvent } from '../core/type_guards';
 
 /**
  * Handle searching for contacts.
@@ -19,9 +20,9 @@ export function handleContactSearch(args: ContactSearchArgs, context: ExecutorCo
     if (!contactsPath)
         return { ok: false, error: makeError('EXEC_ERROR', 'Contacts path not configured.') };
 
-    const contacts = context.readJsonl<any>(contactsPath, c => !!c.name);
+    const contacts = context.readJsonl<Contact>(contactsPath, isContact);
     const results = contacts.filter(
-        c =>
+        (c: Contact) =>
             c.name.toLowerCase().includes(query.toLowerCase()) ||
             (c.email && c.email.toLowerCase().includes(query.toLowerCase())) ||
             (c.phone && c.phone.includes(query))
@@ -40,8 +41,8 @@ export function handleContactAdd(args: ContactAddArgs, context: ExecutorContext)
         return { ok: false, error: makeError('EXEC_ERROR', 'Contacts path not configured.') };
 
     // Check for duplicates
-    const contacts = context.readJsonl<any>(contactsPath, c => !!c.name);
-    const existing = contacts.find(c => c.name.toLowerCase() === name.toLowerCase());
+    const contacts = context.readJsonl<Contact>(contactsPath, isContact);
+    const existing = contacts.find((c: Contact) => c.name.toLowerCase() === name.toLowerCase());
 
     if (existing) {
         return {
@@ -68,8 +69,8 @@ export function handleContactUpdate(args: ContactUpdateArgs, context: ExecutorCo
     if (!contactsPath)
         return { ok: false, error: makeError('EXEC_ERROR', 'Contacts path not configured.') };
 
-    const contacts = context.readJsonl<any>(contactsPath, c => !!c.name);
-    const index = contacts.findIndex(c => c.name.toLowerCase() === name.toLowerCase());
+    const contacts = context.readJsonl<Contact>(contactsPath, isContact);
+    const index = contacts.findIndex((c: Contact) => c.name.toLowerCase() === name.toLowerCase());
 
     if (index === -1)
         return { ok: false, error: makeError('NOT_FOUND', `Contact ${name} not found.`) };
@@ -97,18 +98,19 @@ export function handleCalendarList(args: CalendarListArgs, context: ExecutorCont
         };
     }
 
-    const events = context.readJsonl<any>(calendarPath, e => !!e.start_time);
+    const events = context.readJsonl<CalendarEvent>(calendarPath, isCalendarEvent);
     const now = new Date();
     const future = new Date();
     future.setDate(now.getDate() + days);
 
     const filtered = events
-        .filter(e => {
+        .filter((e: CalendarEvent) => {
             const start = new Date(e.start_time);
             return start >= now && start <= future;
         })
         .sort(
-            (a: any, b: any) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+            (a: CalendarEvent, b: CalendarEvent) =>
+                new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
         );
 
     return { ok: true, result: filtered };
@@ -163,8 +165,8 @@ export function handleCalendarEventUpdate(
         };
     }
 
-    const events = context.readJsonl<any>(calendarPath, e => !!e.id);
-    const index = events.findIndex(e => e.id === id);
+    const events = context.readJsonl<CalendarEvent>(calendarPath, isCalendarEvent);
+    const index = events.findIndex((e: CalendarEvent) => e.id === id);
 
     if (index === -1)
         return { ok: false, error: makeError('NOT_FOUND', `Event with ID ${id} not found.`) };

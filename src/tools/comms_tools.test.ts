@@ -99,10 +99,11 @@ function runTests() {
 
         const result = handleMessageList({ limit: 2 }, mockContext);
         assert.equal(result.ok, true);
-        assert.equal(result.result.length, 2);
-        assert.equal(result.result[0].body, 'Hello');
-        assert.equal(result.result[0].from, 'me');
-        assert.equal(result.result[1].from, '+1234567890');
+        const messages = result.result as Array<{ body: string; from: string }>;
+        assert.equal(messages.length, 2);
+        assert.equal(messages[0].body, 'Hello');
+        assert.equal(messages[0].from, 'me');
+        assert.equal(messages[1].from, '+1234567890');
         console.log('PASS: handleMessageList on macOS');
     } catch (e: any) {
         console.error('FAIL: handleMessageList on macOS', e.message);
