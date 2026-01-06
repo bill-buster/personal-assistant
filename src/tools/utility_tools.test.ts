@@ -319,8 +319,13 @@ try {
     }
 
     // T28: Timestamp should be number
-    const result25Data = result25.result as { timestamp: number };
-    if (result25.ok && typeof result25Data.timestamp !== 'number') {
+    if (
+        result25.ok &&
+        result25.result &&
+        typeof result25.result === 'object' &&
+        'timestamp' in result25.result &&
+        typeof (result25.result as { timestamp: number }).timestamp !== 'number'
+    ) {
         failures += 1;
         logLine(
             'FAIL\ncase: timestamp should be a number\nexpected: typeof result.timestamp === number\n\n',

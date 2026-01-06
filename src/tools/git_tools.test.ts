@@ -194,8 +194,14 @@ try {
         }
         const context10 = createMockContext({ baseDir: gitDir10 });
         const result10 = handleGitStatus({}, context10);
-        const result = result10.result as { files: unknown[] };
-        if (!result10.ok || result?.files.length !== 100) {
+        if (
+            !result10.ok ||
+            !result10.result ||
+            typeof result10.result !== 'object' ||
+            !('files' in result10.result) ||
+            !Array.isArray((result10.result as { files: unknown[] }).files) ||
+            (result10.result as { files: unknown[] }).files.length !== 100
+        ) {
             failures += 1;
             logLine(
                 'FAIL\ncase: git_status with 100 files should work\nexpected: ok true, result.files.length 100\n\n',

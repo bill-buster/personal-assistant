@@ -901,24 +901,37 @@ try {
         failures += 1;
         logLine('FAIL\ncase: verify file info fields\nexpected: ok true\n\n', process.stderr);
     } else {
-        const info = result26.result as Record<string, unknown>;
-        const hasAllFields =
-            info?.path !== undefined &&
-            info?.type !== undefined &&
-            info?.size !== undefined &&
-            info?.modified !== undefined &&
-            info?.permissions !== undefined &&
-            info?.isFile !== undefined &&
-            info?.isDirectory !== undefined &&
-            info?.isSymbolicLink !== undefined;
-        if (!hasAllFields) {
-            failures += 1;
-            logLine(
-                'FAIL\ncase: verify file info fields\nexpected: all fields present\n\n',
-                process.stderr
-            );
-        } else {
-            logLine('PASS: verify file info fields');
+        if (
+            typeof result26.result === 'object' &&
+            result26.result !== null &&
+            'path' in result26.result &&
+            'type' in result26.result &&
+            'size' in result26.result &&
+            'modified' in result26.result &&
+            'permissions' in result26.result &&
+            'isFile' in result26.result &&
+            'isDirectory' in result26.result &&
+            'isSymbolicLink' in result26.result
+        ) {
+            const info = result26.result;
+            const hasAllFields =
+                info.path !== undefined &&
+                info.type !== undefined &&
+                info.size !== undefined &&
+                info.modified !== undefined &&
+                info.permissions !== undefined &&
+                info.isFile !== undefined &&
+                info.isDirectory !== undefined &&
+                info.isSymbolicLink !== undefined;
+            if (!hasAllFields) {
+                failures += 1;
+                logLine(
+                    'FAIL\ncase: verify file info fields\nexpected: all fields present\n\n',
+                    process.stderr
+                );
+            } else {
+                logLine('PASS: verify file info fields');
+            }
         }
     }
 

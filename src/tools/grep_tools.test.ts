@@ -610,7 +610,11 @@ try {
         // File was skipped (0 matches) - this is correct
         // Check if skipped_files info is present (optional but nice to have)
         if (
-            (result23.result as { skipped_count?: number })?.skipped_count !== undefined &&
+            result23.ok &&
+            result23.result &&
+            typeof result23.result === 'object' &&
+            'skipped_count' in result23.result &&
+            typeof (result23.result as { skipped_count: number }).skipped_count === 'number' &&
             (result23.result as { skipped_count: number }).skipped_count > 0
         ) {
             logLine('PASS: skip huge file (with skipped_files info)');
