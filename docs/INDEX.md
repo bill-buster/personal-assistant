@@ -59,12 +59,10 @@
 
 ### Planning & Proposals
 - **[PROPOSED_TOOLS.md](PROPOSED_TOOLS.md)** - Proposed tools (future work)
-- **[TYPE_SAFETY_REFACTOR_PLAN.md](TYPE_SAFETY_REFACTOR_PLAN.md)** - Type safety refactor plan (future work)
 - **[DEBUGGING.md](DEBUGGING.md)** - Debugging patterns
 
 ### Other
 - **[MDC_RULES_PORTABILITY.md](MDC_RULES_PORTABILITY.md)** - MDC rules portability guide
-- **[START_HERE.md](START_HERE.md)** - Quick navigation guide (alternative entry point)
 
 ## 🔍 Quick Links by Task
 
