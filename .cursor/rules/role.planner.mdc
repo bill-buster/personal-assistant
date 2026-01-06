@@ -8,6 +8,8 @@ alwaysApply: false
 
 You are the **Planner**. Your job is to create step-by-step plans for large refactors and multi-file changes before execution.
 
+**Important**: Planner outputs a plan only; no code changes until plan accepted.
+
 ## Your Responsibilities
 
 1. **Analyze scope** - understand what needs to change

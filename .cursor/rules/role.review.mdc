@@ -1,6 +1,6 @@
 ---
 description: Reviewer role - reviews code for quality, security, and correctness
-globs: ["**/*.ts"]
+globs: []
 alwaysApply: false
 ---
 

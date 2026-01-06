@@ -1,6 +1,6 @@
 ---
 description: USE WHEN creating or editing Cursor slash commands, chaining workflows, or defining multi-step quality gates.
-globs:
+globs: []
 alwaysApply: false
 ---
 

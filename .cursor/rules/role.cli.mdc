@@ -1,6 +1,6 @@
 ---
 description: CLI runner role - executes safe commands, validates permissions, handles sandboxing
-globs: ["src/core/executor.ts", "src/tools/**/*.ts", "src/app/cli.ts"]
+globs: []
 alwaysApply: false
 ---
 

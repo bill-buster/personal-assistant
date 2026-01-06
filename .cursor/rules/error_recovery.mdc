@@ -1,6 +1,6 @@
 ---
 description: USE WHEN a workflow step fails, tests fail, tooling is flaky, or partial progress must be safely resumed.
-globs:
+globs: []
 alwaysApply: false
 ---
 
