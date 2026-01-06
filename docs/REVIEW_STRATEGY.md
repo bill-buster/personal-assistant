@@ -1,4 +1,11 @@
+**Status**: Reference-only  
+**Canonical**: [docs/CODE_REVIEW.md](CODE_REVIEW.md) for current code review guide
+
+---
+
 # Code Review Strategy: Narrow vs Broad Scope
+
+*This document is kept for historical reference. Current code review information is in [CODE_REVIEW.md](CODE_REVIEW.md).*
 
 ## Problem Statement
 

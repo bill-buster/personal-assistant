@@ -1,4 +1,11 @@
+**Status**: Reference-only  
+**Canonical**: [docs/TESTING.md](TESTING.md) for complete testing guide
+
+---
+
 # Testing Guide - New Features & Commands
+
+*This document covers testing specific features. For the complete testing guide, see [TESTING.md](TESTING.md).*
 
 This guide covers how to test the new features we added, especially the security improvements and explain mode.
 

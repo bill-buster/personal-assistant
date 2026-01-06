@@ -1,7 +1,14 @@
+**Status**: Reference-only  
+**Canonical**: [docs/INDEX.md](INDEX.md) for current documentation structure
+
+---
+
 # Documentation Cleanup Plan
 
 **Created**: 2025-01-05  
 **Purpose**: Justify each documentation file's existence and identify redundancies
+
+*This document is kept for historical reference. Current documentation organization is in [docs/INDEX.md](INDEX.md).*
 
 ## Analysis Methodology
 

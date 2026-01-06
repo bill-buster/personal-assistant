@@ -1,7 +1,14 @@
+**Status**: Reference-only  
+**Canonical**: [docs/HOW_WE_WORK.md](HOW_WE_WORK.md) for current workflow
+
+---
+
 # Agent Evaluation Comparison & Best Practices Analysis
 
 **Date**: 2024-12-19  
 **Purpose**: Compare three agent evaluations, identify agreements/disagreements, and provide research-backed recommendations
+
+*This document is kept for historical reference. Current workflow information is in [HOW_WE_WORK.md](HOW_WE_WORK.md).*
 
 ---
 

@@ -236,7 +236,14 @@ Prompt: "Analyze [file] and suggest improvements:
 Prioritize by impact."
 ```
 
-## Continuous Improvement Cycle
+#**Status**: Reference-only  
+**Canonical**: See [docs/INDEX.md](INDEX.md) for current documentation structure
+
+---
+
+# Continuous Improvement
+
+*This document is kept for reference but may contain outdated information. See [docs/INDEX.md](INDEX.md) for current documentation organization.* Cycle
 
 ### Weekly Cycle
 

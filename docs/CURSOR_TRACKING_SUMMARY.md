@@ -1,4 +1,11 @@
+**Status**: Reference-only  
+**Canonical**: [docs/HOW_WE_WORK.md](HOW_WE_WORK.md) for current workflow
+
+---
+
 # Cursor Command Tracking - Implementation Summary
+
+*This document is kept for historical reference. Current workflow information is in [HOW_WE_WORK.md](HOW_WE_WORK.md).*
 
 ## What Was Added
 

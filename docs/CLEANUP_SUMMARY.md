@@ -1,7 +1,14 @@
+**Status**: Reference-only  
+**Canonical**: [docs/INDEX.md](INDEX.md) for current documentation structure
+
+---
+
 # Documentation Cleanup Summary
 
 **Date**: 2025-01-05  
 **Action**: Cleaned up redundant and historical documentation files
+
+*This document is kept for historical reference. Current documentation organization is in [docs/INDEX.md](INDEX.md).*
 
 ## Changes Made
 

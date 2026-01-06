@@ -1,6 +1,13 @@
+**Status**: Reference-only  
+**Canonical**: [docs/INDEX.md](INDEX.md) for current documentation structure
+
+---
+
 # Simplified Documentation Structure
 
 **Goal**: Fewer files, longer documents. LLMs can process long docs easily.
+
+*This document is kept for historical reference. Current documentation organization is in [docs/INDEX.md](INDEX.md).*
 
 ## Final Structure (10-12 files)
 

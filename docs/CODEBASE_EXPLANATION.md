@@ -1,4 +1,11 @@
+**Status**: Reference-only  
+**Canonical**: [docs/ARCHITECTURE.md](ARCHITECTURE.md) for current architecture, [docs/DECISIONS.md](DECISIONS.md) for design decisions
+
+---
+
 # Complete Codebase Explanation
+
+*This document is kept for historical reference. Current architecture information is in [ARCHITECTURE.md](ARCHITECTURE.md) and [DECISIONS.md](DECISIONS.md).*
 
 ## Overview: What This System Does
 

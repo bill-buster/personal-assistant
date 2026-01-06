@@ -1,4 +1,11 @@
+**Status**: Reference-only  
+**Canonical**: [docs/HOW_WE_WORK.md](HOW_WE_WORK.md) for current workflow, `.cursor/rules/workflow.mdc` for workflow patterns
+
+---
+
 # Automation Opportunities
+
+*This document is kept for historical reference. Current workflow information is in [HOW_WE_WORK.md](HOW_WE_WORK.md) and `.cursor/rules/workflow.mdc`.*
 
 ## ✅ Already Automated
 

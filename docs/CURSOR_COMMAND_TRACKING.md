@@ -1,4 +1,11 @@
+**Status**: Reference-only  
+**Canonical**: [docs/HOW_WE_WORK.md](HOW_WE_WORK.md) for current commands, `.cursor/commands/README.md` for command reference
+
+---
+
 # Cursor IDE Command Tracking
+
+*This document is kept for historical reference. Current command information is in [HOW_WE_WORK.md](HOW_WE_WORK.md) and `.cursor/commands/README.md`.*
 
 ## Overview
 

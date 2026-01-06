@@ -1,6 +1,17 @@
 # Documentation Index
 
-This directory contains all project documentation. Use this index to find what you need.
+> **⚠️ This file is deprecated. See [INDEX.md](INDEX.md) for the current documentation index.**
+
+This directory contains all project documentation. Use [INDEX.md](INDEX.md) to find what you need.
+
+---
+
+**Status**: Deprecated  
+**Canonical**: [docs/INDEX.md](INDEX.md)
+
+---
+
+*The content below is kept for reference but may be outdated. Please use [INDEX.md](INDEX.md) instead.*
 
 ## 🚀 Getting Started
 

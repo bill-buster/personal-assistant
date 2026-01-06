@@ -1,6 +1,13 @@
+**Status**: Reference-only  
+**Canonical**: See [docs/INDEX.md](INDEX.md) for current documentation structure
+
+---
+
 # Project Status Summary
 
 **Last Updated**: 2025-01-05
+
+*This document is kept for reference but may contain outdated information. See [docs/INDEX.md](INDEX.md) for current documentation organization.*
 
 ## ✅ What's Complete
 

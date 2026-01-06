@@ -37,7 +37,8 @@ npm run repl
 
 > 📖 **Complete Commands Reference**: See [docs/COMMANDS.md](docs/COMMANDS.md) for all available commands.  
 > ⚡ **Performance Features**: See [docs/CACHING.md](docs/CACHING.md) for LLM and test caching.  
-> 📚 **Documentation Index**: See [docs/README.md](docs/README.md) for all documentation organized by topic.
+> 📚 **Documentation Index**: See [docs/INDEX.md](docs/INDEX.md) for all documentation organized by topic.  
+> 🚀 **How We Work**: See [docs/HOW_WE_WORK.md](docs/HOW_WE_WORK.md) for complete workflow guide.
 
 ### Quick Commands
 

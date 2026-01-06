@@ -1,6 +1,13 @@
+**Status**: Reference-only  
+**Canonical**: [docs/INDEX.md](INDEX.md) for current documentation structure
+
+---
+
 # Documentation Consolidation Plan
 
 **Goal**: Reduce from 36 files to ~10-12 comprehensive files. LLMs can process long documents easily.
+
+*This document is kept for historical reference. Current documentation organization is in [docs/INDEX.md](INDEX.md).*
 
 ## Consolidation Strategy
 
