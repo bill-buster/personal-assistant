@@ -96,14 +96,20 @@ try {
     if (fs.existsSync(configFile)) fs.unlinkSync(configFile);
 
     const defaultConfig = loadConfig();
-    const resolvedDefault = resolveConfig(defaultConfig);
-    assert.strictEqual(resolvedDefault.maxRetries, 3, 'Default maxRetries should be 3');
+    const resolvedDefaultResult = resolveConfig(defaultConfig);
+    assert.ok(resolvedDefaultResult.ok, 'Should resolve default config');
+    assert.strictEqual(
+        resolvedDefaultResult.config.maxRetries,
+        3,
+        'Default maxRetries should be 3'
+    );
 
     // 6b. Valid value
     saveConfig({ maxRetries: 5 });
     const validConfig = loadConfig();
-    const resolvedValid = resolveConfig(validConfig);
-    assert.strictEqual(resolvedValid.maxRetries, 5, 'Should accept valid maxRetries');
+    const resolvedValidResult = resolveConfig(validConfig);
+    assert.ok(resolvedValidResult.ok, 'Should resolve valid config');
+    assert.strictEqual(resolvedValidResult.config.maxRetries, 5, 'Should accept valid maxRetries');
 
     // 6c. Invalid value (too high) - schema validation should fail
     // We can't use saveConfig here because it reads first, and we want to write raw invalid json
@@ -135,9 +141,10 @@ try {
 
     // Should have reverted to defaults because validation failed
     assert.ok(warningCalled, 'Should warn about validation failure');
-    const resolvedInvalid = resolveConfig(invalidConfig);
+    const resolvedInvalidResult = resolveConfig(invalidConfig);
+    assert.ok(resolvedInvalidResult.ok, 'Should resolve invalid config (with defaults)');
     assert.strictEqual(
-        resolvedInvalid.maxRetries,
+        resolvedInvalidResult.config.maxRetries,
         3,
         'Should fallback to default 3 when validation fails'
     );

@@ -8,7 +8,7 @@
  */
 
 import { z } from 'zod';
-import { ToolRegistry, ToolHandler, ToolSchemas } from './types';
+import { ToolRegistry, ToolHandler, ToolSchemas, ToolSpec } from './types';
 import { loadAllPlugins, mergePluginTools } from './plugin_loader';
 
 // Tool handlers - all concrete implementations imported here
@@ -91,51 +91,53 @@ class NodeToolRegistry implements ToolRegistry {
 /**
  * Tool handler dispatch map.
  * Maps tool names to their handler implementations.
+ * Note: Handlers have specific arg types, but we use ToolHandler<unknown> for the map.
+ * Type assertions are used because handlers are validated at runtime via Zod schemas.
  */
-const TOOL_HANDLERS: Record<string, ToolHandler> = {
-    write_file: handleWriteFile,
-    read_file: handleReadFile,
-    list_files: handleListFiles,
-    delete_file: handleDeleteFile,
-    move_file: handleMoveFile,
-    copy_file: handleCopyFile,
-    file_info: handleFileInfo,
-    count_words: handleCountWords,
-    create_directory: handleCreateDirectory,
-    delete_directory: handleDeleteDirectory,
-    run_cmd: handleRunCmd,
-    remember: handleRemember,
-    recall: handleRecall,
-    memory_add: handleMemoryAdd,
-    memory_search: handleMemorySearch,
-    task_add: handleTaskAdd,
-    task_list: handleTaskList,
-    task_done: handleTaskDone,
-    reminder_add: handleReminderAdd,
-    reminder_list: handleReminderList,
-    calculate: handleCalculate,
-    get_time: handleGetTime,
-    get_weather: handleGetWeather,
-    delegate_to_coder: handleDelegateToCoder,
-    delegate_to_organizer: handleDelegateToOrganizer,
-    delegate_to_assistant: handleDelegateToAssistant,
-    email_list: handleEmailList,
-    email_send: handleEmailSend,
-    email_get_details: handleEmailGetDetails,
-    message_list: handleMessageList,
-    message_send: handleMessageSend,
-    contact_search: handleContactSearch,
-    contact_add: handleContactAdd,
-    contact_update: handleContactUpdate,
-    calendar_list: handleCalendarList,
-    calendar_event_add: handleCalendarEventAdd,
-    calendar_event_update: handleCalendarEventUpdate,
-    git_status: handleGitStatus,
-    git_diff: handleGitDiff,
-    git_log: handleGitLog,
-    read_url: handleReadUrl,
-    cursor_command_eval: handleCursorCommandEval,
-    grep: handleGrep,
+const TOOL_HANDLERS: Record<string, ToolHandler<unknown>> = {
+    write_file: handleWriteFile as ToolHandler<unknown>,
+    read_file: handleReadFile as ToolHandler<unknown>,
+    list_files: handleListFiles as ToolHandler<unknown>,
+    delete_file: handleDeleteFile as ToolHandler<unknown>,
+    move_file: handleMoveFile as ToolHandler<unknown>,
+    copy_file: handleCopyFile as ToolHandler<unknown>,
+    file_info: handleFileInfo as ToolHandler<unknown>,
+    count_words: handleCountWords as ToolHandler<unknown>,
+    create_directory: handleCreateDirectory as ToolHandler<unknown>,
+    delete_directory: handleDeleteDirectory as ToolHandler<unknown>,
+    run_cmd: handleRunCmd as ToolHandler<unknown>,
+    remember: handleRemember as ToolHandler<unknown>,
+    recall: handleRecall as ToolHandler<unknown>,
+    memory_add: handleMemoryAdd as ToolHandler<unknown>,
+    memory_search: handleMemorySearch as ToolHandler<unknown>,
+    task_add: handleTaskAdd as ToolHandler<unknown>,
+    task_list: handleTaskList as ToolHandler<unknown>,
+    task_done: handleTaskDone as ToolHandler<unknown>,
+    reminder_add: handleReminderAdd as ToolHandler<unknown>,
+    reminder_list: handleReminderList as ToolHandler<unknown>,
+    calculate: handleCalculate as ToolHandler<unknown>,
+    get_time: handleGetTime as ToolHandler<unknown>,
+    get_weather: handleGetWeather as ToolHandler<unknown>,
+    delegate_to_coder: handleDelegateToCoder as ToolHandler<unknown>,
+    delegate_to_organizer: handleDelegateToOrganizer as ToolHandler<unknown>,
+    delegate_to_assistant: handleDelegateToAssistant as ToolHandler<unknown>,
+    email_list: handleEmailList as ToolHandler<unknown>,
+    email_send: handleEmailSend as ToolHandler<unknown>,
+    email_get_details: handleEmailGetDetails as ToolHandler<unknown>,
+    message_list: handleMessageList as ToolHandler<unknown>,
+    message_send: handleMessageSend as ToolHandler<unknown>,
+    contact_search: handleContactSearch as ToolHandler<unknown>,
+    contact_add: handleContactAdd as ToolHandler<unknown>,
+    contact_update: handleContactUpdate as ToolHandler<unknown>,
+    calendar_list: handleCalendarList as ToolHandler<unknown>,
+    calendar_event_add: handleCalendarEventAdd as ToolHandler<unknown>,
+    calendar_event_update: handleCalendarEventUpdate as ToolHandler<unknown>,
+    git_status: handleGitStatus as ToolHandler<unknown>,
+    git_diff: handleGitDiff as ToolHandler<unknown>,
+    git_log: handleGitLog as ToolHandler<unknown>,
+    read_url: handleReadUrl as ToolHandler<unknown>,
+    cursor_command_eval: handleCursorCommandEval as ToolHandler<unknown>,
+    grep: handleGrep as ToolHandler<unknown>,
 };
 
 /**
@@ -178,12 +180,12 @@ export function createNodeToolRegistry(): ToolRegistry {
  * @param toolName - Tool name for error reporting
  * @returns Zod schema or null if conversion fails
  */
-function convertToolSpecToZod(spec: any, toolName: string): z.ZodTypeAny | null {
+function convertToolSpecToZod(spec: ToolSpec, toolName: string): z.ZodTypeAny | null {
     try {
         const shape: Record<string, z.ZodTypeAny> = {};
 
         if (spec.parameters) {
-            for (const [key, param] of Object.entries(spec.parameters as Record<string, any>)) {
+            for (const [key, param] of Object.entries(spec.parameters)) {
                 let zodType: z.ZodTypeAny;
 
                 switch (param.type) {

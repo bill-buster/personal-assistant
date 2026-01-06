@@ -111,7 +111,24 @@ export async function runCLI() {
 
     // Load and resolve config at entrypoint (single source of defaults)
     const rawConfig = loadConfig();
-    const resolvedConfig = resolveConfig(rawConfig);
+    const resolveResult = resolveConfig(rawConfig);
+    if (!resolveResult.ok) {
+        writeResult(
+            false,
+            null,
+            null,
+            makeError('VALIDATION_ERROR', `Failed to resolve config: ${resolveResult.error}`),
+            makeDebug({
+                path: 'tool_json',
+                start,
+                model: null,
+                memory_read: false,
+                memory_write: false,
+            })
+        );
+        return;
+    }
+    const resolvedConfig = resolveResult.config;
     const baseDir = resolvedConfig.fileBaseDir;
 
     // Validate and resolve optional CLI paths

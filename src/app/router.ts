@@ -583,7 +583,12 @@ if (require.main === module) {
 
         // Load config once at entrypoint
         const rawConfig = loadConfig();
-        const resolvedConfig = resolveConfig(rawConfig);
+        const resolveResult = resolveConfig(rawConfig);
+        if (!resolveResult.ok) {
+            process.stderr.write(`Error: ${resolveResult.error}\n`);
+            process.exit(1);
+        }
+        const resolvedConfig = resolveResult.config;
 
         if (help) {
             process.stdout.write(`${USAGE}\n`);

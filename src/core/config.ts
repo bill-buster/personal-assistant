@@ -501,11 +501,18 @@ export function getFileBaseDir(config: AppConfig): string {
 }
 
 /**
+ * Result type for config resolution.
+ */
+export type ResolveConfigResult =
+    | { ok: true; config: ResolvedConfig }
+    | { ok: false; error: string };
+
+/**
  * Resolve an AppConfig into a fully resolved ResolvedConfig.
  * Applies all defaults and resolves paths.
  * Entrypoints should call this once after loadConfig().
  */
-export function resolveConfig(config: AppConfig): ResolvedConfig {
+export function resolveConfig(config: AppConfig): ResolveConfigResult {
     const storage = config.storage || getDefaultStorage();
     const resolvedStorage: StorageConfig = {
         baseDir: expandHome(storage.baseDir),
@@ -521,15 +528,16 @@ export function resolveConfig(config: AppConfig): ResolvedConfig {
 
     // Validate limits are sane
     if (maxReadSize <= 0) {
-        throw new Error(`Invalid maxReadSize: ${maxReadSize} (must be > 0)`);
+        return { ok: false, error: `Invalid maxReadSize: ${maxReadSize} (must be > 0)` };
     }
     if (maxWriteSize <= 0) {
-        throw new Error(`Invalid maxWriteSize: ${maxWriteSize} (must be > 0)`);
+        return { ok: false, error: `Invalid maxWriteSize: ${maxWriteSize} (must be > 0)` };
     }
     if (maxWriteSize < maxReadSize) {
-        throw new Error(
-            `Invalid limits: maxWriteSize (${maxWriteSize}) must be >= maxReadSize (${maxReadSize})`
-        );
+        return {
+            ok: false,
+            error: `Invalid limits: maxWriteSize (${maxWriteSize}) must be >= maxReadSize (${maxReadSize})`,
+        };
     }
 
     const limits: Limits = {
@@ -538,16 +546,19 @@ export function resolveConfig(config: AppConfig): ResolvedConfig {
     };
 
     return {
-        version: config.version ?? 1,
-        defaultProvider: config.defaultProvider,
-        apiKeys: config.apiKeys,
-        models: config.models || {},
-        storage: resolvedStorage,
-        fileBaseDir: getFileBaseDir(config),
-        historyLimit: config.historyLimit ?? 10,
-        compactToolSchemas: config.compactToolSchemas ?? false,
-        maxRetries: config.maxRetries ?? 3,
-        limits,
+        ok: true,
+        config: {
+            version: config.version ?? 1,
+            defaultProvider: config.defaultProvider,
+            apiKeys: config.apiKeys,
+            models: config.models || {},
+            storage: resolvedStorage,
+            fileBaseDir: getFileBaseDir(config),
+            historyLimit: config.historyLimit ?? 10,
+            compactToolSchemas: config.compactToolSchemas ?? false,
+            maxRetries: config.maxRetries ?? 3,
+            limits,
+        },
     };
 }
 

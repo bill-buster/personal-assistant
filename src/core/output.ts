@@ -7,11 +7,13 @@
  * @module output
  */
 
+import { DebugInfo, Task, MemoryEntry } from './types';
+
 export interface CLIResult {
     ok: boolean;
-    result?: any;
+    result?: unknown;
     error?: string;
-    _debug?: any;
+    _debug?: DebugInfo | null;
 }
 
 /**
@@ -54,11 +56,11 @@ function formatHuman(result: CLIResult): string {
         // Check for common patterns
         if ('entries' in data && Array.isArray(data.entries)) {
             if (data.entries.length === 0) return '(no entries found)';
-            return data.entries.map((e: any, i: number) => formatListItem(e, i + 1)).join('\n');
+            return data.entries.map((e: unknown, i: number) => formatListItem(e, i + 1)).join('\n');
         }
         if ('tasks' in data && Array.isArray(data.tasks)) {
             if (data.tasks.length === 0) return '(no tasks)';
-            return data.tasks.map((t: any) => formatTask(t)).join('\n');
+            return data.tasks.map((t: unknown) => formatTask(t)).join('\n');
         }
         if ('message' in data) {
             return `✓ ${data.message}`;
@@ -73,22 +75,29 @@ function formatHuman(result: CLIResult): string {
     return String(data);
 }
 
-function formatListItem(item: any, index: number): string {
+function formatListItem(item: unknown, index: number): string {
     if (typeof item === 'string') {
         return `${index}. ${item}`;
     }
-    if (item.text) {
-        const ts = item.ts ? ` (${item.ts})` : '';
-        return `${index}. ${item.text}${ts}`;
+    if (typeof item === 'object' && item !== null) {
+        const entry = item as MemoryEntry;
+        if ('text' in entry && typeof entry.text === 'string') {
+            const ts = entry.ts ? ` (${entry.ts})` : '';
+            return `${index}. ${entry.text}${ts}`;
+        }
     }
     return `${index}. ${JSON.stringify(item)}`;
 }
 
-function formatTask(task: any): string {
-    const status = task.done ? '✓' : '○';
-    const priority = task.priority ? ` [${task.priority}]` : '';
-    const due = task.due ? ` (due: ${task.due})` : '';
-    return `${status} #${task.id}: ${task.text}${priority}${due}`;
+function formatTask(task: unknown): string {
+    if (typeof task !== 'object' || task === null) {
+        return `${JSON.stringify(task)}`;
+    }
+    const t = task as Task;
+    const status = t.done ? '✓' : '○';
+    const priority = t.priority ? ` [${t.priority}]` : '';
+    const due = t.due ? ` (due: ${t.due})` : '';
+    return `${status} #${t.id}: ${t.text}${priority}${due}`;
 }
 
 /**

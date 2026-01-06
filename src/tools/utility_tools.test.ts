@@ -582,7 +582,14 @@ try {
 
     // T52: Math functions - ceil
     const result52 = handleCalculate({ expression: 'ceil(3.2)' });
-    if (!result52.ok || result52.result?.value !== 4) {
+    const result52Data =
+        result52.ok &&
+        typeof result52.result === 'object' &&
+        result52.result !== null &&
+        'value' in result52.result
+            ? (result52.result as { expression: string; value: number })
+            : null;
+    if (!result52.ok || result52Data?.value !== 4) {
         failures += 1;
         logLine(
             'FAIL\ncase: ceil(3.2) should be 4\nexpected: ok true, result.value 4\n\n',
@@ -592,7 +599,14 @@ try {
 
     // T53: Math functions - round
     const result53 = handleCalculate({ expression: 'round(3.5)' });
-    if (!result53.ok || result53.result?.value !== 4) {
+    const result53Data =
+        result53.ok &&
+        typeof result53.result === 'object' &&
+        result53.result !== null &&
+        'value' in result53.result
+            ? (result53.result as { expression: string; value: number })
+            : null;
+    if (!result53.ok || result53Data?.value !== 4) {
         failures += 1;
         logLine(
             'FAIL\ncase: round(3.5) should be 4\nexpected: ok true, result.value 4\n\n',
@@ -603,7 +617,14 @@ try {
     // T54: Very large expression (performance test)
     const largeExpr = '1' + '+1'.repeat(100);
     const result54 = handleCalculate({ expression: largeExpr });
-    if (!result54.ok || result54.result?.value !== 101) {
+    const result54Data =
+        result54.ok &&
+        typeof result54.result === 'object' &&
+        result54.result !== null &&
+        'value' in result54.result
+            ? (result54.result as { expression: string; value: number })
+            : null;
+    if (!result54.ok || result54Data?.value !== 101) {
         failures += 1;
         logLine(
             'FAIL\ncase: very large expression should work\nexpected: ok true, result.value 101\n\n',
@@ -614,7 +635,14 @@ try {
     // T55: Very deeply nested parentheses
     const nestedExpr = '((((((((((1+1))))))))))';
     const result55 = handleCalculate({ expression: nestedExpr });
-    if (!result55.ok || result55.result?.value !== 2) {
+    const result55Data =
+        result55.ok &&
+        typeof result55.result === 'object' &&
+        result55.result !== null &&
+        'value' in result55.result
+            ? (result55.result as { expression: string; value: number })
+            : null;
+    if (!result55.ok || result55Data?.value !== 2) {
         failures += 1;
         logLine(
             'FAIL\ncase: deeply nested parentheses should work\nexpected: ok true, result.value 2\n\n',
@@ -654,7 +682,14 @@ try {
 
     // T59: Expression with leading operator (unary minus should work)
     const result59 = handleCalculate({ expression: '-5' });
-    if (!result59.ok || result59.result?.value !== -5) {
+    const result59Data =
+        result59.ok &&
+        typeof result59.result === 'object' &&
+        result59.result !== null &&
+        'value' in result59.result
+            ? (result59.result as { expression: string; value: number })
+            : null;
+    if (!result59.ok || result59Data?.value !== -5) {
         failures += 1;
         logLine(
             'FAIL\ncase: expression with leading minus should work\nexpected: ok true, result.value -5\n\n',
@@ -724,7 +759,14 @@ try {
 
     // T66: Very small number (precision test)
     const result66 = handleCalculate({ expression: '0.0000000001' });
-    if (!result66.ok || result66.result?.value !== 0.0000000001) {
+    const result66Data =
+        result66.ok &&
+        typeof result66.result === 'object' &&
+        result66.result !== null &&
+        'value' in result66.result
+            ? (result66.result as { expression: string; value: number })
+            : null;
+    if (!result66.ok || result66Data?.value !== 0.0000000001) {
         failures += 1;
         logLine(
             'FAIL\ncase: very small number should work\nexpected: ok true, result.value 0.0000000001\n\n',
@@ -759,7 +801,14 @@ try {
 
     // T69: GetTime with null format
     const result69 = handleGetTime({ format: null as any });
-    if (!result69.ok || !result69.result?.time) {
+    const result69Data =
+        result69.ok &&
+        typeof result69.result === 'object' &&
+        result69.result !== null &&
+        'time' in result69.result
+            ? (result69.result as { time: string; timestamp: number })
+            : null;
+    if (!result69.ok || !result69Data?.time) {
         failures += 1;
         logLine(
             'FAIL\ncase: getTime with null format should use default\nexpected: ok true, result.time\n\n',
@@ -769,7 +818,14 @@ try {
 
     // T70: GetTime with undefined format
     const result70 = handleGetTime({ format: undefined });
-    if (!result70.ok || !result70.result?.time) {
+    const result70Data =
+        result70.ok &&
+        typeof result70.result === 'object' &&
+        result70.result !== null &&
+        'time' in result70.result
+            ? (result70.result as { time: string; timestamp: number })
+            : null;
+    if (!result70.ok || !result70Data?.time) {
         failures += 1;
         logLine(
             'FAIL\ncase: getTime with undefined format should use default\nexpected: ok true, result.time\n\n',
@@ -779,7 +835,14 @@ try {
 
     // T71: GetTime with number format (should use default)
     const result71 = handleGetTime({ format: 123 as any });
-    if (!result71.ok || !result71.result?.time) {
+    const result71Data =
+        result71.ok &&
+        typeof result71.result === 'object' &&
+        result71.result !== null &&
+        'time' in result71.result
+            ? (result71.result as { time: string; timestamp: number })
+            : null;
+    if (!result71.ok || !result71Data?.time) {
         failures += 1;
         logLine(
             'FAIL\ncase: getTime with number format should use default\nexpected: ok true, result.time\n\n',
@@ -789,7 +852,14 @@ try {
 
     // T72: GetTime with object format (should use default)
     const result72 = handleGetTime({ format: {} as any });
-    if (!result72.ok || !result72.result?.time) {
+    const result72Data =
+        result72.ok &&
+        typeof result72.result === 'object' &&
+        result72.result !== null &&
+        'time' in result72.result
+            ? (result72.result as { time: string; timestamp: number })
+            : null;
+    if (!result72.ok || !result72Data?.time) {
         failures += 1;
         logLine(
             'FAIL\ncase: getTime with object format should use default\nexpected: ok true, result.time\n\n',
@@ -799,12 +869,20 @@ try {
 
     // T73: GetTime timestamp should be positive
     const result73 = handleGetTime({});
-    if (result73.ok && result73.result?.timestamp <= 0) {
-        failures += 1;
-        logLine(
-            'FAIL\ncase: timestamp should be positive\nexpected: result.timestamp > 0\n\n',
-            process.stderr
-        );
+    if (
+        result73.ok &&
+        typeof result73.result === 'object' &&
+        result73.result !== null &&
+        'timestamp' in result73.result
+    ) {
+        const timeResult = result73.result as { time: string; timestamp: number };
+        if (timeResult.timestamp <= 0) {
+            failures += 1;
+            logLine(
+                'FAIL\ncase: timestamp should be positive\nexpected: result.timestamp > 0\n\n',
+                process.stderr
+            );
+        }
     }
 
     // ============================================
@@ -814,7 +892,11 @@ try {
     // T74: Delegate with empty task
     const result74 = handleDelegateToCoder({ task: '' });
     // Empty task should work (validation happens at schema level)
-    if (!result74.ok || result74.result?.task !== '') {
+    const result74Data =
+        result74.ok && typeof result74.result === 'object' && result74.result !== null
+            ? (result74.result as { task: string; delegated_to: string })
+            : null;
+    if (!result74.ok || result74Data?.task !== '') {
         failures += 1;
         logLine(
             'FAIL\ncase: delegate with empty task should work\nexpected: ok true, result.task empty string\n\n',
@@ -825,7 +907,11 @@ try {
     // T75: Delegate with very long task
     const longTask = 'task '.repeat(1000);
     const result75 = handleDelegateToCoder({ task: longTask });
-    if (!result75.ok || result75.result?.task !== longTask) {
+    const result75Data =
+        result75.ok && typeof result75.result === 'object' && result75.result !== null
+            ? (result75.result as { task: string; delegated_to: string })
+            : null;
+    if (!result75.ok || result75Data?.task !== longTask) {
         failures += 1;
         logLine(
             'FAIL\ncase: delegate with very long task should work\nexpected: ok true, result.task matches\n\n',
@@ -836,7 +922,11 @@ try {
     // T76: Delegate with task containing special characters
     const specialTask = 'task with "quotes" and \'apostrophes\' and\nnewlines\tand\ttabs';
     const result76 = handleDelegateToCoder({ task: specialTask });
-    if (!result76.ok || result76.result?.task !== specialTask) {
+    const result76Data =
+        result76.ok && typeof result76.result === 'object' && result76.result !== null
+            ? (result76.result as { task: string; delegated_to: string })
+            : null;
+    if (!result76.ok || result76Data?.task !== specialTask) {
         failures += 1;
         logLine(
             'FAIL\ncase: delegate with special characters should work\nexpected: ok true, result.task matches\n\n',
@@ -870,13 +960,25 @@ try {
     const result79a = handleDelegateToCoder({ task: 'test' });
     const result79b = handleDelegateToOrganizer({ task: 'test' });
     const result79c = handleDelegateToAssistant({ task: 'test' });
+    const result79aData =
+        result79a.ok && typeof result79a.result === 'object' && result79a.result !== null
+            ? (result79a.result as { task: string; delegated_to: string })
+            : null;
+    const result79bData =
+        result79b.ok && typeof result79b.result === 'object' && result79b.result !== null
+            ? (result79b.result as { task: string; delegated_to: string })
+            : null;
+    const result79cData =
+        result79c.ok && typeof result79c.result === 'object' && result79c.result !== null
+            ? (result79c.result as { task: string; delegated_to: string })
+            : null;
     if (
         !result79a.ok ||
         !result79b.ok ||
         !result79c.ok ||
-        result79a.result?.task !== 'test' ||
-        result79b.result?.task !== 'test' ||
-        result79c.result?.task !== 'test'
+        result79aData?.task !== 'test' ||
+        result79bData?.task !== 'test' ||
+        result79cData?.task !== 'test'
     ) {
         failures += 1;
         logLine(
@@ -886,21 +988,21 @@ try {
     }
 
     // T80: Verify delegate target is correct
-    if (result79a.ok && result79a.result?.delegated_to !== 'coder') {
+    if (result79a.ok && result79aData?.delegated_to !== 'coder') {
         failures += 1;
         logLine(
             'FAIL\ncase: delegateToCoder should return delegated_to coder\nexpected: result.delegated_to coder\n\n',
             process.stderr
         );
     }
-    if (result79b.ok && result79b.result?.delegated_to !== 'organizer') {
+    if (result79b.ok && result79bData?.delegated_to !== 'organizer') {
         failures += 1;
         logLine(
             'FAIL\ncase: delegateToOrganizer should return delegated_to organizer\nexpected: result.delegated_to organizer\n\n',
             process.stderr
         );
     }
-    if (result79c.ok && result79c.result?.delegated_to !== 'assistant') {
+    if (result79c.ok && result79cData?.delegated_to !== 'assistant') {
         failures += 1;
         logLine(
             'FAIL\ncase: delegateToAssistant should return delegated_to assistant\nexpected: result.delegated_to assistant\n\n',

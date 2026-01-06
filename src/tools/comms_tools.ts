@@ -24,7 +24,7 @@ export function handleEmailList(args: EmailListArgs, context: ExecutorContext): 
         from: string;
         subject: string;
         snippet: string;
-    }>(emailsPath, e => !!e.id);
+    }>(emailsPath, (e: unknown) => typeof e === 'object' && e !== null && 'id' in e && typeof (e as { id: unknown }).id === 'string' && (e as { id: string }).id.length > 0);
     return { ok: true, result: emails.slice(-limit).reverse() };
 }
 
@@ -62,7 +62,13 @@ export function handleEmailGetDetails(
     // Use the pre-resolved path from ExecutorContext
     const emailsPath = context.emailsPath;
 
-    const emails = context.readJsonl<any>(emailsPath, e => !!e.id);
+    const emails = context.readJsonl<{
+        id: string;
+        from: string;
+        subject: string;
+        body: string;
+        ts: string;
+    }>(emailsPath, (e: unknown) => typeof e === 'object' && e !== null && 'id' in e && typeof (e as { id: unknown }).id === 'string' && (e as { id: string }).id.length > 0);
     const email = emails.find(e => e.id === id);
 
     if (!email)
@@ -82,7 +88,12 @@ export function handleMessageList(args: MessageListArgs, context: ExecutorContex
     // Use the pre-resolved path from ExecutorContext
     const messagesPath = context.messagesPath;
 
-    const messages = context.readJsonl<any>(messagesPath, m => !!m.ts);
+    const messages = context.readJsonl<{
+        to: string;
+        body: string;
+        ts: string;
+        sent_via?: string;
+    }>(messagesPath, (m: unknown) => typeof m === 'object' && m !== null && 'ts' in m && typeof (m as { ts: unknown }).ts === 'string');
     return { ok: true, result: messages.slice(-limit).reverse() };
 }
 

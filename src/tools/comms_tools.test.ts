@@ -13,8 +13,14 @@ const mockContext: ExecutorContext = {
     commands: {
         runAllowed: () => ({ ok: true, result: '' }),
     },
+    permissions: {
+        allow_commands: ['osascript'], // Allow osascript for tests
+        allow_paths: [],
+    },
     readJsonl: () => [],
     appendJsonl: () => {},
+    messagesPath: '/tmp/messages.jsonl',
+    emailsPath: '/tmp/emails.jsonl',
     // ... other stubbed methods
 } as unknown as ExecutorContext;
 

@@ -31,7 +31,15 @@ export async function* streamReply(
     verbose: boolean = false
 ): AsyncGenerator<StreamChunk, void, unknown> {
     if (!provider.completeStream) {
-        throw new Error('Provider does not support streaming');
+        yield {
+            content: '',
+            done: true,
+            error: {
+                message: 'Provider does not support streaming',
+                code: 'UNSUPPORTED_OPERATION',
+            },
+        } as StreamChunk & { error?: { message: string; code: string } };
+        return;
     }
 
     const finalSystemPrompt = systemPrompt || agent.systemPrompt;

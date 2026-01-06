@@ -47,6 +47,24 @@ fs.writeFileSync(
     'utf8'
 );
 
+// Create permissions file with osascript allowed
+const permissionsFile = path.join(testDataDir, 'permissions.json');
+fs.writeFileSync(
+    permissionsFile,
+    JSON.stringify(
+        {
+            version: 1,
+            allow_paths: ['./', '~/'],
+            allow_commands: ['osascript'], // Allow osascript for tests
+            require_confirmation_for: [],
+            deny_tools: [],
+        },
+        null,
+        2
+    ),
+    'utf8'
+);
+
 // Create fake osascript
 // It writes its args to a log file
 const osascriptContent = `#!/bin/sh
@@ -99,7 +117,10 @@ const payloadFail = {
 };
 
 const resultFail = runExecutor(payloadFail, { _TEST_PLATFORM_OVERRIDE: 'linux' });
-const jsonFail = JSON.parse(resultFail.stdout || '{}');
+// Extract JSON from last line (log messages may appear before JSON)
+const stdoutLines = resultFail.stdout.split('\n').filter((l: string) => l.trim());
+const jsonLine = stdoutLines[stdoutLines.length - 1] || '{}';
+const jsonFail = JSON.parse(jsonLine);
 
 assert(jsonFail.ok === false, 'Should fail on linux', jsonFail);
 assert(
@@ -122,7 +143,10 @@ const realMessagesPath = path.join(testDataDir, 'messages.jsonl');
 try {
     const resultOk = runExecutor(payloadOk, { _TEST_PLATFORM_OVERRIDE: 'darwin' });
 
-    const jsonOk = JSON.parse(resultOk.stdout || '{}');
+    // Extract JSON from last line (log messages may appear before JSON)
+    const stdoutLines = resultOk.stdout.split('\n').filter((l: string) => l.trim());
+    const jsonLine = stdoutLines[stdoutLines.length - 1] || '{}';
+    const jsonOk = JSON.parse(jsonLine);
     assert(jsonOk.ok === true, 'Should succeed with override', jsonOk);
     assert(
         jsonOk.result?.message?.includes('via iMessage'),

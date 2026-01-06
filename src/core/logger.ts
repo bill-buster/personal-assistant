@@ -19,7 +19,7 @@ export interface LogEntry {
     agent?: string;
     tool?: string;
     durationMs?: number;
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 let currentLevel: LogLevel = LogLevel.INFO;

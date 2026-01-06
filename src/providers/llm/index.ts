@@ -20,18 +20,22 @@ import * as path from 'node:path';
 export * from './provider';
 
 /**
+ * Result type for provider creation.
+ */
+export type ProviderResult = { ok: true; provider: LLMProvider } | { ok: false; error: string };
+
+/**
  * Create an LLM provider based on the app configuration.
  *
  * @param config - Application configuration with API keys and provider settings
  * @param options - Optional configuration
  * @param options.enableCache - Enable response caching (default: true in dev, false in prod)
- * @returns LLMProvider instance ready to make completions
- * @throws Error if the required API key is missing or provider is unknown
+ * @returns Result with provider instance or error message
  */
 export function createProvider(
     config: AppConfig,
     options: { enableCache?: boolean } = {}
-): LLMProvider {
+): ProviderResult {
     const providerName = config.defaultProvider;
     const enableCache = options.enableCache ?? process.env.NODE_ENV !== 'production';
 
@@ -57,7 +61,9 @@ export function createProvider(
         case 'groq':
             // Groq: Fast inference, generous free tier
             // Default model: llama3-70b-8192 (good balance of speed/quality)
-            if (!config.apiKeys.groq) throw new Error('Missing Groq API Key');
+            if (!config.apiKeys.groq) {
+                return { ok: false, error: 'Missing Groq API Key' };
+            }
             provider = new OpenAICompatibleProvider(
                 config.apiKeys.groq,
                 'https://api.groq.com/openai/v1',
@@ -69,7 +75,9 @@ export function createProvider(
         case 'openrouter':
             // OpenRouter: Access to many models (OpenAI, Anthropic, etc.)
             // Default: gpt-3.5-turbo for cost efficiency
-            if (!config.apiKeys.openrouter) throw new Error('Missing OpenRouter API Key');
+            if (!config.apiKeys.openrouter) {
+                return { ok: false, error: 'Missing OpenRouter API Key' };
+            }
             provider = new OpenAICompatibleProvider(
                 config.apiKeys.openrouter,
                 'https://openrouter.ai/api/v1',
@@ -79,17 +87,23 @@ export function createProvider(
             break;
 
         default:
-            throw new Error(`Unknown provider: ${providerName}. Supported: groq, openrouter, mock`);
+            return {
+                ok: false,
+                error: `Unknown provider: ${providerName}. Supported: groq, openrouter, mock`,
+            };
     }
 
     // Wrap with cache if enabled
     if (enableCache && providerName !== 'mock') {
-        return new CachedLLMProvider({
-            provider,
-            enabled: true,
-            ttl: 24 * 60 * 60 * 1000, // 24 hours
-        });
+        return {
+            ok: true,
+            provider: new CachedLLMProvider({
+                provider,
+                enabled: true,
+                ttl: 24 * 60 * 60 * 1000, // 24 hours
+            }),
+        };
     }
 
-    return provider;
+    return { ok: true, provider };
 }

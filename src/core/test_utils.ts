@@ -70,7 +70,7 @@ export function runCli(
     status: number;
     stdout: string;
     stderr: string;
-    json: any;
+    json: unknown;
 } {
     const cliPath = path.join(__dirname, '..', '..', 'dist', 'app', 'cli.js');
     const result = spawnSync(process.execPath, [cliPath, ...args], {
@@ -92,7 +92,7 @@ export function runCli(
 /**
  * Parse JSON from CLI output (handles mixed output)
  */
-export function parseJsonOutput(output: string): any {
+export function parseJsonOutput(output: string): unknown {
     const lines = output.trim().split('\n');
     for (let i = lines.length - 1; i >= 0; i--) {
         try {

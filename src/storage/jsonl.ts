@@ -96,14 +96,20 @@ export function readJsonlSafely<T>(options: ReadJsonlOptions<T>): T[] {
 }
 
 /**
+ * Result type for JSONL operations.
+ */
+export type JsonlResult = { ok: true } | { ok: false; error: string };
+
+/**
  * Atomically writes an array of entries to a JSONL file.
  * Writes to a temporary file first, then renames it to ensure data integrity.
  * Uses crypto.randomUUID() to prevent race conditions in concurrent writes.
  *
  * @param filePath Path to the destination file.
  * @param entries Array of data entries to write.
+ * @returns Result indicating success or failure.
  */
-export function writeJsonlAtomic<T>(filePath: string, entries: T[]): void {
+export function writeJsonlAtomic<T>(filePath: string, entries: T[]): JsonlResult {
     // Ensure directory exists before writing (prevents crash if directory missing)
     const dir = path.dirname(filePath);
     if (!fs.existsSync(dir)) {
@@ -134,6 +140,7 @@ export function writeJsonlAtomic<T>(filePath: string, entries: T[]): void {
         // Atomic rename: works on same filesystem, same directory
         // On Windows (Node 12+), rename over existing file works correctly
         fs.renameSync(tempPath, filePath);
+        return { ok: true };
     } catch (err: unknown) {
         try {
             if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
@@ -141,7 +148,7 @@ export function writeJsonlAtomic<T>(filePath: string, entries: T[]): void {
             // Ignore cleanup error
         }
         const message = err instanceof Error ? err.message : 'Unknown error';
-        throw new Error(`Failed to write JSONL atomically to ${filePath}: ${message}`);
+        return { ok: false, error: `Failed to write JSONL atomically to ${filePath}: ${message}` };
     }
 }
 
@@ -151,15 +158,17 @@ export function writeJsonlAtomic<T>(filePath: string, entries: T[]): void {
  *
  * @param filePath Path to the destination file.
  * @param entry The data entry to append.
+ * @returns Result indicating success or failure.
  */
-export function appendJsonl<T>(filePath: string, entry: T): void {
+export function appendJsonl<T>(filePath: string, entry: T): JsonlResult {
     const line = JSON.stringify(entry);
     try {
         // We assume the file properly ends with a newline from previous writes.
         // We strictly enforce that this write ends with a newline.
         fs.appendFileSync(filePath, `${line}\n`, 'utf8');
+        return { ok: true };
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Unknown error';
-        throw new Error(`Failed to append to JSONL ${filePath}: ${message}`);
+        return { ok: false, error: `Failed to append to JSONL ${filePath}: ${message}` };
     }
 }

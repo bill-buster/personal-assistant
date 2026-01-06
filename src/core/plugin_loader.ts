@@ -111,8 +111,9 @@ export function loadPlugin(pluginPath: string): LoadedPlugin | null {
             description: manifest.description,
             tools,
         };
-    } catch (err: any) {
-        console.error(`[Plugin] Failed to load plugin from ${pluginPath}: ${err.message}`);
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error(`[Plugin] Failed to load plugin from ${pluginPath}: ${message}`);
         return null;
     }
 }

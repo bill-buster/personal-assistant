@@ -112,10 +112,11 @@ export class FileCache<T> {
 
         try {
             fs.writeFileSync(cachePath, JSON.stringify(entry, null, 2), 'utf8');
-        } catch (err: any) {
+        } catch (err: unknown) {
             // Cache write failures are non-fatal
             if (process.env.VERBOSE) {
-                console.warn(`[Cache] Failed to write cache: ${err.message}`);
+                const message = err instanceof Error ? err.message : String(err);
+                console.warn(`[Cache] Failed to write cache: ${message}`);
             }
         }
     }
@@ -144,9 +145,10 @@ export class FileCache<T> {
                     }
                 }
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             if (process.env.VERBOSE) {
-                console.warn(`[Cache] Failed to clear cache: ${err.message}`);
+                const message = err instanceof Error ? err.message : String(err);
+                console.warn(`[Cache] Failed to clear cache: ${message}`);
             }
         }
     }

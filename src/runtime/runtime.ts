@@ -134,9 +134,10 @@ export function buildRuntime(config: ResolvedConfig, options: BuildRuntimeOption
     if (includeProvider) {
         const hasApiKeys = Object.values(config.apiKeys).some(key => !!key);
         if (hasApiKeys) {
-            try {
-                provider = createProvider(config);
-            } catch {
+            const providerResult = createProvider(config);
+            if (providerResult.ok) {
+                provider = providerResult.provider;
+            } else {
                 // Provider creation failed (e.g., missing key for selected provider)
                 // This is OK - we just won't have LLM fallback
                 provider = undefined;
@@ -179,7 +180,11 @@ export function initializeRuntime(options: BuildRuntimeOptions & { mock?: boolea
         rawConfig.defaultProvider = 'mock';
     }
 
-    const resolvedConfig = resolveConfig(rawConfig);
+    const resolveResult = resolveConfig(rawConfig);
+    if (!resolveResult.ok) {
+        throw new Error(`Failed to resolve config: ${resolveResult.error}`);
+    }
+    const resolvedConfig = resolveResult.config;
     ensureStorageExists(resolvedConfig);
 
     return buildRuntime(resolvedConfig, options);

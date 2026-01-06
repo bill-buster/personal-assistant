@@ -24,7 +24,12 @@ console.log(`  CWD:         ${process.cwd()}`);
 console.log('\n⚙️  Configuration\n');
 
 const rawConfig = loadConfig();
-const config = resolveConfig(rawConfig);
+const resolveResult = resolveConfig(rawConfig);
+if (!resolveResult.ok) {
+    console.error(`Error: Failed to resolve config: ${resolveResult.error}`);
+    process.exit(1);
+}
+const config = resolveResult.config;
 
 console.log(`  Config dir:  ${process.env.ASSISTANT_CONFIG_DIR || '~/.assistant/'}`);
 console.log(`  Provider:    ${config.defaultProvider}`);

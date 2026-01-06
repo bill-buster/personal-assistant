@@ -274,7 +274,9 @@ export class OpenAICompatibleProvider implements LLMProvider {
                 }
             );
 
-            if (!res) throw new Error('Network failed after retries');
+            if (!res) {
+                return { ok: false, error: 'Network failed after retries' };
+            }
 
             if (verbose) {
                 console.log(`[Verbose] Response Status: ${res.status}`);

@@ -1068,8 +1068,15 @@ async function handleDemo(executor: Executor, human: boolean): Promise<void> {
 
         if (human) {
             console.log(result.ok ? '✓' : '✗');
-            if (result.result && step.tool === 'recall') {
-                console.log(`   → Found: ${JSON.stringify(result.result.entries?.slice(0, 2))}`);
+            if (
+                result.result &&
+                step.tool === 'recall' &&
+                typeof result.result === 'object' &&
+                result.result !== null &&
+                'entries' in result.result
+            ) {
+                const recallResult = result.result as { entries: unknown[] };
+                console.log(`   → Found: ${JSON.stringify(recallResult.entries?.slice(0, 2))}`);
             }
         } else {
             console.log(JSON.stringify({ step: step.label, ...result }));

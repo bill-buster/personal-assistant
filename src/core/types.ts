@@ -13,7 +13,7 @@ export type Limits = Readonly<{
 
 export interface ToolCall {
     tool_name: string;
-    args: Record<string, any>;
+    args: Record<string, unknown>;
     _debug?: DebugInfo | null;
 }
 
@@ -55,13 +55,13 @@ export interface ToolSpec {
 export interface ToolResult {
     ok: boolean;
     tool_name?: string | null;
-    result?: any;
+    result?: unknown;
     error?: ToolError | null;
     _debug?: DebugInfo | null;
     value?: {
         // Used in internal validation
         tool_name: string;
-        args: any;
+        args: Record<string, unknown>;
         _debug?: DebugInfo | null;
     };
 }
@@ -69,7 +69,7 @@ export interface ToolResult {
 export interface ToolError {
     code: string;
     message: string;
-    details?: any;
+    details?: unknown;
 }
 
 export interface MemoryEntry {
@@ -180,7 +180,7 @@ export interface ExecutorContext {
     // Storage accessors
     readMemory: (path: string) => { entries: MemoryEntry[] };
     writeMemory: (path: string, data: { entries: MemoryEntry[] }) => void;
-    readJsonl: <T>(path: string, isValid: (entry: any) => boolean) => T[];
+    readJsonl: <T>(path: string, isValid: (entry: unknown) => boolean) => T[];
     writeJsonl: <T>(path: string, entries: T[]) => void;
     appendJsonl: <T>(path: string, entry: T) => void;
     scoreEntry: (entry: MemoryEntry, needle: string, terms: string[]) => number;
@@ -224,7 +224,7 @@ export const SAFE_TOOLS = [
  * Tool handler function type.
  * Each handler receives validated args and executor context.
  */
-export type ToolHandler<T = any> = (
+export type ToolHandler<T = unknown> = (
     args: T,
     context: ExecutorContext
 ) => ToolResult | Promise<ToolResult>;

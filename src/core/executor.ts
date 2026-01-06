@@ -278,16 +278,26 @@ export class Executor {
     }
 
     // File System Helpers
-    private readJsonl<T>(filePath: string, isValid: (entry: any) => boolean): T[] {
+    private readJsonl<T>(filePath: string, isValid: (entry: unknown) => boolean): T[] {
         return readJsonlSafely<T>({ filePath, isValid });
     }
 
     private writeJsonl<T>(filePath: string, entries: T[]): void {
-        writeJsonlAtomic(filePath, entries);
+        const result = writeJsonlAtomic(filePath, entries);
+        if (!result.ok) {
+            // Convert to throw for backward compatibility with existing code
+            // This will be caught by tool handlers and converted to ToolResult
+            throw new Error(result.error);
+        }
     }
 
     private appendJsonl<T>(filePath: string, entry: T): void {
-        appendJsonl(filePath, entry);
+        const result = appendJsonl(filePath, entry);
+        if (!result.ok) {
+            // Convert to throw for backward compatibility with existing code
+            // This will be caught by tool handlers and converted to ToolResult
+            throw new Error(result.error);
+        }
     }
 
     // Scoring Helpers
