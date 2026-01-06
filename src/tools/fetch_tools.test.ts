@@ -105,11 +105,8 @@ try {
 
     // T5: Result should contain url, content, and length
     if (result1.ok) {
-        if (
-            !result1.result ||
-            !(result1.result as Record<string, unknown>).url ||
-            !('content' in result1.result)
-        ) {
+        const result = result1.result as Record<string, unknown>;
+        if (!result || !result.url || !('content' in result)) {
             failures += 1;
             logLine(
                 'FAIL\ncase: result should contain url and content\nexpected: result.url and result.content\n\n',
@@ -360,11 +357,8 @@ try {
     // We'll test the truncation logic by checking the result structure
     const result26 = handleReadUrl({ url: 'https://example.com' }, mockContextWithCurl);
     if (result26.ok && result26.result) {
-        if (
-            typeof (result26.result as Record<string, unknown>).length !== 'number' ||
-            !('content' in result26.result) ||
-            !(result26.result as Record<string, unknown>).url
-        ) {
+        const result = result26.result as Record<string, unknown>;
+        if (typeof result.length !== 'number' || !('content' in result) || !result.url) {
             failures += 1;
             logLine(
                 'FAIL\ncase: result should have url, content, length\nexpected: result with url, content, length\n\n',
@@ -372,10 +366,8 @@ try {
             );
         }
         // Check truncation marker if content is long
-        if (
-            (result26.result as Record<string, unknown>).length > 8000 &&
-            !(result26.result as Record<string, unknown>).content.includes('...[truncated]')
-        ) {
+        const resultTyped = result26.result as { length: number; content: string };
+        if (resultTyped.length > 8000 && !resultTyped.content.includes('...[truncated]')) {
             failures += 1;
             logLine(
                 'FAIL\ncase: content over 8000 chars should be truncated with marker\nexpected: content includes ...[truncated]\n\n',

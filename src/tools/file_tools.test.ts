@@ -901,7 +901,7 @@ try {
         failures += 1;
         logLine('FAIL\ncase: verify file info fields\nexpected: ok true\n\n', process.stderr);
     } else {
-        const info = result26.result;
+        const info = result26.result as Record<string, unknown>;
         const hasAllFields =
             info?.path !== undefined &&
             info?.type !== undefined &&

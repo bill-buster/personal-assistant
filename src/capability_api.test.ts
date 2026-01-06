@@ -158,7 +158,8 @@ async function runTests() {
         const result1 = await executor.execute('test_capability_api', {
             test: 'resolve_allowed_escape',
         });
-        if (result1.ok && result1.result?.passed) {
+        const result = result1.result as { passed?: boolean };
+        if (result1.ok && result?.passed) {
             console.log('PASS: paths.resolveAllowed("../..") throws DENIED_PATH_ALLOWLIST');
         } else {
             console.error('FAIL: paths.resolveAllowed("../..") test:', result1.error?.message);
@@ -169,7 +170,8 @@ async function runTests() {
         const result2 = await executor.execute('test_capability_api', {
             test: 'assert_allowed_denied',
         });
-        if (result2.ok && result2.result?.passed) {
+        const result2Data = result2.result as { passed?: boolean };
+        if (result2.ok && result2Data?.passed) {
             console.log('PASS: paths.assertAllowed(deniedPath) throws DENIED_PATH_ALLOWLIST');
         } else {
             console.error('FAIL: paths.assertAllowed(deniedPath) test:', result2.error?.message);
@@ -180,7 +182,8 @@ async function runTests() {
         const result3 = await executor.execute('test_capability_api', {
             test: 'run_allowed_denied',
         });
-        if (result3.ok && result3.result?.passed) {
+        const result3Data = result3.result as { passed?: boolean };
+        if (result3.ok && result3Data?.passed) {
             console.log('PASS: commands.runAllowed("rm") returns DENIED_COMMAND_ALLOWLIST');
         } else {
             console.error('FAIL: commands.runAllowed("rm") test:', result3.error?.message);

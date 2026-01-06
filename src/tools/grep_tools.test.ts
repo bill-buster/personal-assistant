@@ -611,7 +611,7 @@ try {
         // Check if skipped_files info is present (optional but nice to have)
         if (
             (result23.result as { skipped_count?: number })?.skipped_count !== undefined &&
-            result23.result.skipped_count > 0
+            (result23.result as { skipped_count: number }).skipped_count > 0
         ) {
             logLine('PASS: skip huge file (with skipped_files info)');
         } else {

@@ -37,6 +37,9 @@ export type {
 } from './types';
 export { isRouteError, isRouteToolCall, isRouteReply } from './types';
 
+// Type guards
+export * from './type_guards';
+
 // Config
 export {
     loadConfig,

@@ -299,11 +299,8 @@ try {
 
     // T26: ISO format
     const result26 = handleGetTime({ format: 'iso' });
-    if (
-        !result26.ok ||
-        !(result26.result as Record<string, unknown>)?.time ||
-        !(result26.result as Record<string, unknown>)?.time.includes('T')
-    ) {
+    const result26Data = result26.result as { time?: string };
+    if (!result26.ok || !result26Data?.time || !result26Data.time.includes('T')) {
         failures += 1;
         logLine(
             'FAIL\ncase: getTime iso format should return ISO string\nexpected: ok true, result.time contains T\n\n',
@@ -322,7 +319,8 @@ try {
     }
 
     // T28: Timestamp should be number
-    if (result25.ok && typeof result25.result.timestamp !== 'number') {
+    const result25Data = result25.result as { timestamp: number };
+    if (result25.ok && typeof result25Data.timestamp !== 'number') {
         failures += 1;
         logLine(
             'FAIL\ncase: timestamp should be a number\nexpected: typeof result.timestamp === number\n\n',
@@ -332,8 +330,9 @@ try {
 
     // T29: Timestamp should be current time (within 1 second)
     if (result25.ok) {
+        const result25Data = result25.result as { timestamp: number };
         const now = Date.now();
-        const diff = Math.abs(result25.result.timestamp - now);
+        const diff = Math.abs(result25Data.timestamp - now);
         if (diff > 1000) {
             failures += 1;
             logLine(

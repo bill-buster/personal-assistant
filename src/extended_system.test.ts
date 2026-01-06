@@ -207,10 +207,8 @@ async function run() {
         );
         assert.strictEqual(doYouRememberDispatch.action, 'auto_dispatch');
         assert.strictEqual(doYouRememberDispatch.toolCall?.tool_name, 'recall');
-        assert.ok(
-            doYouRememberDispatch.toolCall?.args.query.includes('doctor'),
-            'query should include doctor'
-        );
+        const args = doYouRememberDispatch.toolCall?.args as { query: string };
+        assert.ok(args?.query.includes('doctor'), 'query should include doctor');
 
         const enforceWeather = dispatcher.enforceAction(
             'I will check the weather in Paris.',

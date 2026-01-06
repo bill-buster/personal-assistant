@@ -194,7 +194,8 @@ try {
         }
         const context10 = createMockContext({ baseDir: gitDir10 });
         const result10 = handleGitStatus({}, context10);
-        if (!result10.ok || (result10.result as Record<string, unknown>)?.files.length !== 100) {
+        const result = result10.result as { files: unknown[] };
+        if (!result10.ok || result?.files.length !== 100) {
             failures += 1;
             logLine(
                 'FAIL\ncase: git_status with 100 files should work\nexpected: ok true, result.files.length 100\n\n',
@@ -480,14 +481,24 @@ try {
                     'FAIL\ncase: git_log result should have count and commits\nexpected: result with count (number), commits (array)\n\n',
                     process.stderr
                 );
-            } else if ((result26.result as Record<string, unknown>).commits.length > 0) {
-                const commit = (result26.result as Record<string, unknown>).commits[0];
-                if (!commit.hash || !commit.message || !commit.author || !commit.date) {
-                    failures += 1;
-                    logLine(
-                        'FAIL\ncase: git_log commit should have hash, message, author, date\nexpected: commit with all fields\n\n',
-                        process.stderr
-                    );
+            } else {
+                const result = result26.result as {
+                    commits: Array<{
+                        hash?: string;
+                        message?: string;
+                        author?: string;
+                        date?: string;
+                    }>;
+                };
+                if (result.commits.length > 0) {
+                    const commit = result.commits[0];
+                    if (!commit.hash || !commit.message || !commit.author || !commit.date) {
+                        failures += 1;
+                        logLine(
+                            'FAIL\ncase: git_log commit should have hash, message, author, date\nexpected: commit with all fields\n\n',
+                            process.stderr
+                        );
+                    }
                 }
             }
         }
