@@ -3,36 +3,36 @@
  * @module core/executor
  */
 
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import * as os from 'node:os';
 import { spawnSync } from 'node:child_process';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import { appendJsonl, readJsonlSafely, writeJsonlAtomic } from '../storage/jsonl';
+import { readMemory, writeMemory } from '../storage/memory_store';
+import { buildShellCommand, parseShellArgs } from './arg_parser';
+import { loadPermissions } from './config';
+import { makeDebug, nowMs } from './debug';
 import {
+    DENIED_AGENT_TOOLSET,
+    DENIED_TOOL_BLOCKLIST,
+    ErrorCode,
     makeError,
     makePermissionError,
-    DENIED_TOOL_BLOCKLIST,
-    DENIED_AGENT_TOOLSET,
-    ErrorCode,
 } from './tool_contract';
-import { readMemory, writeMemory } from '../storage/memory_store';
-import { makeDebug, nowMs } from './debug';
-import { parseShellArgs, buildShellCommand } from './arg_parser';
-import {
-    ExecutorContext,
-    Permissions,
-    MemoryEntry,
-    ToolResult,
-    ToolRegistry,
-    Agent,
-    Limits,
-    PathOp,
-    PathCapabilities,
-    CommandCapabilities,
-    SAFE_TOOLS,
-} from './types';
-import { loadPermissions } from './config';
-import { readJsonlSafely, writeJsonlAtomic, appendJsonl } from '../storage/jsonl';
 import { createNodeToolRegistry } from './tool_registry';
+import {
+    Agent,
+    CommandCapabilities,
+    ExecutorContext,
+    Limits,
+    MemoryEntry,
+    PathCapabilities,
+    PathOp,
+    Permissions,
+    SAFE_TOOLS,
+    ToolRegistry,
+    ToolResult,
+} from './types';
 
 export interface ExecutorConfig {
     baseDir: string;

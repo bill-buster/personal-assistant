@@ -1,15 +1,15 @@
+import { makeError } from '../core/tool_contract';
+import { isCalendarEvent, isContact, type CalendarEvent, type Contact } from '../core/type_guards';
 import {
-    ToolResult,
-    ExecutorContext,
-    ContactSearchArgs,
-    ContactAddArgs,
-    ContactUpdateArgs,
-    CalendarListArgs,
     CalendarEventAddArgs,
     CalendarEventUpdateArgs,
+    CalendarListArgs,
+    ContactAddArgs,
+    ContactSearchArgs,
+    ContactUpdateArgs,
+    ExecutorContext,
+    ToolResult,
 } from '../core/types';
-import { makeError } from '../core/tool_contract';
-import { isContact, isCalendarEvent, type Contact, type CalendarEvent } from '../core/type_guards';
 
 /**
  * Handle searching for contacts.
@@ -20,7 +20,7 @@ export function handleContactSearch(args: ContactSearchArgs, context: ExecutorCo
     if (!contactsPath)
         return { ok: false, error: makeError('EXEC_ERROR', 'Contacts path not configured.') };
 
-    const contacts = context.readJsonl<Contact>(contactsPath, isContact);
+    const contacts: Contact[] = context.readJsonl<Contact>(contactsPath, isContact);
     const results = contacts.filter(
         (c: Contact) =>
             c.name.toLowerCase().includes(query.toLowerCase()) ||
@@ -41,7 +41,7 @@ export function handleContactAdd(args: ContactAddArgs, context: ExecutorContext)
         return { ok: false, error: makeError('EXEC_ERROR', 'Contacts path not configured.') };
 
     // Check for duplicates
-    const contacts = context.readJsonl<Contact>(contactsPath, isContact);
+    const contacts: Contact[] = context.readJsonl<Contact>(contactsPath, isContact);
     const existing = contacts.find((c: Contact) => c.name.toLowerCase() === name.toLowerCase());
 
     if (existing) {
@@ -69,7 +69,7 @@ export function handleContactUpdate(args: ContactUpdateArgs, context: ExecutorCo
     if (!contactsPath)
         return { ok: false, error: makeError('EXEC_ERROR', 'Contacts path not configured.') };
 
-    const contacts = context.readJsonl<Contact>(contactsPath, isContact);
+    const contacts: Contact[] = context.readJsonl<Contact>(contactsPath, isContact);
     const index = contacts.findIndex((c: Contact) => c.name.toLowerCase() === name.toLowerCase());
 
     if (index === -1)
@@ -98,7 +98,7 @@ export function handleCalendarList(args: CalendarListArgs, context: ExecutorCont
         };
     }
 
-    const events = context.readJsonl<CalendarEvent>(calendarPath, isCalendarEvent);
+    const events: CalendarEvent[] = context.readJsonl<CalendarEvent>(calendarPath, isCalendarEvent);
     const now = new Date();
     const future = new Date();
     future.setDate(now.getDate() + days);
@@ -165,7 +165,7 @@ export function handleCalendarEventUpdate(
         };
     }
 
-    const events = context.readJsonl<CalendarEvent>(calendarPath, isCalendarEvent);
+    const events: CalendarEvent[] = context.readJsonl<CalendarEvent>(calendarPath, isCalendarEvent);
     const index = events.findIndex((e: CalendarEvent) => e.id === id);
 
     if (index === -1)
