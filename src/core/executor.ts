@@ -3,7 +3,6 @@
  * @module core/executor
  */
 
-import { spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -345,6 +344,275 @@ export class Executor {
         return decorated.map(d => d.entry);
     }
 
+    /**
+     * Calculate directory size using Node.js built-ins (replaces du command).
+     * Supports flags: -h (human readable), -s (summary), -d N (max depth), -t SIZE (threshold)
+     */
+    private calculateDirectorySize(
+        targetPath: string,
+        options: {
+            humanReadable: boolean;
+            summary: boolean;
+            maxDepth?: number;
+            threshold?: number;
+        }
+    ): string {
+        const formatSize = (bytes: number): string => {
+            if (!options.humanReadable) return bytes.toString();
+            const units = ['B', 'K', 'M', 'G', 'T'];
+            let size = bytes;
+            let unitIndex = 0;
+            while (size >= 1024 && unitIndex < units.length - 1) {
+                size /= 1024;
+                unitIndex++;
+            }
+            return `${size.toFixed(1)}${units[unitIndex]}`;
+        };
+
+        interface SizeEntry {
+            path: string;
+            size: number;
+        }
+
+        const calculateSize = (dirPath: string, depth: number): { size: number; entries: SizeEntry[] } => {
+            let totalSize = 0;
+            const entries: SizeEntry[] = [];
+
+            try {
+                const stat = fs.statSync(dirPath);
+                if (stat.isFile()) {
+                    totalSize = stat.size;
+                    entries.push({ path: dirPath, size: totalSize });
+                    return { size: totalSize, entries };
+                }
+
+                if (!stat.isDirectory()) {
+                    return { size: 0, entries: [] };
+                }
+
+                // Calculate size of directory itself (metadata)
+                totalSize = stat.size || 0;
+
+                // If summary mode, calculate total but don't collect subdirectory entries
+                if (options.summary) {
+                    // Still need to calculate total size recursively
+                    const dirEntries = fs.readdirSync(dirPath);
+                    for (const entry of dirEntries) {
+                        const fullPath = path.join(dirPath, entry);
+                        try {
+                            const entryStat = fs.statSync(fullPath);
+                            if (entryStat.isFile()) {
+                                totalSize += entryStat.size;
+                            } else if (entryStat.isDirectory()) {
+                                // Recursively calculate size but don't collect entries
+                                const subSize = calculateSize(fullPath, depth + 1).size;
+                                totalSize += subSize;
+                            }
+                        } catch {
+                            // Skip entries we can't access
+                        }
+                    }
+                    // Only add entry if this is the target path (depth 0)
+                    if (depth === 0) {
+                        entries.push({ path: dirPath, size: totalSize });
+                    }
+                    return { size: totalSize, entries };
+                }
+
+                // Check max depth
+                const shouldRecurse = options.maxDepth === undefined || depth < options.maxDepth;
+
+                const dirEntries = fs.readdirSync(dirPath);
+                for (const entry of dirEntries) {
+                    const fullPath = path.join(dirPath, entry);
+                    try {
+                        const entryStat = fs.statSync(fullPath);
+                        if (entryStat.isFile()) {
+                            totalSize += entryStat.size;
+                        } else if (entryStat.isDirectory() && shouldRecurse) {
+                            const subResult = calculateSize(fullPath, depth + 1);
+                            totalSize += subResult.size;
+                            entries.push(...subResult.entries);
+                        } else if (entryStat.isDirectory()) {
+                            // Hit max depth, just add directory size
+                            totalSize += entryStat.size || 0;
+                        }
+                    } catch {
+                        // Skip entries we can't access
+                    }
+                }
+
+                // Add current directory entry
+                entries.push({ path: dirPath, size: totalSize });
+            } catch (err: any) {
+                throw new Error(`Cannot access ${dirPath}: ${err.message}`);
+            }
+
+            return { size: totalSize, entries };
+        };
+
+        const { entries } = calculateSize(targetPath, 0);
+
+        // In summary mode, only show the target path
+        const displayEntries = options.summary
+            ? entries.filter(e => e.path === targetPath)
+            : entries;
+
+        // Filter by threshold if specified
+        const filteredEntries = options.threshold !== undefined
+            ? displayEntries.filter(e => e.size >= options.threshold!)
+            : displayEntries;
+
+        // Format output
+        const lines = filteredEntries.map(entry => {
+            const sizeStr = formatSize(entry.size);
+            return `${sizeStr}\t${entry.path}`;
+        });
+
+        return lines.join('\n');
+    }
+
+    /**
+     * List directory contents using Node.js built-ins (replaces ls command).
+     * Supports flags: -a (all), -A (almost all), -l (long), -1 (one per line), -F (indicator), -R (recursive), -h (human readable)
+     */
+    private listDirectory(paths: string[], flags: Set<string>): string {
+        const showAll = flags.has('a');
+        const showAlmostAll = flags.has('A');
+        const longFormat = flags.has('l');
+        const onePerLine = flags.has('1');
+        const showIndicator = flags.has('F');
+        const recursive = flags.has('R');
+        const humanReadable = flags.has('h');
+
+        const formatSize = (bytes: number): string => {
+            if (!humanReadable) return bytes.toString();
+            const units = ['B', 'K', 'M', 'G', 'T'];
+            let size = bytes;
+            let unitIndex = 0;
+            while (size >= 1024 && unitIndex < units.length - 1) {
+                size /= 1024;
+                unitIndex++;
+            }
+            return `${size.toFixed(1)}${units[unitIndex]}`;
+        };
+
+        const formatDate = (date: Date): string => {
+            const now = new Date();
+            const diff = now.getTime() - date.getTime();
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            if (days < 180) {
+                // Show time if within 6 months
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            }
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        };
+
+        const getIndicator = (stat: fs.Stats, name: string): string => {
+            if (!showIndicator) return '';
+            if (stat.isDirectory()) return '/';
+            if (stat.isSymbolicLink()) return '@';
+            if (stat.mode & 0o111) return '*'; // Executable
+            return '';
+        };
+
+        const formatLongLine = (name: string, stat: fs.Stats, fullPath: string): string => {
+            const mode = stat.mode.toString(8).slice(-3);
+            const size = formatSize(stat.size);
+            const date = formatDate(stat.mtime);
+            const indicator = getIndicator(stat, name);
+            return `${mode} ${size.padStart(8)} ${date} ${name}${indicator}`;
+        };
+
+        const listSingleDir = (dirPath: string, prefix = ''): string[] => {
+            const lines: string[] = [];
+            try {
+                const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+                
+                // Filter entries based on flags
+                const filtered = entries.filter(entry => {
+                    if (showAll) return true;
+                    if (showAlmostAll) return entry.name !== '.' && entry.name !== '..';
+                    return !entry.name.startsWith('.');
+                });
+
+                // Sort entries
+                filtered.sort((a, b) => {
+                    // Directories first, then files
+                    if (a.isDirectory() !== b.isDirectory()) {
+                        return a.isDirectory() ? -1 : 1;
+                    }
+                    return a.name.localeCompare(b.name);
+                });
+
+                for (const entry of filtered) {
+                    const fullPath = path.join(dirPath, entry.name);
+                    let stat: fs.Stats;
+                    try {
+                        stat = fs.statSync(fullPath);
+                    } catch {
+                        continue; // Skip entries we can't stat
+                    }
+
+                    let line: string;
+                    if (longFormat) {
+                        line = formatLongLine(entry.name, stat, fullPath);
+                    } else {
+                        const indicator = getIndicator(stat, entry.name);
+                        line = entry.name + indicator;
+                    }
+
+                    if (prefix) {
+                        lines.push(prefix + line);
+                    } else {
+                        lines.push(line);
+                    }
+
+                    // Handle recursive flag
+                    if (recursive && stat.isDirectory() && entry.name !== '.' && entry.name !== '..') {
+                        const subPrefix = prefix ? prefix + '  ' : '  ';
+                        const subLines = listSingleDir(fullPath, subPrefix);
+                        lines.push(...subLines);
+                    }
+                }
+            } catch (err: any) {
+                throw new Error(`Cannot read directory ${dirPath}: ${err.message}`);
+            }
+            return lines;
+        };
+
+        const allLines: string[] = [];
+        for (const dirPath of paths) {
+            try {
+                const stat = fs.statSync(dirPath);
+                if (!stat.isDirectory()) {
+                    // Single file - just show it
+                    if (longFormat) {
+                        allLines.push(formatLongLine(path.basename(dirPath), stat, dirPath));
+                    } else {
+                        const indicator = getIndicator(stat, path.basename(dirPath));
+                        allLines.push(path.basename(dirPath) + indicator);
+                    }
+                } else {
+                    // Directory - list contents
+                    if (paths.length > 1) {
+                        allLines.push(`${dirPath}:`);
+                    }
+                    const lines = listSingleDir(dirPath);
+                    allLines.push(...lines);
+                    if (paths.length > 1 && paths.indexOf(dirPath) < paths.length - 1) {
+                        allLines.push(''); // Blank line between directories
+                    }
+                }
+            } catch (err: any) {
+                throw new Error(`Cannot access ${dirPath}: ${err.message}`);
+            }
+        }
+
+        const separator = onePerLine ? '\n' : '  ';
+        return allLines.join(separator);
+    }
+
     private runAllowedCommand(commandText: string): {
         ok: boolean;
         result?: string;
@@ -375,7 +643,8 @@ export class Executor {
         if (cmd === 'ls') {
             // Safe flags that don't pose security risks
             const allowedChars = new Set(['a', 'l', 'R', '1', 'h', 'A', 'F']);
-            const safeArgs: string[] = [];
+            const flags = new Set<string>();
+            const paths: string[] = [];
 
             for (const arg of args) {
                 if (arg.startsWith('-')) {
@@ -388,8 +657,8 @@ export class Executor {
                                 errorCode: ErrorCode.INVALID_ARGUMENT,
                             };
                         }
+                        flags.add(arg[i]);
                     }
-                    safeArgs.push(arg);
                 } else {
                     // It's a path - validate it
                     const safePath = this.safeResolve(arg);
@@ -412,30 +681,28 @@ export class Executor {
                             errorCode: ErrorCode.DENIED_PATH_ALLOWLIST,
                         };
                     }
-                    safeArgs.push(safePath);
+                    paths.push(safePath);
                 }
             }
 
-            const result = spawnSync('ls', safeArgs, { cwd: this.baseDir, encoding: 'utf8' });
-            if (result.error) return { ok: false, error: result.error.message || 'ls failed' };
-            if (result.status !== 0) {
-                const message =
-                    result.stderr.trim() ||
-                    (result.signal ? `ls terminated by signal ${result.signal}` : 'ls failed');
-                return { ok: false, error: message };
+            // Default to current directory if no path specified
+            const targetPaths = paths.length > 0 ? paths : [this.baseDir];
+
+            try {
+                const result = this.listDirectory(targetPaths, flags);
+                return { ok: true, result };
+            } catch (err: any) {
+                return { ok: false, error: err.message || 'ls failed' };
             }
-            return { ok: true, result: result.stdout.trim() };
         }
         if (cmd === 'pwd') {
-            const result = spawnSync('pwd', [], { cwd: this.baseDir, encoding: 'utf8' });
-            if (result.error) return { ok: false, error: result.error.message || 'pwd failed' };
-            if (result.status !== 0) {
-                const message =
-                    result.stderr.trim() ||
-                    (result.signal ? `pwd terminated by signal ${result.signal}` : 'pwd failed');
-                return { ok: false, error: message };
+            try {
+                // Use process.cwd() instead of spawning pwd command
+                const cwd = process.cwd();
+                return { ok: true, result: cwd };
+            } catch (err: any) {
+                return { ok: false, error: err.message || 'pwd failed' };
             }
-            return { ok: true, result: result.stdout.trim() };
         }
         if (cmd === 'cat') {
             if (args.length !== 1)
@@ -470,25 +737,28 @@ export class Executor {
                     errorCode: ErrorCode.DENIED_PATH_ALLOWLIST,
                 };
             }
-            const result = spawnSync('cat', [safePath], { cwd: this.baseDir, encoding: 'utf8' });
-            if (result.error) return { ok: false, error: result.error.message || 'cat failed' };
-            if (result.status !== 0) {
-                const message =
-                    result.stderr.trim() ||
-                    (result.signal ? `cat terminated by signal ${result.signal}` : 'cat failed');
-                return { ok: false, error: message };
+            try {
+                // Use fs.readFileSync instead of spawning cat command
+                const content = fs.readFileSync(safePath, 'utf8');
+                return { ok: true, result: content };
+            } catch (err: any) {
+                return { ok: false, error: err.message || 'cat failed' };
             }
-            return { ok: true, result: result.stdout };
         }
         if (cmd === 'du') {
             // Tightened: only allow -h, -s, -d N (N=0-5), and -t THRESHOLD with required path
-            const safeArgs: string[] = [];
+            let humanReadable = false;
+            let summary = false;
+            let maxDepth: number | null = null;
+            let threshold: number | null = null;
             let pathArg: string | null = null;
 
             for (let i = 0; i < args.length; i++) {
                 const arg = args[i];
-                if (arg === '-h' || arg === '-s') {
-                    safeArgs.push(arg);
+                if (arg === '-h') {
+                    humanReadable = true;
+                } else if (arg === '-s') {
+                    summary = true;
                 } else if (arg === '-d' || arg === '--max-depth') {
                     const next = args[i + 1];
                     if (!next || !/^[0-5]$/.test(next)) {
@@ -498,8 +768,7 @@ export class Executor {
                             errorCode: ErrorCode.INVALID_ARGUMENT,
                         };
                     }
-                    // depth value validated, add to args
-                    safeArgs.push('-d', next);
+                    maxDepth = parseInt(next, 10);
                     i++;
                 } else if (arg === '-t' || arg === '--threshold') {
                     const next = args[i + 1];
@@ -511,7 +780,17 @@ export class Executor {
                             errorCode: ErrorCode.INVALID_ARGUMENT,
                         };
                     }
-                    safeArgs.push('-t', next);
+                    // Parse threshold: convert k/M/G/T to bytes
+                    const match = next.match(/^(-?\d+)([kMGT]?)$/);
+                    if (match) {
+                        let bytes = parseInt(match[1], 10);
+                        const unit = match[2];
+                        if (unit === 'k') bytes *= 1024;
+                        else if (unit === 'M') bytes *= 1024 * 1024;
+                        else if (unit === 'G') bytes *= 1024 * 1024 * 1024;
+                        else if (unit === 'T') bytes *= 1024 * 1024 * 1024 * 1024;
+                        threshold = bytes;
+                    }
                     i++;
                 } else if (arg.startsWith('-')) {
                     return {
@@ -542,7 +821,6 @@ export class Executor {
                         };
                     }
                     pathArg = safePath;
-                    safeArgs.push(safePath);
                 }
             }
 
@@ -555,15 +833,17 @@ export class Executor {
                 };
             }
 
-            const result = spawnSync('du', safeArgs, { cwd: this.baseDir, encoding: 'utf8' });
-            if (result.error) return { ok: false, error: result.error.message || 'du failed' };
-            if (result.status !== 0) {
-                const message =
-                    result.stderr.trim() ||
-                    (result.signal ? `du terminated by signal ${result.signal}` : 'du failed');
-                return { ok: false, error: message };
+            try {
+                const result = this.calculateDirectorySize(pathArg, {
+                    humanReadable,
+                    summary,
+                    maxDepth: maxDepth ?? undefined,
+                    threshold: threshold ?? undefined,
+                });
+                return { ok: true, result };
+            } catch (err: any) {
+                return { ok: false, error: err.message || 'du failed' };
             }
-            return { ok: true, result: result.stdout.trim() };
         }
         return {
             ok: false,
