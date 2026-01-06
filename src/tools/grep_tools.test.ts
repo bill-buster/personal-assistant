@@ -292,9 +292,10 @@ try {
         logLine('PASS: unicode content');
     }
 
-    // T15: Very long line (should not crash)
+    // T15: Very long line (should not crash, but may hit size limit)
     const longLineFile = path.join(testRoot, 'longline.txt');
-    const longLine = 'x'.repeat(100000) + 'target' + 'x'.repeat(100000);
+    // Create a line that's long but under the size limit (65536 bytes in test context)
+    const longLine = 'x'.repeat(30000) + 'target' + 'x'.repeat(30000); // ~60KB, under 65KB limit
     fs.writeFileSync(longLineFile, longLine + '\n');
     const result15 = handleGrep(
         { pattern: 'target', path: 'longline.txt', case_sensitive: false },
@@ -436,6 +437,40 @@ try {
         );
     } else {
         logLine('PASS: large directory structure');
+    }
+
+    // T23: Skip huge file (file size limit)
+    const hugeFile = path.join(testRoot, 'huge.txt');
+    // Create a file larger than maxReadSize (default 65536 in test context)
+    const hugeContent = 'target\n' + 'x'.repeat(70000); // Larger than 65536
+    fs.writeFileSync(hugeFile, hugeContent);
+    const result23 = handleGrep(
+        { pattern: 'target', path: 'huge.txt', case_sensitive: false },
+        context1
+    );
+    // Should skip the huge file (no matches because file is too large)
+    // The file should be skipped, so we should get 0 matches
+    if (!result23.ok) {
+        failures += 1;
+        logLine(
+            `FAIL\ncase: skip huge file\nexpected: ok true (file skipped)\ngot: ok false\n\n`,
+            process.stderr
+        );
+    } else if (result23.result?.matches && result23.result.matches.length > 0) {
+        failures += 1;
+        logLine(
+            `FAIL\ncase: skip huge file\nexpected: 0 matches (file skipped)\ngot: ${result23.result.matches.length} matches\n\n`,
+            process.stderr
+        );
+    } else {
+        // File was skipped (0 matches) - this is correct
+        // Check if skipped_files info is present (optional but nice to have)
+        if (result23.result?.skipped_count !== undefined && result23.result.skipped_count > 0) {
+            logLine('PASS: skip huge file (with skipped_files info)');
+        } else {
+            // File was skipped silently (also acceptable)
+            logLine('PASS: skip huge file (skipped silently)');
+        }
     }
 
     // ============================================

@@ -84,6 +84,52 @@ This directory contains command definitions that guide AI behavior for specific 
 - **Process**: Replace spawnSync with direct imports where safe
 - **File**: `perf_fix_spawn.md`
 
+### `/implement_and_review_tool` ⭐ **Recommended**
+- **Purpose**: Complete tool implementation workflow (composite command)
+- **Role**: Implementer (`role.impl.mdc`)
+- **When to use**: Implementing tools end-to-end with full quality checks
+- **Dependencies**: Requires `docs/TOOL_IMPLEMENTATION_CHECKLIST.md`
+- **Process**: 16-step workflow that chains: generate → implement → test → review → fix loop → commit → summary
+- **File**: `implement_and_review_tool.md`
+- **Features**:
+  - Idempotent: safe to re-run after partial completion
+  - Explicit quality gates: tests + review must be green before commit
+  - Clear Jules role integration for "try to break it" testing
+  - Comprehensive fix loop with re-test and re-review
+  - Summary step for better UX
+  - Auto-commit if all checks pass
+
+### `/workflow_implement_tool` ⚠️ **Deprecated**
+- **Status**: Deprecated - Use `/implement_and_review_tool` instead
+- **File**: `workflow_implement_tool.md`
+- **Reason**: Replaced by improved version with better idempotency, explicit quality gates, and summary step
+
+### `/help`
+- **Purpose**: Discover available commands and workflows
+- **Role**: Any
+- **When to use**: Finding the right command for your task
+- **Dependencies**: None
+- **Process**: Reads `.cursor/commands/` directory and lists all commands with descriptions
+- **File**: `help.md`
+- **Features**:
+  - Categorized command list
+  - Usage suggestions based on context
+  - Common workflow mappings
+  - Auto-updates when commands change
+
+### `/fix_all_issues`
+- **Purpose**: Batch-fix common repo issues in a safe order
+- **Role**: Implementer (`role.impl.mdc`)
+- **When to use**: Cleaning up multiple issues at once (TODOs, lint, types, docs)
+- **Dependencies**: None
+- **Process**: 7-step workflow: preflight → fix TODOs → fix lint → fix types → fix docs → test → summary
+- **File**: `fix_all_issues.md`
+- **Features**:
+  - Safe order: fixes issues in dependency order
+  - Tests between stages
+  - Summary of what was fixed
+  - Remaining issues tracking
+
 ## Command Structure
 
 All commands follow a consistent structure:
@@ -123,9 +169,52 @@ For example:
 Some commands depend on external files:
 
 - `impl_add_tool` → `docs/TOOL_IMPLEMENTATION_CHECKLIST.md`
+- `implement_and_review_tool` → `docs/TOOL_IMPLEMENTATION_CHECKLIST.md`
+- `workflow_implement_tool` → `docs/TOOL_IMPLEMENTATION_CHECKLIST.md` (deprecated)
 - `add_docs` → `README.md`, `docs/COMMANDS.md`
 
 Ensure these files exist before running dependent commands.
+
+## Composite Commands
+
+**Composite commands** chain multiple workflows together for complete automation:
+
+### `/implement_and_review_tool` ⭐
+
+This command combines:
+- Tool generation (optional)
+- Tool implementation (`impl_add_tool` steps 1-7)
+- Comprehensive testing with Jules role (`jules_test` patterns)
+- Code review (`review_pr`)
+- Explicit fix loop (fix → re-test → re-review)
+- Commit and post-commit review
+- Summary step
+
+**Use when**: You want to implement a tool with full quality checks in one command.
+
+**Benefits**:
+- Single command for complete workflow
+- Idempotent: safe to re-run after partial completion
+- Explicit quality gates: tests + review must be green before commit
+- Clear ownership: Jules role for "try to break it" testing
+- Summary step for better UX
+
+### `/fix_all_issues`
+
+This command combines:
+- Fix TODOs (`fix_todos` logic)
+- Fix lint and formatting
+- Fix type errors (`type_safety` logic)
+- Fix documentation (`add_docs` logic)
+- Run tests between stages
+- Summary of fixes
+
+**Use when**: You want to batch-fix multiple issues in a safe order.
+
+**Benefits**:
+- Fixes issues in dependency order
+- Tests between stages prevent regressions
+- Summary tracks what was fixed
 
 ## Best Practices
 

@@ -1,0 +1,25 @@
+---
+description: USE WHEN creating or editing Cursor slash commands, chaining workflows, or defining multi-step quality gates.
+globs:
+alwaysApply: false
+---
+
+# Workflow & Command-Chaining Rules
+
+## Principles
+- Prefer a single composite command over "run 6 commands manually."
+- Make workflows idempotent: safe to re-run after partial completion.
+- Use explicit quality gates: tests + review must be green before commit.
+- Keep state in files (e.g., checklist or HANDOFF logs), not in memory.
+
+## Composite command structure
+- Preflight: read checklist + identify files touched
+- Implement: small steps with clear outputs
+- Test: narrow → broad
+- Review: automated → manual
+- Fix loop: fix → re-test → re-review (repeat until green)
+- Commit + summary: always end with "what changed + tests run"
+
+## Logging
+- Use `[STEP X/Y]` markers.
+- Record test commands run verbatim and their results.

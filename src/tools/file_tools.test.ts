@@ -1363,7 +1363,12 @@ try {
     } as ExecutorContext;
 
     const result41 = handleCountWords({ path: 'count_test1.txt' }, context41);
-    if (!result41.ok || result41.result?.words !== 6 || result41.result?.lines !== 2 || result41.result?.characters !== 28) {
+    if (
+        !result41.ok ||
+        result41.result?.words !== 6 ||
+        result41.result?.lines !== 2 ||
+        result41.result?.characters !== 28
+    ) {
         failures += 1;
         logLine(
             `FAIL\ncase: count words in file\nexpected: ok true, words=6, lines=2, characters=28\ngot: ok=${result41.ok}, words=${result41.result?.words}, lines=${result41.result?.lines}, characters=${result41.result?.characters}\n`,
@@ -1377,7 +1382,12 @@ try {
     const testFile42 = path.join(testRoot, 'count_test2.txt');
     fs.writeFileSync(testFile42, '');
     const result42 = handleCountWords({ path: 'count_test2.txt' }, context41);
-    if (!result42.ok || result42.result?.words !== 0 || result42.result?.lines !== 0 || result42.result?.characters !== 0) {
+    if (
+        !result42.ok ||
+        result42.result?.words !== 0 ||
+        result42.result?.lines !== 0 ||
+        result42.result?.characters !== 0
+    ) {
         failures += 1;
         logLine(
             `FAIL\ncase: count words in empty file\nexpected: ok true, words=0, lines=0, characters=0\ngot: ok=${result42.ok}, words=${result42.result?.words}, lines=${result42.result?.lines}, characters=${result42.result?.characters}\n`,

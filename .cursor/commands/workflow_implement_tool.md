@@ -1,3 +1,15 @@
+# ⚠️ DEPRECATED: Use `/implement_and_review_tool` instead
+
+This command has been replaced by `/implement_and_review_tool` which includes:
+- Better idempotency (safe to re-run)
+- Explicit quality gates
+- Clear Jules role integration
+- Summary step for better UX
+
+**Please use `/implement_and_review_tool` for all new tool implementations.**
+
+---
+
 You are the Implementer. Follow role.impl.mdc first, then project rules.
 
 ## Security Note

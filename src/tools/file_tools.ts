@@ -1313,7 +1313,13 @@ export function handleCountWords(args: CountWordsArgs, context: ExecutorContext)
     const lines = content.length === 0 ? 0 : content.split('\n').length;
 
     // Count words (split by whitespace, filter empty strings)
-    const words = content.trim().length === 0 ? 0 : content.trim().split(/\s+/).filter(w => w.length > 0).length;
+    const words =
+        content.trim().length === 0
+            ? 0
+            : content
+                  .trim()
+                  .split(/\s+/)
+                  .filter(w => w.length > 0).length;
 
     return {
         ok: true,

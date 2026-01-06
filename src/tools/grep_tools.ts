@@ -66,6 +66,11 @@ function findFilesRecursive(
 
     for (const entry of entries) {
         // Skip hidden files/directories and common build/cache directories
+        // Note: This is a blacklist approach (consistent with list_files tool behavior).
+        // It skips common build artifacts to avoid searching large generated directories.
+        // Legitimate directories with these names inside allowed workspace are also skipped
+        // (e.g., a user folder named "dist" would be skipped - this is intentional to avoid
+        // searching build artifacts).
         if (
             entry.name.startsWith('.') ||
             entry.name === 'node_modules' ||
@@ -100,12 +105,25 @@ function findFilesRecursive(
  * @param filePath - File path to search.
  * @param pattern - Regex pattern.
  * @param caseSensitive - Whether search is case-sensitive.
- * @returns Array of matches.
+ * @param maxFileSize - Maximum file size to read (bytes). Files larger than this are skipped.
+ * @returns Array of matches, or null if file is too large.
  */
-function searchInFile(filePath: string, pattern: string, caseSensitive: boolean): Match[] {
+function searchInFile(
+    filePath: string,
+    pattern: string,
+    caseSensitive: boolean,
+    maxFileSize: number
+): Match[] | null {
     const matches: Match[] = [];
 
     try {
+        // Check file size before reading
+        const stats = fs.statSync(filePath);
+        if (stats.size > maxFileSize) {
+            // File too large - return null to indicate skip
+            return null;
+        }
+
         // Read file content
         const content = fs.readFileSync(filePath, 'utf8');
         const lines = content.split(/\r?\n/);
@@ -135,8 +153,12 @@ function searchInFile(filePath: string, pattern: string, caseSensitive: boolean)
             }
         }
     } catch (err: any) {
-        // Skip files that can't be read (binary files, permissions, etc.)
-        // Don't throw - just skip silently
+        // Skip files that can't be read:
+        // - Binary files (encoding errors when reading as UTF-8)
+        // - Permission errors
+        // - Other I/O errors
+        // Don't throw - just skip silently (consistent with grep behavior)
+        return [];
     }
 
     return matches;
@@ -149,8 +171,11 @@ function searchInFile(filePath: string, pattern: string, caseSensitive: boolean)
  * @returns Result object with ok, result, error, debug.
  */
 export function handleGrep(args: GrepArgs, context: ExecutorContext): ToolResult {
-    const { paths, start } = context;
+    const { paths, start, limits } = context;
     const { pattern, path: searchPath, case_sensitive = false, max_results } = args;
+
+    // Get max file size from context limits (default to 1MB if not configured)
+    const maxFileSize = limits?.maxReadSize ?? 1024 * 1024;
 
     // Validate and resolve path
     let targetPath: string;
@@ -237,8 +262,16 @@ export function handleGrep(args: GrepArgs, context: ExecutorContext): ToolResult
 
     // Search all files
     const allMatches: Match[] = [];
+    const skippedFiles: string[] = [];
     for (const filePath of filesToSearch) {
-        const matches = searchInFile(filePath, pattern, case_sensitive);
+        const matches = searchInFile(filePath, pattern, case_sensitive, maxFileSize);
+
+        if (matches === null) {
+            // File too large - skip it
+            skippedFiles.push(path.relative(context.baseDir, filePath));
+            continue;
+        }
+
         allMatches.push(...matches);
 
         // Stop if we've reached max_results
@@ -264,6 +297,8 @@ export function handleGrep(args: GrepArgs, context: ExecutorContext): ToolResult
             count: formattedMatches.length,
             pattern,
             case_sensitive,
+            skipped_files: skippedFiles.length > 0 ? skippedFiles : undefined,
+            skipped_count: skippedFiles.length > 0 ? skippedFiles.length : undefined,
         },
         error: null,
         _debug: makeDebug({
