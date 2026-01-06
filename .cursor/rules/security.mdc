@@ -40,19 +40,20 @@ private safeResolve(relPath: string): string | null {
     
     const resolved = path.resolve(this.baseDir, relPath);
     
-    // Must be under baseDir
-    if (!resolved.startsWith(this.baseDir + path.sep)) return null;
+    // Allow exact baseDir match (for '.') or paths under baseDir
+    if (resolved !== this.baseDir && !resolved.startsWith(this.baseDir + path.sep)) return null;
     
     // Canonicalize to prevent symlink bypass
     try {
         const canonical = fs.realpathSync(resolved);
-        if (!canonical.startsWith(this.baseDir + path.sep)) return null;
+        // Allow exact baseDir match or paths under baseDir
+        if (canonical !== this.baseDir && !canonical.startsWith(this.baseDir + path.sep)) return null;
         return canonical;
     } catch {
         // For new files, verify parent is under baseDir
         const parentDir = path.dirname(resolved);
         const canonicalParent = fs.realpathSync(parentDir);
-        if (!canonicalParent.startsWith(this.baseDir + path.sep)) return null;
+        if (canonicalParent !== this.baseDir && !canonicalParent.startsWith(this.baseDir + path.sep)) return null;
         return resolved;
     }
 }
@@ -213,7 +214,7 @@ private logAudit(toolName: string, args: any, result: ToolResult): void {
 }
 ```
 
-Audit log location: `~/.assistant/data/audit.jsonl`
+Audit log location: `~/.assistant-data/audit.jsonl`
 
 ### Sanitize Sensitive Data
 

@@ -286,17 +286,29 @@ const apiKey = process.env.GROQ_API_KEY || config.apiKeys?.groq || null;
 
 Use console methods directly (no-console is off):
 
+**Critical**: Debug logs must go to stderr, not stdout. stdout is reserved for actual command output (especially JSON).
+
 ```typescript
-// Verbose/debug output (only when --verbose flag)
-if (verbose) console.log('[Verbose] Processing:', input);
+// Verbose/debug output (only when --verbose flag) - use stderr
+if (verbose) console.error('[Verbose] Processing:', input);
 
 // Errors always go to stderr
 console.error('[Error] Failed to connect:', err.message);
 
-// Prefix with context for traceability
-console.log(`[Router] Matched tool: ${toolName}`);
-console.log(`[Executor] Running: ${toolName}`);
+// Debug/trace logs - use stderr to avoid corrupting stdout
+console.error(`[Router] Matched tool: ${toolName}`);
+console.error(`[Executor] Running: ${toolName}`);
+
+// ✅ Good: stdout only for actual command output
+if (outputFormat === 'json') {
+    console.log(JSON.stringify(result));  // OK: actual output
+}
+
+// ❌ Bad: debug logs to stdout (breaks JSON parsing)
+console.log('[Debug] Processing:', input);  // NEVER in code paths that output JSON
 ```
+
+**Rule**: Never `console.log` in code paths that output JSON. Log to stderr instead.
 
 ## Common Helpers
 
