@@ -8,7 +8,8 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import { spawnSync } from 'node:child_process';
+// spawnSync unused after refactoring to native fetch
+// import { spawnSync } from 'node:child_process';
 import { handleReadUrl } from './fetch_tools';
 import { createMockContext } from '../core/test_utils';
 
@@ -32,10 +33,10 @@ function logLine(msg: string, stream: NodeJS.WriteStream = process.stdout) {
     stream.write(msg + '\n');
 }
 
-function parseOutput(output: string) {
+function _parseOutput(output: string) {
     try {
         return JSON.parse(output);
-    } catch (err: unknown) {
+    } catch {
         const lines = output.trim().split('\n');
         for (let i = lines.length - 1; i >= 0; i--) {
             try {
@@ -43,7 +44,7 @@ function parseOutput(output: string) {
                 if (json && typeof json.ok === 'boolean') {
                     return json;
                 }
-            } catch (_err) {
+            } catch {
                 continue;
             }
         }
@@ -547,9 +548,9 @@ function parseOutput(output: string) {
         }
 
         // T40: URL with port 65536 (over max - should fail validation)
-        const result40 = await handleReadUrl({ url: 'https://example.com:65536' }, mockContext);
+        const _result40 = await handleReadUrl({ url: 'https://example.com:65536' }, mockContext);
         // Port over 65535 might be rejected by URL parser
-        // Accept either validation error or execution error
+        // Accept either validation error or execution error (result not checked)
 
         // T41: URL with IPv6 address (should pass validation)
         const result41 = await handleReadUrl({ url: 'https://[2001:db8::1]' }, mockContext);
@@ -577,7 +578,7 @@ function parseOutput(output: string) {
         // ============================================
 
         // T43: URL as number (should fail validation)
-        const result43 = await handleReadUrl({ url: 123 as any }, mockContext);
+        const result43 = await handleReadUrl({ url: 123 as unknown as string }, mockContext);
         if (result43.ok || result43.error?.code !== 'VALIDATION_ERROR') {
             failures += 1;
             logLine(
@@ -587,7 +588,7 @@ function parseOutput(output: string) {
         }
 
         // T44: URL as null (should fail validation)
-        const result44 = await handleReadUrl({ url: null as any }, mockContext);
+        const result44 = await handleReadUrl({ url: null as unknown as string }, mockContext);
         if (result44.ok || result44.error?.code !== 'VALIDATION_ERROR') {
             failures += 1;
             logLine(
@@ -597,7 +598,7 @@ function parseOutput(output: string) {
         }
 
         // T45: URL as undefined (should fail validation)
-        const result45 = await handleReadUrl({ url: undefined as any }, mockContext);
+        const result45 = await handleReadUrl({ url: undefined as unknown as string }, mockContext);
         if (result45.ok || result45.error?.code !== 'VALIDATION_ERROR') {
             failures += 1;
             logLine(
@@ -607,7 +608,7 @@ function parseOutput(output: string) {
         }
 
         // T46: URL as object (should fail validation)
-        const result46 = await handleReadUrl({ url: {} as any }, mockContext);
+        const result46 = await handleReadUrl({ url: {} as unknown as string }, mockContext);
         if (result46.ok || result46.error?.code !== 'VALIDATION_ERROR') {
             failures += 1;
             logLine(
@@ -617,7 +618,7 @@ function parseOutput(output: string) {
         }
 
         // T47: URL as array (should fail validation)
-        const result47 = await handleReadUrl({ url: [] as any }, mockContext);
+        const result47 = await handleReadUrl({ url: [] as unknown as string }, mockContext);
         if (result47.ok || result47.error?.code !== 'VALIDATION_ERROR') {
             failures += 1;
             logLine(
@@ -677,9 +678,10 @@ function parseOutput(output: string) {
         }
 
         logLine(`Ran 51 test cases, ${failures} failures`);
-    } catch (err: any) {
+    } catch (err: unknown) {
         failures += 1;
-        logLine(`FAIL: ${err.message}\n`, process.stderr);
+        const message = err instanceof Error ? err.message : String(err);
+        logLine(`FAIL: ${message}\n`, process.stderr);
     } finally {
         // Cleanup
         try {

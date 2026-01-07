@@ -152,7 +152,7 @@ try {
         ...createMockContext({
             baseDir: testRoot,
             paths: {
-                resolve: (p: string) => {
+                resolve: (_p: string) => {
                     throw new Error('Path traversal detected');
                 },
                 assertAllowed: () => {
@@ -413,7 +413,7 @@ try {
         ...createMockContext({
             baseDir: testRoot,
             paths: {
-                resolve: (p: string) => {
+                resolve: (_p: string) => {
                     throw new Error('Path traversal detected');
                 },
                 assertAllowed: () => {
@@ -736,7 +736,7 @@ try {
         ...createMockContext({
             baseDir: testRoot,
             paths: {
-                resolve: (p: string) => {
+                resolve: (_p: string) => {
                     throw new Error('Path traversal detected');
                 },
                 assertAllowed: () => {
@@ -968,7 +968,7 @@ try {
         ...createMockContext({
             baseDir: testRoot,
             paths: {
-                resolve: (p: string) => {
+                resolve: (_p: string) => {
                     throw new Error('Path traversal detected');
                 },
                 assertAllowed: () => {
@@ -1333,7 +1333,7 @@ try {
         ...createMockContext({
             baseDir: testRoot,
             paths: {
-                resolve: (p: string) => {
+                resolve: (_p: string) => {
                     throw new Error('Path traversal detected');
                 },
                 assertAllowed: () => {
@@ -1480,7 +1480,7 @@ try {
         ...createMockContext({
             baseDir: testRoot,
             paths: {
-                resolve: (p: string) => {
+                resolve: (_p: string) => {
                     throw new Error('Path traversal detected');
                 },
                 assertAllowed: () => {
@@ -1594,8 +1594,10 @@ try {
     }
 
     logLine('RESULT\nstatus: OK\n');
-} catch (e: any) {
-    logLine(`\nUNEXPECTED ERROR: ${e.message}\n${e.stack}\n`, process.stderr);
+} catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e);
+    const stack = e instanceof Error ? e.stack : '';
+    logLine(`\nUNEXPECTED ERROR: ${message}\n${stack}\n`, process.stderr);
     process.exit(1);
 }
 

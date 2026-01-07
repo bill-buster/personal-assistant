@@ -10,7 +10,6 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import { handleGrep } from './grep_tools';
 import { createMockContext } from '../core/test_utils';
-import { ExecutorContext } from '../core/types';
 
 // Create isolated temp directory
 const testRootRaw = fs.mkdtempSync(path.join(os.tmpdir(), 'grep-tools-test-'));
@@ -328,8 +327,8 @@ try {
             }
         )?.matches
     ) {
-        const foundHidden = (result13.result as { matches: Array<unknown> }).matches.some(
-            (m: any) => m.file.includes('.hidden')
+        const foundHidden = (result13.result as { matches: Array<{ file: string }> }).matches.some(
+            (m: { file: string }) => m.file.includes('.hidden')
         );
         if (foundHidden) {
             failures += 1;
@@ -634,8 +633,10 @@ try {
     }
 
     logLine('\nRESULT\nstatus: OK\n');
-} catch (err: any) {
-    logLine(`\nFATAL ERROR: ${err.message}\n${err.stack}\n`, process.stderr);
+} catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? err.stack : '';
+    logLine(`\nFATAL ERROR: ${message}\n${stack}\n`, process.stderr);
     process.exit(1);
 } finally {
     // Cleanup

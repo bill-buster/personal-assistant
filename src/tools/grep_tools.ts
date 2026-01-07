@@ -149,7 +149,7 @@ function searchInFile(
                 });
             }
         }
-    } catch (_err) {
+    } catch {
         // Skip files that can't be read:
         // - Binary files (encoding errors when reading as UTF-8)
         // - Permission errors
@@ -200,7 +200,7 @@ export function handleGrep(args: GrepArgs, context: ExecutorContext): ToolResult
     let stats: fs.Stats;
     try {
         stats = fs.statSync(targetPath);
-    } catch (_err) {
+    } catch {
         return {
             ok: false,
             result: null,

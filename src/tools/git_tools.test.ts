@@ -147,7 +147,7 @@ try {
     const gitDir7 = fs.mkdtempSync(path.join(testRoot, 'git7-'));
     if (initGitRepo(gitDir7)) {
         const context7 = createMockContext({ baseDir: gitDir7 });
-        const result7 = handleGitStatus(undefined as any, context7);
+        const result7 = handleGitStatus(undefined as unknown as Record<string, never>, context7);
         if (!result7.ok) {
             failures += 1;
             logLine(
@@ -161,7 +161,7 @@ try {
     const gitDir8 = fs.mkdtempSync(path.join(testRoot, 'git8-'));
     if (initGitRepo(gitDir8)) {
         const context8 = createMockContext({ baseDir: gitDir8 });
-        const result8 = handleGitStatus(null as any, context8);
+        const result8 = handleGitStatus(null as unknown as Record<string, never>, context8);
         if (!result8.ok) {
             failures += 1;
             logLine(
@@ -371,7 +371,7 @@ try {
     const gitDir20 = fs.mkdtempSync(path.join(testRoot, 'git20-'));
     if (initGitRepo(gitDir20)) {
         const context20 = createMockContext({ baseDir: gitDir20 });
-        const result20 = handleGitDiff({ staged: null as any }, context20);
+        const result20 = handleGitDiff({ staged: null as unknown as boolean }, context20);
         if (!result20.ok || (result20.result as Record<string, unknown>)?.staged !== false) {
             failures += 1;
             logLine(
@@ -406,7 +406,7 @@ try {
     const gitDir22 = fs.mkdtempSync(path.join(testRoot, 'git22-'));
     if (initGitRepo(gitDir22)) {
         const context22 = createMockContext({ baseDir: gitDir22 });
-        const result22 = handleGitDiff({ staged: 'true' as any }, context22);
+        const result22 = handleGitDiff({ staged: 'true' as unknown as boolean }, context22);
         // TypeScript would catch this, but test runtime behavior
         // Should work (string 'true' is truthy) or fail validation
         if (result22.ok && (result22.result as Record<string, unknown>)?.staged !== true) {
@@ -418,7 +418,7 @@ try {
     const gitDir23 = fs.mkdtempSync(path.join(testRoot, 'git23-'));
     if (initGitRepo(gitDir23)) {
         const context23 = createMockContext({ baseDir: gitDir23 });
-        const result23 = handleGitDiff({ path: 123 as any }, context23);
+        const result23 = handleGitDiff({ path: 123 as unknown as string }, context23);
         // Should fail at path resolution or work if converted to string
         // Test that it doesn't crash
         if (result23.ok === undefined) {
@@ -650,7 +650,7 @@ try {
     if (initGitRepo(gitDir35)) {
         createTestFileAndCommit(gitDir35, 'test.txt', 'content');
         const context35 = createMockContext({ baseDir: gitDir35 });
-        const result35 = handleGitLog({ limit: null as any }, context35);
+        const result35 = handleGitLog({ limit: null as unknown as number }, context35);
         if (!result35.ok || (result35.result as Record<string, unknown>)?.count !== 1) {
             failures += 1;
             logLine(
@@ -669,7 +669,7 @@ try {
     if (initGitRepo(gitDir36)) {
         createTestFileAndCommit(gitDir36, 'test.txt', 'content');
         const context36 = createMockContext({ baseDir: gitDir36 });
-        const result36 = handleGitLog({ limit: '10' as any }, context36);
+        const result36 = handleGitLog({ limit: '10' as unknown as number }, context36);
         // TypeScript would catch this, but test runtime
         // Should either work (if converted) or fail gracefully
         if (result36.ok === undefined) {
@@ -686,7 +686,7 @@ try {
     if (initGitRepo(gitDir37)) {
         createTestFileAndCommit(gitDir37, 'test.txt', 'content');
         const context37 = createMockContext({ baseDir: gitDir37 });
-        const result37 = handleGitLog({ limit: 5.7 as any }, context37);
+        const result37 = handleGitLog({ limit: 5.7 as unknown as number }, context37);
         // Should work (truncated to 5) or fail validation
         if (result37.ok === undefined) {
             failures += 1;
