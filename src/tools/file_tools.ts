@@ -122,11 +122,12 @@ export function handleWriteFile(args: WriteFileArgs, context: ExecutorContext): 
         // Invalidate stat cache after write
         const statCache = getStatCache();
         statCache.invalidate(targetPath);
-    } catch (err: any) {
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
         return {
             ok: false,
             result: null,
-            error: makeError(ErrorCode.EXEC_ERROR, `Failed to write file: ${err.message}`),
+            error: makeError(ErrorCode.EXEC_ERROR, `Failed to write file: ${message}`),
             _debug: makeDebug({
                 path: 'tool_json',
                 start,
@@ -266,11 +267,12 @@ export function handleReadFile(args: ReadFileArgs, context: ExecutorContext): To
         } finally {
             fs.closeSync(fd);
         }
-    } catch (err: any) {
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
         return {
             ok: false,
             result: null,
-            error: makeError(ErrorCode.EXEC_ERROR, `Failed to read file: ${err.message}`),
+            error: makeError(ErrorCode.EXEC_ERROR, `Failed to read file: ${message}`),
             _debug: makeDebug({
                 path: 'tool_json',
                 start,
@@ -368,11 +370,12 @@ export function handleListFiles(args: ListFilesArgs, context: ExecutorContext): 
     let dirEntries: fs.Dirent[];
     try {
         dirEntries = fs.readdirSync(targetDir, { withFileTypes: true });
-    } catch (err: any) {
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
         return {
             ok: false,
             result: null,
-            error: makeError(ErrorCode.EXEC_ERROR, `Failed to list files: ${err.message}`),
+            error: makeError(ErrorCode.EXEC_ERROR, `Failed to list files: ${message}`),
             _debug: makeDebug({
                 path: 'tool_json',
                 start,
@@ -493,11 +496,12 @@ export function handleDeleteFile(args: DeleteFileArgs, context: ExecutorContext)
         // Invalidate stat cache after delete
         const statCache = getStatCache();
         statCache.invalidate(targetPath);
-    } catch (err: any) {
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
         return {
             ok: false,
             result: null,
-            error: makeError(ErrorCode.EXEC_ERROR, `Failed to delete file: ${err.message}`),
+            error: makeError(ErrorCode.EXEC_ERROR, `Failed to delete file: ${message}`),
             _debug: makeDebug({
                 path: 'tool_json',
                 start,
@@ -656,13 +660,14 @@ export function handleMoveFile(args: MoveFileArgs, context: ExecutorContext): To
     try {
         const destDir = path.dirname(destinationPath);
         fs.mkdirSync(destDir, { recursive: true });
-    } catch (err: any) {
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
         return {
             ok: false,
             result: null,
             error: makeError(
                 ErrorCode.EXEC_ERROR,
-                `Failed to create destination directory: ${err.message}`
+                `Failed to create destination directory: ${message}`
             ),
             _debug: makeDebug({
                 path: 'tool_json',
@@ -681,11 +686,12 @@ export function handleMoveFile(args: MoveFileArgs, context: ExecutorContext): To
         const statCache = getStatCache();
         statCache.invalidate(sourcePath);
         statCache.invalidate(destinationPath);
-    } catch (err: any) {
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
         return {
             ok: false,
             result: null,
-            error: makeError(ErrorCode.EXEC_ERROR, `Failed to move file: ${err.message}`),
+            error: makeError(ErrorCode.EXEC_ERROR, `Failed to move file: ${message}`),
             _debug: makeDebug({
                 path: 'tool_json',
                 start,
@@ -848,13 +854,14 @@ export function handleCopyFile(args: CopyFileArgs, context: ExecutorContext): To
     try {
         const destDir = path.dirname(destinationPath);
         fs.mkdirSync(destDir, { recursive: true });
-    } catch (err: any) {
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
         return {
             ok: false,
             result: null,
             error: makeError(
                 ErrorCode.EXEC_ERROR,
-                `Failed to create destination directory: ${err.message}`
+                `Failed to create destination directory: ${message}`
             ),
             _debug: makeDebug({
                 path: 'tool_json',
@@ -872,11 +879,12 @@ export function handleCopyFile(args: CopyFileArgs, context: ExecutorContext): To
         // Invalidate stat cache for destination (source unchanged)
         const statCache = getStatCache();
         statCache.invalidate(destinationPath);
-    } catch (err: any) {
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
         return {
             ok: false,
             result: null,
-            error: makeError(ErrorCode.EXEC_ERROR, `Failed to copy file: ${err.message}`),
+            error: makeError(ErrorCode.EXEC_ERROR, `Failed to copy file: ${message}`),
             _debug: makeDebug({
                 path: 'tool_json',
                 start,
@@ -1091,13 +1099,14 @@ export function handleCreateDirectory(
                     memory_write: false,
                 }),
             };
-        } catch (mkdirErr: any) {
+        } catch (mkdirErr: unknown) {
+            const message = mkdirErr instanceof Error ? mkdirErr.message : String(mkdirErr);
             return {
                 ok: false,
                 result: null,
                 error: makeError(
                     ErrorCode.EXEC_ERROR,
-                    `Failed to create directory: ${mkdirErr.message}`
+                    `Failed to create directory: ${message}`
                 ),
                 _debug: makeDebug({
                     path: 'tool_json',
@@ -1201,11 +1210,12 @@ export function handleDeleteDirectory(
         fs.rmSync(targetPath, { recursive: true, force: true });
         // Invalidate stat cache after delete
         statCache.invalidate(targetPath);
-    } catch (err: any) {
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
         return {
             ok: false,
             result: null,
-            error: makeError(ErrorCode.EXEC_ERROR, `Failed to delete directory: ${err.message}`),
+            error: makeError(ErrorCode.EXEC_ERROR, `Failed to delete directory: ${message}`),
             _debug: makeDebug({
                 path: 'tool_json',
                 start,
@@ -1303,11 +1313,12 @@ export function handleCountWords(args: CountWordsArgs, context: ExecutorContext)
     let content: string;
     try {
         content = fs.readFileSync(targetPath, 'utf8');
-    } catch (err: any) {
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
         return {
             ok: false,
             result: null,
-            error: makeError(ErrorCode.EXEC_ERROR, `Failed to read file: ${err.message}`),
+            error: makeError(ErrorCode.EXEC_ERROR, `Failed to read file: ${message}`),
             _debug: makeDebug({
                 path: 'tool_json',
                 start,

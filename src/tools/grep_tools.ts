@@ -149,7 +149,7 @@ function searchInFile(
                 });
             }
         }
-    } catch (err: any) {
+    } catch (_err) {
         // Skip files that can't be read:
         // - Binary files (encoding errors when reading as UTF-8)
         // - Permission errors
@@ -200,7 +200,7 @@ export function handleGrep(args: GrepArgs, context: ExecutorContext): ToolResult
     let stats: fs.Stats;
     try {
         stats = fs.statSync(targetPath);
-    } catch (err: any) {
+    } catch (_err) {
         return {
             ok: false,
             result: null,
@@ -218,11 +218,12 @@ export function handleGrep(args: GrepArgs, context: ExecutorContext): ToolResult
     // Validate regex pattern
     try {
         new RegExp(pattern, case_sensitive ? 'g' : 'gi');
-    } catch (err: any) {
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
         return {
             ok: false,
             result: null,
-            error: makeError(ErrorCode.EXEC_ERROR, `Invalid regex pattern: ${err.message}`),
+            error: makeError(ErrorCode.EXEC_ERROR, `Invalid regex pattern: ${message}`),
             _debug: makeDebug({
                 path: 'tool_json',
                 start,

@@ -35,11 +35,12 @@ export function handleRemember(args: RememberArgs, context: ExecutorContext): To
         }
         memory.entries.push({ ts: new Date().toISOString(), text });
         writeMemory(memoryPath, memory);
-    } catch (err: any) {
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
         return {
             ok: false,
             result: null,
-            error: makeError('EXEC_ERROR', `Failed to update memory: ${err.message}`),
+            error: makeError('EXEC_ERROR', `Failed to update memory: ${message}`),
             _debug: makeDebug({
                 path: 'tool_json',
                 start,
@@ -78,11 +79,12 @@ export function handleRecall(args: RecallArgs, context: ExecutorContext): ToolRe
     let entries;
     try {
         entries = readMemory(memoryPath).entries;
-    } catch (err: any) {
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
         return {
             ok: false,
             result: null,
-            error: makeError('EXEC_ERROR', `Failed to read memory: ${err.message}`),
+            error: makeError('EXEC_ERROR', `Failed to read memory: ${message}`),
             _debug: makeDebug({
                 path: 'tool_json',
                 start,
@@ -127,11 +129,12 @@ export function handleMemoryAdd(args: MemoryAddArgs, context: ExecutorContext): 
     const entry = { ts: new Date().toISOString(), text };
     try {
         appendJsonl(memoryLogPath, entry);
-    } catch (err: any) {
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
         return {
             ok: false,
             result: null,
-            error: makeError('EXEC_ERROR', `Failed to write memory: ${err.message}`),
+            error: makeError('EXEC_ERROR', `Failed to write memory: ${message}`),
             _debug: makeDebug({
                 path: 'tool_json',
                 start,

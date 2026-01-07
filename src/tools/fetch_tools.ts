@@ -7,7 +7,7 @@ import { makeError, ErrorCode } from '../core/tool_contract';
  */
 export async function handleReadUrl(
     args: ReadUrlArgs,
-    context: ExecutorContext
+    _context: ExecutorContext
 ): Promise<ToolResult> {
     const { url } = args;
 
@@ -66,11 +66,12 @@ export async function handleReadUrl(
                 ),
             };
         }
-    } catch (err: any) {
+    } catch (err: unknown) {
         // Invalid URL format
+        const message = err instanceof Error ? err.message : String(err);
         return {
             ok: false,
-            error: makeError(ErrorCode.VALIDATION_ERROR, `Invalid URL format: ${err.message}`),
+            error: makeError(ErrorCode.VALIDATION_ERROR, `Invalid URL format: ${message}`),
         };
     }
 
@@ -149,10 +150,11 @@ export async function handleReadUrl(
                 length: text.length,
             },
         };
-    } catch (err: any) {
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
         return {
             ok: false,
-            error: makeError(ErrorCode.EXEC_ERROR, `System error: ${err.message}`),
+            error: makeError(ErrorCode.EXEC_ERROR, `System error: ${message}`),
         };
     }
 }

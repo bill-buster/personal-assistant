@@ -304,19 +304,37 @@ export function handleCursorCommandEval(
             },
             _debug: makeDebug({ path: 'cursor_command_eval', start: startTime }),
         };
-    } catch (err: any) {
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
         return {
             ok: false,
-            error: makeError('EXEC_ERROR', `Failed to evaluate commands: ${err.message}`),
+            error: makeError('EXEC_ERROR', `Failed to evaluate commands: ${message}`),
             _debug: makeDebug({ path: 'cursor_command_eval', start: startTime }),
         };
     }
 }
 
+interface CommandEvaluation {
+    name: string;
+    type: 'project' | 'user';
+    path: string;
+    metadata?: CommandFile['metadata'];
+    usage: CommandUsage;
+    evaluation: {
+        has_documentation: boolean;
+        has_examples: boolean;
+        has_steps: boolean;
+        complexity: string;
+        indirect_usage_count: number;
+        last_used?: string;
+        related_tools: string[];
+    };
+}
+
 /**
  * Generate recommendations based on command evaluations.
  */
-function generateRecommendations(evaluations: any[]): string[] {
+function generateRecommendations(evaluations: CommandEvaluation[]): string[] {
     const recommendations: string[] = [];
 
     // Commands with no usage
