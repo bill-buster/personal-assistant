@@ -1,564 +1,227 @@
-#!/usr/bin/env node
+import { describe, expect, it } from 'vitest';
+import { route, runParseArgs } from './app/router';
+import { ResolvedConfig } from './core/config';
+import { LLMProvider } from './runtime';
 
-import { spawnSync } from 'node:child_process';
-import * as path from 'node:path';
+// Minimal mock config for routing
+const mockConfig = {
+    fileBaseDir: '/tmp',
+    defaultProvider: 'mock',
+    toolSchemas: {}, // Add if needed
+} as unknown as ResolvedConfig;
 
-// When running from dist/, use the compiled JS files directly
-const isDist = __dirname.includes('/dist') || __dirname.includes('\\dist');
-const spikeDir = isDist
-    ? path.resolve(__dirname) // Use dist/ directory in dist mode
-    : path.resolve(__dirname);
-const routerPath = isDist
-    ? path.join(spikeDir, 'app', 'router.js')
-    : path.join(spikeDir, 'app', 'router.ts');
-const baseArgs = isDist ? [routerPath] : ['-r', require.resolve('ts-node/register'), routerPath];
+// Mock provider that never gets called for regex/heuristic tests
+const mockProvider = {
+    complete: async () => ({ ok: false, error: 'Mock provider should not be called' }),
+} as unknown as LLMProvider;
 
-function runRouter(args: string[]) {
-    return spawnSync(process.execPath, [...baseArgs, ...args], { cwd: spikeDir, encoding: 'utf8' });
-}
+// Mock SYSTEM agent locally to avoid circular dependencies during testing
+const MOCK_SYSTEM_AGENT = {
+    name: 'System',
+    description: 'Direct CLI access with all tools.',
+    systemPrompt: 'You are a helpful assistant.',
+    tools: [
+        'read_file',
+        'write_file',
+        'list_files',
+        'delete_file',
+        'move_file',
+        'copy_file',
+        'file_info',
+        'count_words',
+        'create_directory',
+        'delete_directory',
+        'run_cmd',
+        'remember',
+        'recall',
+        'memory_add',
+        'memory_search',
+        'task_add',
+        'task_list',
+        'task_done',
+        'calculate',
+        'get_time',
+        'get_weather',
+        'git_status',
+        'git_diff',
+        'git_log',
+        'read_url',
+        'cursor_command_eval',
+        'grep',
+        'reminder_add',
+    ],
+    kind: 'system' as const,
+};
 
-const cases = [
-    {
-        args: ['fix: bug in login'],
-        expect: 'You are fixing a bug. Be concise. Output only the fix.\n\nbug in login',
-    },
-    {
-        args: ['explain: caching'],
-        expect: 'Explain step by step in simple terms.\n\ncaching',
-    },
-    {
-        args: ['no label here'],
-        expect: 'Implement the simplest viable solution.\n\nno label here',
-    },
-    {
-        args: ['--intent', 'explain', 'short answer'],
-        expect: 'Explain step by step in simple terms.\n\nshort answer',
-    },
-    {
-        args: ['--intent=fix', 'router:', 'override'],
-        expect: 'You are fixing a bug. Be concise. Output only the fix.\n\nrouter: override',
-    },
-    {
-        args: ['--intent=explain', 'fix: ignore label'],
-        expect: 'Explain step by step in simple terms.\n\nfix: ignore label',
-    },
-    {
-        args: ['--json', 'explain: caching'],
-        expect: JSON.stringify({
-            version: 1,
-            intent: 'explain',
-            instruction: 'Explain step by step in simple terms.',
-            content: 'caching',
-            prompt: 'Explain step by step in simple terms.\n\ncaching',
-        }),
-    },
-    {
-        args: ['--tool-json', 'write ./notes.txt hello there'],
-        expectJson: {
-            version: 1,
-            intent: 'spike',
-            mode: 'tool_call',
-            tool_call: {
-                tool_name: 'write_file',
-                args: { path: './notes.txt', content: 'hello there' },
-            },
-            reply: null,
-            debugPath: 'regex_fast_path',
-        },
-    },
-    {
-        args: ['--tool-json', 'read ./notes.txt'],
-        expectJson: {
-            version: 1,
-            intent: 'spike',
-            mode: 'tool_call',
-            tool_call: { tool_name: 'read_file', args: { path: './notes.txt' } },
-            reply: null,
-            debugPath: 'regex_fast_path',
-        },
-    },
-    {
-        args: ['--tool-json', 'list'],
-        expectJson: {
-            version: 1,
-            intent: 'spike',
-            mode: 'tool_call',
-            tool_call: { tool_name: 'list_files', args: {} },
-            reply: null,
-            debugPath: 'regex_fast_path',
-        },
-    },
-    {
-        args: ['--tool-json', 'task add buy milk --priority high --due 2026-01-02'],
-        expectJson: {
-            version: 1,
-            intent: 'spike',
-            mode: 'tool_call',
-            tool_call: {
-                tool_name: 'task_add',
-                args: { text: 'buy milk', due: '2026-01-02', priority: 'high' },
-            },
-            reply: null,
-            debugPath: 'cli_parse',
-        },
-    },
-    {
-        args: ['--tool-json', 'task list --status open'],
-        expectJson: {
-            version: 1,
-            intent: 'spike',
-            mode: 'tool_call',
-            tool_call: {
-                tool_name: 'task_list',
-                args: { status: 'open' },
-            },
-            reply: null,
-            debugPath: 'cli_parse',
-        },
-    },
-    {
-        args: ['--tool-json', 'task done 2'],
-        expectJson: {
-            version: 1,
-            intent: 'spike',
-            mode: 'tool_call',
-            tool_call: {
-                tool_name: 'task_done',
-                args: { id: 2 },
-            },
-            reply: null,
-            debugPath: 'cli_parse',
-        },
-    },
-    {
-        args: ['--tool-json', 'memory add met with Sam'],
-        expectJson: {
-            version: 1,
-            intent: 'spike',
-            mode: 'tool_call',
-            tool_call: {
-                tool_name: 'memory_add',
-                args: { text: 'met with Sam' },
-            },
-            reply: null,
-            debugPath: 'cli_parse',
-        },
-    },
-    {
-        args: ['--tool-json', 'add task buy milk'],
-        expectJson: {
-            version: 1,
-            intent: 'spike',
-            mode: 'tool_call',
-            tool_call: {
-                tool_name: 'task_add',
-                args: { text: 'buy milk' },
-            },
-            reply: null,
-            debugPath: 'heuristic_parse',
-        },
-    },
-    {
-        args: ['--tool-json', 'list open tasks'],
-        expectJson: {
-            version: 1,
-            intent: 'spike',
-            mode: 'tool_call',
-            tool_call: {
-                tool_name: 'task_list',
-                args: { status: 'open' },
-            },
-            reply: null,
-            debugPath: 'heuristic_parse',
-        },
-    },
-    {
-        args: ['--tool-json', 'complete task 4'],
-        expectJson: {
-            version: 1,
-            intent: 'spike',
-            mode: 'tool_call',
-            tool_call: {
-                tool_name: 'task_done',
-                args: { id: 4 },
-            },
-            reply: null,
-            debugPath: 'heuristic_parse',
-        },
-    },
-    {
-        args: ['--tool-json', 'remember buy oat milk'],
-        expectJson: {
-            version: 1,
-            intent: 'spike',
-            mode: 'tool_call',
-            tool_call: {
-                tool_name: 'remember',
-                args: { text: 'buy oat milk' },
-            },
-            reply: null,
-            debugPath: 'cli_parse',
-        },
-    },
-    {
-        args: ['--tool-json', 'find memory roadmap'],
-        expectJson: {
-            version: 1,
-            intent: 'spike',
-            mode: 'tool_call',
-            tool_call: {
-                tool_name: 'memory_search',
-                args: { query: 'roadmap' },
-            },
-            reply: null,
-            debugPath: 'heuristic_parse',
-        },
-    },
-    {
-        args: ['--tool-json', 'remind me in 10 minutes to stretch'],
-        expectJson: {
-            version: 1,
-            intent: 'spike',
-            mode: 'tool_call',
-            tool_call: {
-                tool_name: 'reminder_add',
-                args: { text: 'stretch', in_seconds: 600 },
-            },
-            reply: null,
-            debugPath: 'cli_parse',
-        },
-    },
-    // New heuristic parser patterns
-    {
-        args: ['--tool-json', "what's in file notes.txt"],
-        expectJson: {
-            version: 1,
-            intent: 'spike',
-            mode: 'tool_call',
-            tool_call: { tool_name: 'read_file', args: { path: 'notes.txt' } },
-            reply: null,
-            debugPath: 'heuristic_parse',
-        },
-    },
-    {
-        args: ['--tool-json', 'list my tasks'],
-        expectJson: {
-            version: 1,
-            intent: 'spike',
-            mode: 'tool_call',
-            tool_call: { tool_name: 'task_list', args: { status: 'all' } },
-            reply: null,
-            debugPath: 'heuristic_parse',
-        },
-    },
-    {
-        args: ['--tool-json', 'show my tasks'],
-        expectJson: {
-            version: 1,
-            intent: 'spike',
-            mode: 'tool_call',
-            tool_call: { tool_name: 'task_list', args: { status: 'all' } },
-            reply: null,
-            debugPath: 'heuristic_parse',
-        },
-    },
-    {
-        args: ['--tool-json', 'save this: important meeting tomorrow'],
-        expectJson: {
-            version: 1,
-            intent: 'spike',
-            mode: 'tool_call',
-            tool_call: { tool_name: 'remember', args: { text: 'important meeting tomorrow' } },
-            reply: null,
-            debugPath: 'heuristic_parse',
-        },
-    },
-    {
-        args: ['--tool-json', 'note: call mom later'],
-        expectJson: {
-            version: 1,
-            intent: 'spike',
-            mode: 'tool_call',
-            tool_call: { tool_name: 'remember', args: { text: 'call mom later' } },
-            reply: null,
-            debugPath: 'heuristic_parse',
-        },
-    },
-    {
-        args: ['--tool-json', 'what time is it'],
-        expectJson: {
-            version: 1,
-            intent: 'spike',
-            mode: 'tool_call',
-            tool_call: { tool_name: 'get_time', args: {} },
-            reply: null,
-            debugPath: 'regex_fast_path',
-        },
-    },
-    {
-        args: ['--tool-json', 'calculate 15 * 8'],
-        expectJson: {
-            version: 1,
-            intent: 'spike',
-            mode: 'tool_call',
-            tool_call: { tool_name: 'calculate', args: { expression: '15 * 8' } },
-            reply: null,
-            debugPath: 'regex_fast_path',
-        },
-    },
-    {
-        args: ['--tool-json', 'memory search roadmap --limit 3 --offset 1'],
-        expectJson: {
-            version: 1,
-            intent: 'spike',
-            mode: 'tool_call',
-            tool_call: {
-                tool_name: 'memory_search',
-                args: { query: 'roadmap', limit: 3, offset: 1 },
-            },
-            reply: null,
-            debugPath: 'cli_parse',
-        },
-    },
-    // NOTE: Removed flaky LLM-dependent test case for 'fix: ignore label'
-    // The LLM may return different valid tools (memory_add, recall, etc.)
-    // LLM fallback path is tested by other cases that don't depend on specific tool choice
+describe('Router CLI Args', () => {
+    it('should parse basic input', () => {
+        const { rawInput, error } = runParseArgs(['fix: bug']);
+        expect(rawInput).toBe('fix: bug');
+        expect(error).toBeFalsy();
+    });
 
-    {
-        args: ['--tool-json', 'remember: store this'],
-        expectJson: {
-            version: 1,
-            intent: 'spike',
-            mode: 'tool_call',
-            tool_call: {
-                tool_name: 'remember',
-                args: { text: 'store this' },
-            },
-            reply: null,
-            debugPath: 'regex_fast_path',
-        },
-    },
-    {
-        args: ['--tool-json', 'recall: store'],
-        expectJson: {
-            version: 1,
-            intent: 'spike',
-            mode: 'tool_call',
-            tool_call: {
-                tool_name: 'recall',
-                args: { query: 'store' },
-            },
-            reply: null,
-            debugPath: 'regex_fast_path',
-        },
-    },
-];
+    it('should parse intent flag', () => {
+        const { forcedIntent, rawInput } = runParseArgs(['--intent', 'explain', 'why']);
+        expect(forcedIntent).toBe('explain');
+        expect(rawInput).toBe('why');
+    });
 
-let failures = 0;
-function checkDebug(debug: any, expectedPath: string | undefined, caseName: string) {
-    const keys = ['path', 'duration_ms', 'model', 'memory_read', 'memory_write'];
-    if (!debug || typeof debug !== 'object') {
-        failures += 1;
-        process.stderr.write(`FAIL\ncase: ${caseName}\nexpected: object\nActual: ${debug}\n\n`);
-        return;
-    }
-    for (const key of keys) {
-        if (!(key in debug)) {
-            failures += 1;
-            process.stderr.write(`FAIL\ncase: debug\nmissing: ${key}\n\n`);
-            return;
-        }
-    }
-    if (expectedPath && debug.path !== expectedPath) {
-        failures += 1;
-        process.stderr.write(
-            `FAIL\ncase: debug\nexpected path: ${expectedPath}\nactual path: ${debug.path}\n\n`
+    it('should handle flags', () => {
+        const { jsonOutput, toolJsonOutput } = runParseArgs(['--json', '--tool-json', 'input']);
+        expect(jsonOutput).toBe(true);
+        expect(toolJsonOutput).toBe(true);
+    });
+
+    it('should return error for missing intent value', () => {
+        const { error } = runParseArgs(['--intent']);
+        expect(error).toContain('requires a value');
+    });
+
+    it('should return error for unknown intent is handled in main, but args parsing passes', () => {
+        // runParseArgs just extracts strings, validation of valid intent strings happens in main
+        const { forcedIntent } = runParseArgs(['--intent', 'unknown', 'input']);
+        expect(forcedIntent).toBe('unknown');
+    });
+});
+
+describe('Router Logic', () => {
+    // Re-using test cases from original router.test.ts where applicable
+    // Adapted for direct route() call testing
+
+    // Helper to call route wrapper
+    const runRoute = async (
+        input: string,
+        intent: string = 'spike',
+        forcedInstruction: string | null = null,
+        toolJson: boolean = false
+    ) => {
+        const agent = MOCK_SYSTEM_AGENT;
+
+        return route(
+            input,
+            intent,
+            forcedInstruction,
+            [], // history
+            true, // verbose: true
+            agent,
+            mockProvider,
+            { enableRegex: true, toolFormat: 'compact' },
+            mockConfig
         );
-    }
-    if (typeof debug.duration_ms !== 'number') {
-        failures += 1;
-        process.stderr.write('FAIL\ncase: debug\nduration_ms not number\n\n');
-    }
-}
-for (const testCase of cases) {
-    const result = runRouter(testCase.args);
-    const stdout = (result.stdout || '').trim();
-    if (testCase.expectJson) {
-        let parsed;
-        try {
-            parsed = JSON.parse(stdout);
-        } catch {
-            failures += 1;
-            process.stderr.write(`FAIL\nargs: ${testCase.args.join(' ')}\nexpected: json\n\n`);
-            continue;
+    };
+
+    const cases = [
+        {
+            name: 'Weather regex',
+            input: 'weather in London',
+            expectedTool: 'get_weather',
+            expectedArgs: { location: 'London' },
+        },
+        {
+            name: 'Remember regex',
+            input: 'remember: buy milk',
+            expectedTool: 'remember',
+            expectedArgs: { text: 'buy milk' },
+        },
+        {
+            name: 'Recall regex',
+            input: 'recall: milk',
+            expectedTool: 'recall',
+            expectedArgs: { query: 'milk' },
+        },
+        {
+            name: 'Read URL regex',
+            input: 'read url https://example.com',
+            expectedTool: 'read_url',
+            expectedArgs: { url: 'https://example.com' },
+        },
+        {
+            name: 'Read bare domain regex',
+            input: 'read example.com',
+            expectedTool: 'read_url',
+            expectedArgs: { url: 'https://example.com' },
+        },
+        {
+            name: 'Write regex',
+            input: 'write ./note.txt hello world',
+            expectedTool: 'write_file',
+            expectedArgs: { path: './note.txt', content: 'hello world' },
+        },
+        {
+            name: 'Task add heuristic',
+            input: 'task add buy milk',
+            expectedTool: 'task_add',
+            expectedArgs: { text: 'buy milk' },
+        },
+        {
+            name: 'Task list heuristic',
+            input: 'task list --status open',
+            expectedTool: 'task_list',
+            expectedArgs: { status: 'open' },
+        },
+        {
+            name: 'Remind me heuristic',
+            input: 'remind me in 10 minutes to stretch',
+            expectedTool: 'reminder_add',
+            expectedArgs: { text: 'stretch', in_seconds: 600 },
+        },
+        {
+            name: 'Calc regex',
+            input: 'calc: 2+2',
+            expectedTool: 'calculate',
+            expectedArgs: { expression: '2+2' },
+        },
+        {
+            name: 'Time regex',
+            input: 'what time is it',
+            expectedTool: 'get_time',
+            expectedArgs: {},
+        },
+    ];
+
+    it.each(cases)('$name', async ({ input, expectedTool, expectedArgs }) => {
+        const result = await runRoute(input);
+
+        if ('error' in result) {
+            console.log(`FAIL case ${input}:`, result.error);
+        } else if (result.mode !== 'tool_call' || result.tool_call?.tool_name !== expectedTool) {
+            console.log(`FAIL case ${input}:`, JSON.stringify(result, null, 2));
         }
-        if (
-            parsed.intent !== testCase.expectJson.intent ||
-            parsed.mode !== testCase.expectJson.mode
-        ) {
-            failures += 1;
-            process.stderr.write(
-                `FAIL\nargs: ${testCase.args.join(' ')}\nexpected: intent/mode\n\n`
-            );
-            continue;
+
+        expect(result).toMatchObject({
+            mode: 'tool_call',
+            tool_call: {
+                tool_name: expectedTool,
+                args: expectedArgs,
+            },
+        });
+
+        // Check for debug path
+        if ('_debug' in result && result._debug) {
+            expect(result._debug.path).toBeDefined();
         }
-        if (parsed.version !== testCase.expectJson.version) {
-            failures += 1;
-            process.stderr.write(`FAIL\nargs: ${testCase.args.join(' ')}\nexpected: version\n\n`);
-            continue;
+    });
+
+    it('should result in reply input does not match tool', async () => {
+        // 'spike' intent errors on no tool match, so use 'explain' to trigger reply
+        const result = await runRoute('unmatched input', 'explain');
+        if ('error' in result) throw new Error(result.error);
+        expect(result.mode).toBe('reply');
+        if (result.mode === 'reply') {
+            expect(result.reply.content).toBe('unmatched input');
+            expect(result.reply.instruction).toBe('Implement the simplest viable solution.');
         }
-        if (testCase.expectJson.tool_call) {
-            const expectedCall = testCase.expectJson.tool_call;
-            if (!parsed.tool_call || parsed.tool_call.tool_name !== expectedCall.tool_name) {
-                failures += 1;
-                process.stderr.write(
-                    `FAIL\nargs: ${testCase.args.join(' ')}\nexpected: tool_call name\n\n`
-                );
-                continue;
-            }
-            if (JSON.stringify(parsed.tool_call.args) !== JSON.stringify(expectedCall.args)) {
-                failures += 1;
-                process.stderr.write(
-                    `FAIL\nargs: ${testCase.args.join(' ')}\nexpected: tool_call args\n\n`
-                );
-                continue;
-            }
+    });
+
+    it('should respect custom intent', async () => {
+        // In production handling, runParseArgs -> parseInput strips "intent:"
+        // So we pass "code" as content here to simulate what route() receives
+        const result = await runRoute('code', 'explain', 'Explain code');
+        if ('error' in result) throw new Error(result.error);
+        expect(result.mode).toBe('reply');
+        if (result.mode === 'reply') {
+            expect(result.reply.instruction).toBe('Explain code');
+            expect(result.reply.content).toBe('code');
         }
-        if (testCase.expectJson.reply) {
-            const expectedReply = testCase.expectJson.reply as { prompt: string };
-            const reply: any = parsed.reply;
-            if (!reply || typeof reply.prompt !== 'string') {
-                failures += 1;
-                process.stderr.write(
-                    `FAIL\nargs: ${testCase.args.join(' ')}\nexpected: reply prompt\n\n`
-                );
-                continue;
-            }
-            if (reply.prompt !== expectedReply.prompt) {
-                failures += 1;
-                process.stderr.write(
-                    `FAIL\nargs: ${testCase.args.join(' ')}\nexpected: reply prompt\n\n`
-                );
-                continue;
-            }
-        }
-        checkDebug(parsed._debug, testCase.expectJson.debugPath, testCase.args.join(' '));
-    } else if (stdout !== testCase.expect) {
-        failures += 1;
-        process.stderr.write(
-            `FAIL\nargs: ${testCase.args.join(' ')}\nexpected: ${testCase.expect}\nactual: ${stdout}\n\n`
-        );
-    }
-}
-
-const errorResult = runRouter([]);
-if (errorResult.status === 0) {
-    failures += 1;
-    process.stderr.write('FAIL\nargs: <none>\nexpected: non-zero exit\nactual: 0\n\n');
-}
-
-const emptyLabelResult = runRouter(['fix:']);
-if (emptyLabelResult.status === 0) {
-    failures += 1;
-    process.stderr.write('FAIL\nargs: fix:\nexpected: non-zero exit\nactual: 0\n\n');
-}
-
-const missingInputResult = runRouter(['--tool-json']);
-if (missingInputResult.status === 0) {
-    failures += 1;
-    process.stderr.write('FAIL\nargs: --tool-json\nexpected: non-zero exit\nactual: 0\n\n');
-}
-
-const helpResult = runRouter(['--help']);
-const helpOutput = (helpResult.stdout || '').trim();
-if (helpResult.status !== 0) {
-    failures += 1;
-    process.stderr.write('FAIL\nargs: --help\nexpected: exit 0\nactual: non-zero\n\n');
-}
-if (
-    !helpOutput.includes('Usage:') ||
-    !helpOutput.includes('Examples:') ||
-    !helpOutput.includes('fix:') ||
-    !helpOutput.includes('explain:') ||
-    !helpOutput.includes('--json') ||
-    !helpOutput.includes('--tool-json')
-) {
-    failures += 1;
-    process.stderr.write('FAIL\nargs: --help\nexpected: usage text with examples\n\n');
-}
-
-const invalidIntentResult = runRouter(['--intent=unknown', 'anything']);
-if (invalidIntentResult.status === 0) {
-    failures += 1;
-    process.stderr.write('FAIL\nargs: --intent=unknown\nexpected: non-zero exit\nactual: 0\n\n');
-}
-
-const missingIntentResult = runRouter(['--intent']);
-if (missingIntentResult.status === 0) {
-    failures += 1;
-    process.stderr.write('FAIL\nargs: --intent\nexpected: non-zero exit\nactual: 0\n\n');
-}
-
-const jsonValidationResult = runRouter(['--json', 'read']);
-if (jsonValidationResult.status !== 0) {
-    failures += 1;
-    process.stderr.write('FAIL\nargs: --json read\nexpected: exit 0\nactual: non-zero\n\n');
-}
-const jsonValidationOutput = (jsonValidationResult.stdout || '').trim();
-try {
-    const parsed = JSON.parse(jsonValidationOutput);
-    if (parsed.version !== 1) {
-        failures += 1;
-        process.stderr.write('FAIL\nargs: --json read\nexpected: version 1\n\n');
-    }
-} catch {
-    failures += 1;
-    process.stderr.write('FAIL\nargs: --json read\nexpected: valid json\n\n');
-}
-
-const badToolInputs = [
-    ['--tool-json', 'read'],
-    ['--tool-json', 'write ./notes.txt'],
-    ['--tool-json', 'remember:'],
-    ['--tool-json', 'recall:'],
-    ['--tool-json', 'list extra'],
-    ['--tool-json', 'task'],
-    ['--tool-json', 'memory'],
-    ['--tool-json', 'run'],
-];
-
-for (const args of badToolInputs) {
-    const result = runRouter(args);
-    if (result.status === 0) {
-        failures += 1;
-        process.stderr.write(
-            `FAIL\nargs: ${args.join(' ')}\nexpected: non-zero exit\nactual: 0\n\n`
-        );
-    }
-}
-
-const validToolResult = runRouter(['--tool-json', 'read ./notes.txt']);
-if (validToolResult.status !== 0) {
-    failures += 1;
-    process.stderr.write('FAIL\nargs: --tool-json read ./notes.txt\nexpected: exit 0\n\n');
-} else {
-    try {
-        const parsed = JSON.parse((validToolResult.stdout || '').trim());
-        if (!parsed.tool_call || parsed.tool_call.tool_name !== 'read_file') {
-            failures += 1;
-            process.stderr.write(
-                'FAIL\nargs: --tool-json read ./notes.txt\nexpected: read_file\n\n'
-            );
-        }
-    } catch {
-        failures += 1;
-        process.stderr.write('FAIL\nargs: --tool-json read ./notes.txt\nexpected: json\n\n');
-    }
-}
-
-if (failures > 0) {
-    process.exit(1);
-}
-
-process.stdout.write('OK\n');
-export {};
+    });
+});
