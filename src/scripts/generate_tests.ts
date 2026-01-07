@@ -51,7 +51,13 @@ function extractHandlerFromFile(
     return { handlerName, importPath, hasContext };
 }
 
-function extractSchemaFromFile(filePath: string): { schemaName: string; args: any[] } | null {
+interface SchemaArg {
+    name: string;
+    type: string;
+    required: boolean;
+}
+
+function extractSchemaFromFile(filePath: string): { schemaName: string; args: SchemaArg[] } | null {
     const content = fs.readFileSync(filePath, 'utf8');
 
     // Try to find schema definition in the file first
@@ -141,8 +147,8 @@ function extractSchemaFromFile(filePath: string): { schemaName: string; args: an
 function matchHandlerToSchema(
     filePath: string,
     handlerName: string,
-    defaultSchema: { schemaName: string; args: any[] }
-): { schemaName: string; args: any[] } {
+    defaultSchema: { schemaName: string; args: SchemaArg[] }
+): { schemaName: string; args: SchemaArg[] } {
     // Extract handler name pattern: handleGitStatus -> GitStatus
     const handlerPattern = handlerName.replace(/^handle/, '');
 
@@ -228,11 +234,11 @@ function matchHandlerToSchema(
     return defaultSchema;
 }
 
-function generateTestCases(handlerName: string, args: any[], hasContext: boolean): string {
+function generateTestCases(handlerName: string, args: SchemaArg[], hasContext: boolean): string {
     const requiredArgs = args.filter(a => a.required);
-    const optionalArgs = args.filter(a => !a.required);
+    const _optionalArgs = args.filter(a => !a.required);
 
-    const successArgs: Record<string, any> = {};
+    const successArgs: Record<string, unknown> = {};
     for (const arg of args) {
         switch (arg.type) {
             case 'string':

@@ -50,7 +50,7 @@ function toPascalCase(str: string): string {
         .join('');
 }
 
-function toCamelCase(str: string): string {
+function _toCamelCase(str: string): string {
     const parts = str.split('_');
     return (
         parts[0] +
@@ -174,9 +174,9 @@ function generateTest(toolName: string, args: ArgDef[]): string {
     const handlerName = `handle${toPascalCase(toolName)}`;
     const typeName = `${toPascalCase(toolName)}Args`;
     const requiredArgs = args.filter(a => a.required);
-    const optionalArgs = args.filter(a => !a.required);
+    const _optionalArgs = args.filter(a => !a.required);
 
-    const successArgs: Record<string, any> = {};
+    const successArgs: Record<string, unknown> = {};
     for (const arg of args) {
         switch (arg.type) {
             case 'string':
@@ -321,7 +321,7 @@ Examples:
     const toolsDir = path.join(projectRoot, 'src', 'tools');
     const toolsFile = path.join(toolsDir, `${toolName}_tools.ts`);
     const testFile = path.join(toolsDir, `${toolName}_tools.test.ts`);
-    const typesFile = path.join(projectRoot, 'src', 'core', 'types.ts');
+    const _typesFile = path.join(projectRoot, 'src', 'core', 'types.ts');
 
     // Generate schema (to add to types.ts)
     const schema = generateSchema(toolName, argDefs);

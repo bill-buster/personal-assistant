@@ -308,7 +308,11 @@ export class OpenAICompatibleProvider implements LLMProvider {
             const rawData = await res.json();
             // Type assertion for OpenAI-compatible response format
             const data = rawData as {
-                usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+                usage?: {
+                    prompt_tokens?: number;
+                    completion_tokens?: number;
+                    total_tokens?: number;
+                };
                 choices?: Array<{
                     message: {
                         content?: string | null;

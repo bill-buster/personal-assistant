@@ -8,7 +8,6 @@
  */
 
 import * as fs from 'node:fs';
-import * as path from 'node:path';
 
 interface RefactoringIssue {
     line: number;
@@ -37,7 +36,7 @@ function analyzeFile(filePath: string): RefactoringIssue[] {
             if (line.includes('throw ') && !line.includes('//')) {
                 const match = line.match(/throw\s+new\s+Error\(([^)]+)\)/);
                 if (match) {
-                    const errorMsg = match[1];
+                    const _errorMsg = match[1];
                     issues.push({
                         line: i + 1,
                         type: 'throw_to_return',

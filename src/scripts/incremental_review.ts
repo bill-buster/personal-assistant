@@ -453,8 +453,9 @@ files incrementally over time. Progress is saved between runs.
             console.log(
                 `  ${file} - Score: ${score}/100 (${issueCount} issues, ${criticalCount} critical)`
             );
-        } catch (err: any) {
-            console.error(`  ⚠️  Error reviewing ${file}: ${err.message}`);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            console.error(`  ⚠️  Error reviewing ${file}: ${message}`);
         }
     }
 

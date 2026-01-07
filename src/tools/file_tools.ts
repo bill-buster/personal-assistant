@@ -1104,10 +1104,7 @@ export function handleCreateDirectory(
             return {
                 ok: false,
                 result: null,
-                error: makeError(
-                    ErrorCode.EXEC_ERROR,
-                    `Failed to create directory: ${message}`
-                ),
+                error: makeError(ErrorCode.EXEC_ERROR, `Failed to create directory: ${message}`),
                 _debug: makeDebug({
                     path: 'tool_json',
                     start,
