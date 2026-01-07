@@ -1,47 +1,60 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Assistant Dashboard</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>🤖 Assistant Dashboard</h1>
-            <span class="status" id="status">Connecting...</span>
-        </header>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Assistant Dashboard</title>
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <div class="container">
+            <header>
+                <h1>🤖 Assistant Dashboard</h1>
+                <span class="status" id="status">Connecting...</span>
+            </header>
 
-        <main>
-            <section class="panel tasks-panel">
-                <h2>📋 Tasks</h2>
-                <form id="task-form">
-                    <input type="text" id="task-input" placeholder="Add a new task..." required>
-                    <button type="submit">Add</button>
-                </form>
-                <ul id="task-list"></ul>
-            </section>
+            <main>
+                <section class="panel tasks-panel">
+                    <h2>📋 Tasks</h2>
+                    <form id="task-form">
+                        <input
+                            type="text"
+                            id="task-input"
+                            placeholder="Add a new task..."
+                            required
+                        />
+                        <button type="submit">Add</button>
+                    </form>
+                    <ul id="task-list"></ul>
+                </section>
 
-            <section class="panel memory-panel">
-                <h2>🧠 Memory</h2>
-                <form id="memory-form">
-                    <input type="text" id="memory-input" placeholder="Remember something..." required>
-                    <button type="submit">Store</button>
-                </form>
-                <div class="search-bar">
-                    <input type="text" id="memory-search" placeholder="Search memory...">
-                    <button id="search-btn">Search</button>
-                </div>
-                <ul id="memory-list"></ul>
-            </section>
-        </main>
+                <section class="panel memory-panel">
+                    <h2>🧠 Memory</h2>
+                    <form id="memory-form">
+                        <input
+                            type="text"
+                            id="memory-input"
+                            placeholder="Remember something..."
+                            required
+                        />
+                        <button type="submit">Store</button>
+                    </form>
+                    <div class="search-bar">
+                        <input type="text" id="memory-search" placeholder="Search memory..." />
+                        <button id="search-btn">Search</button>
+                    </div>
+                    <ul id="memory-list"></ul>
+                </section>
+            </main>
 
-        <footer>
-            <p>Assistant CLI v1.0 • <a href="javascript:void(0)" onclick="location.reload()">Refresh</a></p>
-        </footer>
-    </div>
+            <footer>
+                <p>
+                    Assistant CLI v1.0 •
+                    <a href="javascript:void(0)" onclick="location.reload()">Refresh</a>
+                </p>
+            </footer>
+        </div>
 
-    <script src="app.js"></script>
-</body>
+        <script src="app.js"></script>
+    </body>
 </html>

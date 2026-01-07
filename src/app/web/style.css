@@ -66,7 +66,9 @@ main {
 }
 
 @media (max-width: 768px) {
-    main { grid-template-columns: 1fr; }
+    main {
+        grid-template-columns: 1fr;
+    }
 }
 
 .panel {
@@ -88,7 +90,7 @@ form {
     margin-bottom: 1rem;
 }
 
-input[type="text"] {
+input[type='text'] {
     flex: 1;
     padding: 0.625rem 1rem;
     border: 1px solid var(--border);
@@ -98,12 +100,12 @@ input[type="text"] {
     font-size: 0.875rem;
 }
 
-input[type="text"]:focus {
+input[type='text']:focus {
     outline: none;
     border-color: var(--accent);
 }
 
-input[type="text"]::placeholder {
+input[type='text']::placeholder {
     color: var(--text-secondary);
 }
 

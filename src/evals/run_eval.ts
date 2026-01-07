@@ -13,10 +13,13 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-// Import from compiled dist
-const { route } = require('../../dist/router');
-const { MockLLMProvider } = require('../../dist/llm/mock_provider');
-const { AGENTS } = require('../../dist/agents');
+// Import from source (compiled at build time)
+import { AGENTS } from '../agents';
+import { route } from '../app/router';
+import type { Agent } from '../core/types';
+import { isRouteError, isRouteReply, isRouteToolCall } from '../core/types';
+import { MockLLMProvider } from '../providers/llm/mock_provider';
+import type { LLMProvider } from '../runtime';
 
 interface TestCase {
     input: string;
@@ -153,7 +156,11 @@ async function runEval(
     console.log('─'.repeat(60));
 }
 
-async function evaluateCase(testCase: TestCase, agent: any, provider: any): Promise<EvalResult> {
+async function evaluateCase(
+    testCase: TestCase,
+    agent: Agent | undefined,
+    provider: LLMProvider | undefined
+): Promise<EvalResult> {
     const { input, expected_tool, expected_path, expected_error, expected_reply, category } =
         testCase;
 
@@ -164,17 +171,25 @@ async function evaluateCase(testCase: TestCase, agent: any, provider: any): Prom
         // Route
         const result = await route(input, 'spike', null, [], false, agent, provider);
         const endTs = Date.now();
-        const latency = result._debug?.duration || endTs - startTs;
+        
+        // Use type guards to safely access properties
+        const isError = isRouteError(result);
+        const isToolCall = isRouteToolCall(result);
+        const isReplyResult = isRouteReply(result);
+        
+        // Get latency from debug info if available
+        const debugInfo = !isError && '_debug' in result ? result._debug : null;
+        const latency = debugInfo?.duration_ms ?? (endTs - startTs);
 
         if (expected_error) {
-            const passed = !!result.error;
+            const passed = isError;
             return {
                 passed,
                 input,
                 expected: 'error',
-                actual: result.error
+                actual: isError
                     ? 'error'
-                    : result.tool_call
+                    : isToolCall
                       ? `tool:${result.tool_call.tool_name}`
                       : 'reply',
                 category: category || 'unknown',
@@ -183,19 +198,18 @@ async function evaluateCase(testCase: TestCase, agent: any, provider: any): Prom
         }
 
         // Check tool match
-        const actualTool = result.tool_call?.tool_name || null;
-        const actualPath = result._debug?.path || null;
-        const isReply = result.mode === 'reply';
+        const actualTool = isToolCall ? result.tool_call.tool_name : null;
+        const actualPath = debugInfo?.path || null;
 
         if (expected_reply) {
-            const passed = isReply && !result.error;
+            const passed = isReplyResult && !isError;
             return {
                 passed,
                 input,
                 expected: 'reply',
-                actual: result.error
+                actual: isError
                     ? `error:${result.error}`
-                    : isReply
+                    : isReplyResult
                       ? 'reply'
                       : `tool:${actualTool}`,
                 category: category || 'unknown',
@@ -207,19 +221,20 @@ async function evaluateCase(testCase: TestCase, agent: any, provider: any): Prom
         const pathMatch = !expected_path || actualPath === expected_path;
 
         return {
-            passed: toolMatch && pathMatch && !result.error,
+            passed: toolMatch && pathMatch && !isError,
             input,
             expected: `${expected_tool || '*'}@${expected_path || '*'}`,
-            actual: result.error ? `error:${result.error}` : `${actualTool}@${actualPath}`,
+            actual: isError ? `error:${result.error}` : `${actualTool}@${actualPath}`,
             category: category || 'unknown',
             latency,
         };
-    } catch (err: any) {
+    } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
         return {
             passed: !!expected_error,
             input,
             expected: expected_error ? 'error' : `${expected_tool}`,
-            actual: `exception:${err.message}`,
+            actual: `exception:${errorMessage}`,
             category: category || 'unknown',
             latency: Date.now() - startTs,
         };

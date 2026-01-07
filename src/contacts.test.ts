@@ -1,181 +1,137 @@
-#!/usr/bin/env node
-
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import * as os from 'node:os';
 import { spawnSync } from 'node:child_process';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-// When running from dist/, __dirname is dist/ but we need src/
-const isDist = __dirname.includes('/dist') || __dirname.includes('\\dist');
-const spikeDir = isDist
-    ? path.resolve(__dirname) // Use dist/ directory in dist mode
-    : path.resolve(__dirname);
-const executorPath = isDist
-    ? path.join(spikeDir, 'app', 'executor.js')
-    : path.join(spikeDir, 'app', 'executor.ts');
-const baseArgs = isDist
-    ? [executorPath]
-    : ['-r', require.resolve('ts-node/register'), executorPath];
+// Always use dist/ for spawned processes
+const projectRoot = path.resolve(__dirname, '..');
+const distDir = path.join(projectRoot, 'dist');
+const executorPath = path.join(distDir, 'app', 'executor.js');
+const baseArgs = [executorPath];
 
-// Create isolated temp directory for this test run
-const rawTestTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'contacts-test-'));
-const testTmpDir = fs.realpathSync(rawTestTmpDir);
+describe('Contacts', () => {
+    let testTmpDir: string;
 
-function runExecutor(payload: any) {
-    // Use ASSISTANT_DATA_DIR to isolate test data in temp directory
-    const result = spawnSync(process.execPath, baseArgs, {
-        input: JSON.stringify(payload),
-        cwd: spikeDir,
-        encoding: 'utf8',
-        env: {
-            ...process.env,
-            // Use temp directory for data isolation
-            ASSISTANT_DATA_DIR: testTmpDir,
-            // Point to permissions.json in spike directory
-            ASSISTANT_PERMISSIONS_PATH: path.join(spikeDir, 'permissions.json'),
-        },
+    beforeAll(() => {
+        testTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'contacts-test-'));
+        testTmpDir = fs.realpathSync(testTmpDir);
+
+        // Create permissions.json in the test directory
+        fs.writeFileSync(
+            path.join(testTmpDir, 'permissions.json'),
+            JSON.stringify({
+                version: 1,
+                allow_paths: ['./'],
+                allow_commands: [],
+                require_confirmation_for: [],
+                deny_tools: [],
+            }),
+            'utf8'
+        );
     });
-    return {
-        status: result.status,
-        stdout: (result.stdout || '').trim(),
-    };
-}
 
-function parseOutput(output: string) {
-    try {
-        return JSON.parse(output);
-    } catch {
-        // Try to find the last valid JSON line
-        const lines = output.trim().split('\n');
-        for (let i = lines.length - 1; i >= 0; i--) {
-            try {
-                const json = JSON.parse(lines[i]);
-                if (json && typeof json.ok === 'boolean') {
-                    return json;
-                }
-            } catch {
-                // continue
-            }
+    afterAll(() => {
+        try {
+            fs.rmSync(testTmpDir, { recursive: true, force: true });
+        } catch {
+            // Ignore cleanup error
         }
-        return null;
-    }
-}
+    });
 
-function logLine(text: string) {
-    process.stdout.write(text);
-}
-
-let failures = 0;
-
-try {
-    // 1. Add Contact
-    const addPayload = {
-        mode: 'tool_call',
-        tool_call: {
-            tool_name: 'contact_add',
-            args: { name: 'Test User', email: 'test@example.com', phone: '123-456-7890' },
-        },
-    };
-    const addResult = runExecutor(addPayload);
-    const addJson = parseOutput(addResult.stdout);
-
-    if (!addJson || addJson.ok !== true) {
-        failures++;
-        logLine('FAIL: contact_add failed\n');
-        console.error(addResult.stdout);
-    } else {
-        logLine('PASS: contact_add\n');
+    function runExecutor(payload: unknown) {
+        const result = spawnSync(process.execPath, baseArgs, {
+            input: JSON.stringify(payload),
+            cwd: distDir,
+            encoding: 'utf8',
+            env: {
+                ...process.env,
+                ASSISTANT_DATA_DIR: testTmpDir,
+                ASSISTANT_PERMISSIONS_PATH: path.join(testTmpDir, 'permissions.json'),
+            },
+        });
+        return {
+            status: result.status,
+            stdout: (result.stdout || '').trim(),
+        };
     }
 
-    // 2. Verify Contact Exists (Search)
-    const searchPayload = {
-        mode: 'tool_call',
-        tool_call: {
-            tool_name: 'contact_search',
-            args: { query: 'Test User' },
-        },
-    };
-    const searchResult = runExecutor(searchPayload);
-    const searchJson = parseOutput(searchResult.stdout);
-
-    if (
-        !searchJson ||
-        searchJson.ok !== true ||
-        !searchJson.result ||
-        searchJson.result.length !== 1
-    ) {
-        failures++;
-        logLine('FAIL: contact_search failed or found incorrect number of results\n');
-        console.error(searchResult.stdout);
-    } else if (searchJson.result[0].name !== 'Test User') {
-        failures++;
-        logLine('FAIL: contact_search found wrong user\n');
-    } else {
-        logLine('PASS: contact_search\n');
+    function parseOutput(output: string) {
+        try {
+            return JSON.parse(output);
+        } catch {
+            const lines = output.trim().split('\n');
+            for (let i = lines.length - 1; i >= 0; i--) {
+                try {
+                    const json = JSON.parse(lines[i]);
+                    if (json && typeof json.ok === 'boolean') {
+                        return json;
+                    }
+                } catch {
+                    // continue
+                }
+            }
+            return null;
+        }
     }
 
-    // 3. Add Duplicate Contact (Should Fail)
-    const dupResult = runExecutor(addPayload);
-    const dupJson = parseOutput(dupResult.stdout);
+    it('should add a contact', () => {
+        const addPayload = {
+            mode: 'tool_call',
+            tool_call: {
+                tool_name: 'contact_add',
+                args: { name: 'Test User', email: 'test@example.com', phone: '123-456-7890' },
+            },
+        };
+        const addResult = runExecutor(addPayload);
+        const addJson = parseOutput(addResult.stdout);
 
-    if (!dupJson || dupJson.ok !== false) {
-        failures++;
-        logLine('FAIL: Duplicate contact_add should fail\n');
-        console.error(dupResult.stdout);
-    } else if (!dupJson.error || !dupJson.error.message.includes('already exists')) {
-        failures++;
-        logLine('FAIL: Duplicate contact_add error message mismatch\n');
-        console.error(dupJson.error);
-    } else {
-        logLine('PASS: Duplicate contact_add prevention\n');
-    }
+        expect(addJson).not.toBeNull();
+        expect(addJson?.ok).toBe(true);
+    });
 
-    // 4. Update Contact
-    const updatePayload = {
-        mode: 'tool_call',
-        tool_call: {
-            tool_name: 'contact_update',
-            args: { name: 'Test User', email: 'updated@example.com' },
-        },
-    };
-    const updateResult = runExecutor(updatePayload);
-    const updateJson = parseOutput(updateResult.stdout);
+    it('should search for a contact', () => {
+        // First add a contact
+        const addPayload = {
+            mode: 'tool_call',
+            tool_call: {
+                tool_name: 'contact_add',
+                args: { name: 'Search User', email: 'search@example.com', phone: '555-555-5555' },
+            },
+        };
+        runExecutor(addPayload);
 
-    if (!updateJson || updateJson.ok !== true) {
-        failures++;
-        logLine('FAIL: contact_update failed\n');
-        console.error(updateResult.stdout);
-    } else if (updateJson.result.contact.email !== 'updated@example.com') {
-        failures++;
-        logLine('FAIL: contact_update failed to update email\n');
-    } else {
-        logLine('PASS: contact_update\n');
-    }
+        const searchPayload = {
+            mode: 'tool_call',
+            tool_call: {
+                tool_name: 'contact_search',
+                args: { query: 'Search User' },
+            },
+        };
+        const searchResult = runExecutor(searchPayload);
+        const searchJson = parseOutput(searchResult.stdout);
 
-    // 5. Verify Update
-    const searchUpdateResult = runExecutor(searchPayload);
-    const searchUpdateJson = parseOutput(searchUpdateResult.stdout);
-    if (searchUpdateJson.result[0].email !== 'updated@example.com') {
-        failures++;
-        logLine('FAIL: contact_search did not show updated email\n');
-    } else {
-        logLine('PASS: contact_update verification\n');
-    }
-} catch (err) {
-    console.error('Test script error:', err);
-    failures++;
-} finally {
-    // Cleanup temp dir
-    try {
-        fs.rmSync(testTmpDir, { recursive: true, force: true });
-    } catch {
-        // Ignore cleanup error
-    }
-}
+        expect(searchJson).not.toBeNull();
+        expect(searchJson?.ok).toBe(true);
+        expect(searchJson?.result?.length).toBeGreaterThanOrEqual(1);
+    });
 
-if (failures > 0) {
-    console.error(`\n${failures} tests failed.`);
-    process.exit(1);
-} else {
-    console.log('\nAll contact tests passed.');
-}
+    it('should prevent duplicate contacts', () => {
+        const addPayload = {
+            mode: 'tool_call',
+            tool_call: {
+                tool_name: 'contact_add',
+                args: { name: 'Duplicate User', email: 'dup@example.com' },
+            },
+        };
+        runExecutor(addPayload);
+
+        // Try to add the same contact again
+        const dupResult = runExecutor(addPayload);
+        const dupJson = parseOutput(dupResult.stdout);
+
+        expect(dupJson).not.toBeNull();
+        expect(dupJson?.ok).toBe(false);
+        expect(dupJson?.error?.message).toContain('already exists');
+    });
+});

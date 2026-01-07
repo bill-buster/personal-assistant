@@ -1,160 +1,140 @@
-import { strict as assert } from 'assert';
-import { handleMessageList, handleMessageSend } from './comms_tools';
-import * as child_process from 'child_process';
-import { ExecutorContext } from '../core/types';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ExecutorContext } from '../core/types';
 
-// Simple mock context
-const mockContext: ExecutorContext = {
-    paths: {
-        resolve: (p: string) => p,
-        assertAllowed: () => {},
-        resolveAllowed: (p: string) => p,
-    },
-    commands: {
-        runAllowed: () => ({ ok: true, result: '' }),
-    },
-    permissions: {
-        allow_commands: ['osascript'], // Allow osascript for tests
-        allow_paths: [],
-    },
-    readJsonl: () => [],
-    appendJsonl: () => {},
-    messagesPath: '/tmp/messages.jsonl',
-    emailsPath: '/tmp/emails.jsonl',
-    // ... other stubbed methods
-} as unknown as ExecutorContext;
-
-// Mock child_process.spawnSync
-const originalSpawnSync = child_process.spawnSync;
-let mockSpawnSync: any = null;
-
-// Mock process.platform
-const originalPlatform = process.platform;
-let mockPlatform = 'darwin';
-
-Object.defineProperty(process, 'platform', {
-    get: () => mockPlatform,
+// Mock child_process module using vi.mock
+vi.mock('child_process', async () => {
+    const actual = await vi.importActual<typeof import('child_process')>('child_process');
+    return {
+        ...actual,
+        spawnSync: vi.fn().mockReturnValue({
+            status: 0,
+            stdout: '',
+            stderr: '',
+        }),
+    };
 });
 
-// Monkey patch spawnSync
-(child_process as any).spawnSync = (...args: any[]) => {
-    if (mockSpawnSync) {
-        return mockSpawnSync(...args);
-    }
-    return originalSpawnSync(...(args as [string, string[], any]));
-};
+describe('Comms Tools', () => {
+    let handleMessageList: typeof import('./comms_tools').handleMessageList;
+    let handleMessageSend: typeof import('./comms_tools').handleMessageSend;
+    let spawnSyncMock: ReturnType<typeof vi.fn>;
+    let originalEnv: NodeJS.ProcessEnv;
 
-function runTests() {
-    console.log('Running comms_tools tests...');
-    let failures = 0;
+    beforeEach(async () => {
+        originalEnv = { ...process.env };
 
-    // Helper to reset mocks
-    const reset = () => {
-        mockSpawnSync = null;
-        mockPlatform = 'darwin';
-    };
+        // Import the module fresh for each test
+        vi.resetModules();
+        const commsModule = await import('./comms_tools');
+        handleMessageList = commsModule.handleMessageList;
+        handleMessageSend = commsModule.handleMessageSend;
 
-    // Test 1: handleMessageList on non-macOS
-    try {
-        reset();
-        mockPlatform = 'linux';
-        const result = handleMessageList({ limit: 5 }, mockContext);
-        assert.equal(result.ok, false);
-        assert.ok(result.error?.message.includes('macOS'));
-        console.log('PASS: handleMessageList on non-macOS');
-    } catch (e: any) {
-        console.error('FAIL: handleMessageList on non-macOS', e.message);
-        failures++;
-    }
+        const childProcess = await import('child_process');
+        spawnSyncMock = childProcess.spawnSync as ReturnType<typeof vi.fn>;
+    });
 
-    // Test 2: handleMessageList on macOS (Success)
-    try {
-        reset();
-        mockPlatform = 'darwin';
-        mockSpawnSync = (cmd: string, args: string[]) => {
-            if (cmd === 'sqlite3') {
-                // Verify args
-                assert.ok(args.includes(process.env.HOME + '/Library/Messages/chat.db'));
-                return {
-                    status: 0,
-                    stdout: JSON.stringify([
-                        {
-                            text: 'Hello',
-                            date: 725846400000000000,
-                            is_from_me: 1,
-                            id: '+1234567890',
-                        },
-                        {
-                            text: 'Hi back',
-                            date: 725846500000000000,
-                            is_from_me: 0,
-                            id: '+1234567890',
-                        },
-                    ]),
-                    stderr: '',
-                };
-            }
-            return { status: 1, error: new Error('Unknown command') };
-        };
+    afterEach(() => {
+        vi.restoreAllMocks();
+        process.env = originalEnv;
+    });
 
-        const result = handleMessageList({ limit: 2 }, mockContext);
-        assert.equal(result.ok, true);
-        const messages = result.result as Array<{ body: string; from: string }>;
-        assert.equal(messages.length, 2);
-        assert.equal(messages[0].body, 'Hello');
-        assert.equal(messages[0].from, 'me');
-        assert.equal(messages[1].from, '+1234567890');
-        console.log('PASS: handleMessageList on macOS');
-    } catch (e: any) {
-        console.error('FAIL: handleMessageList on macOS', e.message);
-        failures++;
-    }
+    const createMockContext = (): ExecutorContext =>
+        ({
+            paths: {
+                resolve: (p: string) => p,
+                assertAllowed: () => {},
+                resolveAllowed: (p: string) => p,
+            },
+            commands: {
+                runAllowed: () => ({ ok: true, result: '' }),
+            },
+            permissions: {
+                allow_commands: ['osascript'],
+                allow_paths: [],
+            },
+            readJsonl: () => [],
+            appendJsonl: () => {},
+            messagesPath: '/tmp/messages.jsonl',
+            emailsPath: '/tmp/emails.jsonl',
+        }) as unknown as ExecutorContext;
 
-    // Test 3: handleMessageSend on non-macOS
-    try {
-        reset();
-        mockPlatform = 'linux';
-        const result = handleMessageSend({ to: '123', body: 'test' }, mockContext);
-        assert.equal(result.ok, false);
-        assert.ok(result.error?.message.includes('macOS'));
-        console.log('PASS: handleMessageSend on non-macOS');
-    } catch (e: any) {
-        console.error('FAIL: handleMessageSend on non-macOS', e.message);
-        failures++;
-    }
+    describe('handleMessageList', () => {
+        it('should return messages from JSONL', () => {
+            const mockMessages = [
+                { to: 'alice', body: 'hello', ts: '2024-01-01T00:00:00Z' },
+                { to: 'bob', body: 'world', ts: '2024-01-02T00:00:00Z' },
+            ];
+            const mockContext = {
+                ...createMockContext(),
+                readJsonl: () => mockMessages,
+            } as unknown as ExecutorContext;
 
-    // Test 4: handleMessageSend on macOS (Success)
-    try {
-        reset();
-        mockPlatform = 'darwin';
-        let capturedArgs: string[] = [];
-        mockSpawnSync = (cmd: string, args: string[]) => {
-            if (cmd === 'osascript') {
-                capturedArgs = args;
-                return { status: 0, stdout: '', stderr: '' };
-            }
-            return { status: 1 };
-        };
+            const result = handleMessageList({ limit: 5 }, mockContext);
 
-        const result = handleMessageSend({ to: '+15551234', body: 'Hello world' }, mockContext);
-        assert.equal(result.ok, true);
-        assert.ok(capturedArgs[1].includes('tell application "Messages"'));
-        assert.ok(capturedArgs[1].includes('send "Hello world" to buddy "+15551234"'));
-        console.log('PASS: handleMessageSend on macOS');
-    } catch (e: any) {
-        console.error('FAIL: handleMessageSend on macOS', e.message);
-        failures++;
-    }
+            expect(result.ok).toBe(true);
+            expect(Array.isArray(result.result)).toBe(true);
+        });
 
-    // Restore original platform just in case
-    Object.defineProperty(process, 'platform', { get: () => originalPlatform });
+        it('should limit results', () => {
+            const mockMessages = [
+                { to: 'a', body: '1', ts: '2024-01-01T00:00:00Z' },
+                { to: 'b', body: '2', ts: '2024-01-02T00:00:00Z' },
+                { to: 'c', body: '3', ts: '2024-01-03T00:00:00Z' },
+            ];
+            const mockContext = {
+                ...createMockContext(),
+                readJsonl: () => mockMessages,
+            } as unknown as ExecutorContext;
 
-    if (failures > 0) {
-        console.error(`\n${failures} tests failed.`);
-        process.exit(1);
-    } else {
-        console.log('\nAll tests passed.');
-    }
-}
+            const result = handleMessageList({ limit: 2 }, mockContext);
 
-runTests();
+            expect(result.ok).toBe(true);
+            expect((result.result as unknown[]).length).toBe(2);
+        });
+    });
+
+    describe('handleMessageSend', () => {
+        it('should fail on non-macOS (using env override)', () => {
+            process.env._TEST_PLATFORM_OVERRIDE = 'linux';
+
+            const mockContext = createMockContext();
+            const result = handleMessageSend({ to: '123', body: 'test' }, mockContext);
+
+            expect(result.ok).toBe(false);
+            expect(result.error?.message).toContain('macOS');
+        });
+
+        it('should succeed on macOS (using env override)', () => {
+            process.env._TEST_PLATFORM_OVERRIDE = 'darwin';
+
+            spawnSyncMock.mockReturnValue({
+                status: 0,
+                stdout: '',
+                stderr: '',
+            });
+
+            const mockContext = createMockContext();
+            const result = handleMessageSend({ to: '+15551234', body: 'Hello world' }, mockContext);
+
+            expect(result.ok).toBe(true);
+            expect((result.result as { message: string })?.message).toContain('via iMessage');
+        });
+
+        it('should fail if osascript is not in allowlist', () => {
+            process.env._TEST_PLATFORM_OVERRIDE = 'darwin';
+
+            const mockContext = {
+                ...createMockContext(),
+                permissions: {
+                    allow_commands: [], // osascript not allowed
+                    allow_paths: [],
+                },
+            } as unknown as ExecutorContext;
+
+            const result = handleMessageSend({ to: '123', body: 'test' }, mockContext);
+
+            expect(result.ok).toBe(false);
+            expect(result.error?.code).toBe('DENIED_COMMAND_ALLOWLIST');
+        });
+    });
+});

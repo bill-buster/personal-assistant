@@ -23,26 +23,28 @@
  */
 
 import * as fs from 'node:fs';
-import * as path from 'node:path';
 import * as os from 'node:os';
+import * as path from 'node:path';
+import type { CLIResult, ResolvedConfig, ToolResult } from '../core';
 import {
     Executor,
-    printResult,
-    setHumanMode,
-    parseArgs,
-    getPackageVersion,
     FileCache,
     TestCache,
-    loadAllPlugins,
     generateCorrelationId,
+    getPackageVersion,
+    isRouteError,
+    isRouteReply,
+    isRouteToolCall,
+    loadAllPlugins,
+    parseArgs,
+    printResult,
+    setHumanMode,
 } from '../core';
 import { CursorCommandLogger } from '../core/cursor_command_log';
-import type { ToolResult, CLIResult, ResolvedConfig } from '../core';
-import { route } from './router';
-import { isRouteError, isRouteToolCall, isRouteReply } from '../core';
 import { SAFE_TOOLS } from '../core/types';
-import { initializeRuntime } from '../runtime';
 import type { Runtime } from '../runtime';
+import { initializeRuntime } from '../runtime';
+import { route } from './router';
 
 /**
  * Convert executor ToolResult to CLI-friendly format
@@ -717,7 +719,7 @@ async function handleCursorEval(
 
 function handleCache(
     subcommand: string | null,
-    flags: Record<string, string | boolean>
+    _flags: Record<string, string | boolean>
 ): CLIResult {
     switch (subcommand) {
         case 'clear': {
@@ -757,7 +759,7 @@ function handleCache(
 function handleGenerate(
     subcommand: string | null,
     args: string[],
-    flags: Record<string, string | boolean>
+    _flags: Record<string, string | boolean>
 ): CLIResult {
     const { spawnSync } = require('node:child_process');
 
@@ -864,7 +866,7 @@ async function handleProfile(
 
     if (isRouteToolCall(routed)) {
         const execStart = Date.now();
-        const execResult = await runtime.executor.execute(
+        const _execResult = await runtime.executor.execute(
             routed.tool_call.tool_name,
             routed.tool_call.args
         );
@@ -908,9 +910,9 @@ async function handleProfile(
     };
 }
 
-function handlePlugins(
+function _handlePlugins(
     subcommand: string | null,
-    flags: Record<string, string | boolean>
+    _flags: Record<string, string | boolean>
 ): CLIResult {
     switch (subcommand) {
         case 'list': {

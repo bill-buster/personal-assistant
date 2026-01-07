@@ -46,7 +46,7 @@
         "review:reset": "npm run build && node dist/scripts/incremental_review.js --reset",
         "review:eslint": "npm run build && node dist/scripts/eslint_review.js",
         "review:compare": "./scripts/compare_reviews.sh",
-        "eval": "npm run build && node dist/evals/run_eval.js",
+        "eval": "npm run build && node dist/evals/run_eval.js src/evals/routing_accuracy.jsonl",
         "eval:e2e": "npm run build && node dist/scripts/e2e_eval.js",
         "eval:debug": "npm run build && node dist/scripts/e2e_eval_debug.js",
         "bench": "npm run build && node dist/benchmarks/executor_bench.js",
