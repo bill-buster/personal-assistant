@@ -12,7 +12,6 @@ import {
     RecallArgs,
     MemoryAddArgs,
     MemorySearchArgs,
-    MemoryEntry,
 } from '../core/types';
 
 /**
