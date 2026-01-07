@@ -10,12 +10,11 @@
         "build": "tsc",
         "build:watch": "tsc --watch --preserveWatchOutput",
         "clean": "rm -rf dist coverage .tmp .cache .test-results *.prof *.profraw *.cpuprofile *.heapsnapshot",
-        "test": "npm run build && TEST_DIST=1 node --max-old-space-size=256 dist/run_tests.js",
-        "test:single": "npm run build && TEST_DIST=1 node --max-old-space-size=256 dist/run_tests.js",
-        "test:parallel": "npm run build && TEST_DIST=1 TEST_PARALLEL=1 node --max-old-space-size=256 dist/run_tests.js",
-        "test:sequential": "npm run build && TEST_DIST=1 TEST_PARALLEL=0 node --max-old-space-size=256 dist/run_tests.js",
-        "test:watch": "npm run build:watch & nodemon --watch dist --ext js --exec 'TEST_DIST=1 node dist/run_tests.js'",
-        "test:coverage": "npm run build && c8 --reporter=text --reporter=html --reporter=lcov npm test",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "test:ui": "vitest --ui",
+        "test:coverage": "vitest run --coverage",
+        "test:legacy": "npm run build && TEST_DIST=1 node --max-old-space-size=256 dist/run_tests.js",
         "test:coverage:open": "npm run test:coverage && open coverage/index.html",
         "test:coverage:report": "npm run build && npm run test:coverage && node dist/scripts/test_coverage_report.js",
         "test:e2e": "npm run build && TEST_DIST=1 node dist/app/cli_e2e.test.js",
@@ -48,6 +47,8 @@
         "review:eslint": "npm run build && node dist/scripts/eslint_review.js",
         "review:compare": "./scripts/compare_reviews.sh",
         "eval": "npm run build && node dist/evals/run_eval.js",
+        "eval:e2e": "npm run build && node dist/scripts/e2e_eval.js",
+        "eval:debug": "npm run build && node dist/scripts/e2e_eval_debug.js",
         "bench": "npm run build && node dist/benchmarks/executor_bench.js",
         "profile": "npm run build && node --prof dist/app/cli.js demo",
         "profile:analyze": "node --prof-process isolate-*.log > profile.txt && cat profile.txt",
@@ -90,7 +91,8 @@
         "semantic-release": "^25.0.2",
         "typedoc": "^0.28.15",
         "typescript": "^5.9.3",
-        "typescript-eslint": "^8.0.0"
+        "typescript-eslint": "^8.0.0",
+        "vitest": "^4.0.16"
     },
     "dependencies": {
         "zod": "^4.3.4"
