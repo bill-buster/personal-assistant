@@ -11,6 +11,11 @@ import * as readline from 'node:readline';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
+
+/** Helper to check if readline is closed (avoids any cast) */
+function isRlClosed(rl: readline.Interface): boolean {
+    return (rl as unknown as { closed?: boolean }).closed === true;
+}
 import { route } from './router';
 import { isRouteError, isRouteToolCall } from '../core';
 import { saveConfig } from '../core';
@@ -105,13 +110,13 @@ export async function startRepl(options: { verbose?: boolean; stream?: boolean }
             HISTORY.length = 0;
             updatePrompt(); // Reset prompt
             console.log('[System] Reset to Supervisor.');
-            if (!(rl as any).closed) rl.prompt();
+            if (!isRlClosed(rl)) rl.prompt();
             return;
         }
 
         if (input === '/stats') {
             showStats(stats);
-            if (!(rl as any).closed) rl.prompt();
+            if (!isRlClosed(rl)) rl.prompt();
             return;
         }
 
@@ -124,7 +129,7 @@ export async function startRepl(options: { verbose?: boolean; stream?: boolean }
             } else {
                 console.error(`[Error] ${result.error}`);
             }
-            if (!(rl as any).closed) rl.prompt();
+            if (!isRlClosed(rl)) rl.prompt();
             return;
         }
 
@@ -146,7 +151,7 @@ export async function startRepl(options: { verbose?: boolean; stream?: boolean }
                     console.error(`[Error] ${result.error}`);
                 }
             }
-            if (!(rl as any).closed) rl.prompt();
+            if (!isRlClosed(rl)) rl.prompt();
             return;
         }
 
@@ -162,19 +167,19 @@ export async function startRepl(options: { verbose?: boolean; stream?: boolean }
                 }
                 console.log('');
             }
-            if (!(rl as any).closed) rl.prompt();
+            if (!isRlClosed(rl)) rl.prompt();
             return;
         }
 
         if (input === '/tools') {
             showTools(currentAgent);
-            if (!(rl as any).closed) rl.prompt();
+            if (!isRlClosed(rl)) rl.prompt();
             return;
         }
 
         if (input.startsWith('/')) {
             await handleCommand(input);
-            if (!(rl as any).closed) rl.prompt();
+            if (!isRlClosed(rl)) rl.prompt();
             return;
         }
 
@@ -241,7 +246,7 @@ export async function startRepl(options: { verbose?: boolean; stream?: boolean }
                 }
             }
 
-            if (!(rl as any).closed) rl.prompt();
+            if (!isRlClosed(rl)) rl.prompt();
             return;
         }
 
@@ -427,8 +432,9 @@ export async function startRepl(options: { verbose?: boolean; stream?: boolean }
                             }
                             process.stdout.write('\n');
                             HISTORY.push({ role: 'assistant', content: fullContent });
-                        } catch (err: any) {
-                            console.error(`\n[Stream Error] ${err.message}`);
+                        } catch (err: unknown) {
+                            const message = err instanceof Error ? err.message : String(err);
+                            console.error(`\n[Stream Error] ${message}`);
                             // Fallback to non-streamed reply
                             console.log(`[${currentAgent.name}] ${result.reply.content}`);
                             HISTORY.push({ role: 'assistant', content: result.reply.content });
@@ -499,12 +505,13 @@ export async function startRepl(options: { verbose?: boolean; stream?: boolean }
                 } else {
                     break;
                 }
-            } catch (e: any) {
-                console.error('Error:', e.message);
+            } catch (e: unknown) {
+                const message = e instanceof Error ? e.message : String(e);
+                console.error('Error:', message);
                 break;
             }
         }
-        if (!(rl as any).closed) rl.prompt();
+        if (!isRlClosed(rl)) rl.prompt();
     };
 
     rl.on('line', line => processInput(line.trim()));
@@ -546,10 +553,10 @@ function showStats(stats: SessionStats) {
  */
 function handleDelegation(
     toolName: string,
-    args: any
+    args: Record<string, unknown>
 ): { switched: boolean; input: string | null; newAgent?: Agent } {
     if (toolName === 'delegate_to_coder') {
-        const task = args.task;
+        const task = args.task as string;
         console.log(`[System] Switching to Coder for: "${task}"`);
         return {
             switched: true,
@@ -559,7 +566,7 @@ function handleDelegation(
     }
 
     if (toolName === 'delegate_to_organizer') {
-        const task = args.task;
+        const task = args.task as string;
         console.log(`[System] Switching to Organizer for: "${task}"`);
         return {
             switched: true,
@@ -569,7 +576,7 @@ function handleDelegation(
     }
 
     if (toolName === 'delegate_to_assistant') {
-        const task = args.task;
+        const task = args.task as string;
         console.log(`[System] Switching to Assistant for: "${task}"`);
         return {
             switched: true,
@@ -774,8 +781,9 @@ function saveSession(
 
         fs.writeFileSync(filePath, JSON.stringify(session, null, 2), 'utf8');
         return { ok: true };
-    } catch (e: any) {
-        return { ok: false, error: e.message };
+    } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : String(e);
+        return { ok: false, error: message };
     }
 }
 
@@ -792,8 +800,9 @@ function loadSession(name: string): { ok: boolean; session?: Session; error?: st
         const data = fs.readFileSync(filePath, 'utf8');
         const session = JSON.parse(data) as Session;
         return { ok: true, session };
-    } catch (e: any) {
-        return { ok: false, error: e.message };
+    } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : String(e);
+        return { ok: false, error: message };
     }
 }
 

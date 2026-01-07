@@ -43,7 +43,7 @@ function readStdin(): Promise<string> {
 function jsonResult(
     ok: boolean,
     toolName: string | null | undefined,
-    result: any,
+    result: unknown,
     error: ToolError | null | undefined,
     debug: DebugInfo | null
 ): string {
@@ -72,7 +72,7 @@ function exitCodeForError(error: ToolError | null | undefined): number {
 function writeResult(
     ok: boolean,
     toolName: string | null | undefined,
-    result: any,
+    result: unknown,
     error: ToolError | null | undefined,
     debug: DebugInfo | null
 ): void {
@@ -225,12 +225,13 @@ export async function runCLI() {
     let input = '';
     try {
         input = (await readStdin()).trim();
-    } catch (err: any) {
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
         writeResult(
             false,
             null,
             null,
-            makeError('EXEC_ERROR', `Failed to read stdin: ${err.message}`),
+            makeError('EXEC_ERROR', `Failed to read stdin: ${message}`),
             makeDebug({
                 path: 'tool_json',
                 start,

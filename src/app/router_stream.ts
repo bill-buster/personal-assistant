@@ -46,9 +46,10 @@ export async function* streamReply(
 
     try {
         yield* provider.completeStream(input, history, verbose, finalSystemPrompt);
-    } catch (err: any) {
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Streaming failed';
         yield {
-            content: `\n[Error] ${err.message || 'Streaming failed'}`,
+            content: `\n[Error] ${message}`,
             done: true,
         };
     }

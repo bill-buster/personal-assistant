@@ -108,13 +108,13 @@ async function handleAPI(
     res.setHeader('Content-Type', 'application/json');
 
     // Parse body for POST requests
-    let body: any = {};
+    let body: Record<string, unknown> = {};
     if (req.method === 'POST') {
         body = await parseBody(req);
     }
 
     try {
-        let result: any;
+        let result: unknown;
 
         switch (pathname) {
             case '/api/tasks':
@@ -153,13 +153,14 @@ async function handleAPI(
 
         res.writeHead(200);
         res.end(JSON.stringify(result));
-    } catch (err: any) {
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
         res.writeHead(500);
-        res.end(JSON.stringify({ ok: false, error: err.message }));
+        res.end(JSON.stringify({ ok: false, error: message }));
     }
 }
 
-function parseBody(req: http.IncomingMessage): Promise<any> {
+function parseBody(req: http.IncomingMessage): Promise<Record<string, unknown>> {
     return new Promise(resolve => {
         let data = '';
         req.on('data', chunk => (data += chunk));

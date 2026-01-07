@@ -25,7 +25,7 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import type { CLIResult, ResolvedConfig, ToolResult } from '../core';
+import type { CLIResult, ResolvedConfig, RouteResult, ToolResult } from '../core';
 import {
     Executor,
     FileCache,
@@ -289,7 +289,7 @@ async function routeAndExecute(
             runtime.config
         );
 
-        let toolResult: any = undefined;
+        let toolResult: ToolResult | undefined = undefined;
 
         if (isRouteError(routed)) {
             // Log command with routing error
@@ -329,10 +329,11 @@ async function routeAndExecute(
             });
             return { ok: false, error: 'Router did not return a tool call or reply' };
         }
-    } catch (err: any) {
+    } catch (err: unknown) {
         // Log command with exception
-        const errorRouteResult: any = {
-            error: err.message || 'Routing failed',
+        const message = err instanceof Error ? err.message : 'Routing failed';
+        const errorRouteResult = {
+            error: message,
             _debug: {
                 path: 'exception',
                 duration_ms: null,
@@ -340,12 +341,18 @@ async function routeAndExecute(
                 memory_read: false,
                 memory_write: false,
             },
-        };
-        runtime.commandLogger.logCommand(correlationId, input, errorRouteResult, undefined, {
-            intent: 'spike',
-            agent: runtime.defaultAgent?.name,
-        });
-        return { ok: false, error: err.message || 'Routing failed' };
+        } as const;
+        runtime.commandLogger.logCommand(
+            correlationId,
+            input,
+            errorRouteResult as unknown as RouteResult,
+            undefined,
+            {
+                intent: 'spike',
+                agent: runtime.defaultAgent?.name,
+            }
+        );
+        return { ok: false, error: message };
     }
 }
 
@@ -500,8 +507,9 @@ function handleAudit(flags: Record<string, string | boolean>, config: ResolvedCo
             .filter(Boolean);
 
         return { ok: true, result: { count: entries.length, entries } };
-    } catch (e: any) {
-        return { ok: false, error: `Failed to read audit log: ${e.message}` };
+    } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : String(e);
+        return { ok: false, error: `Failed to read audit log: ${message}` };
     }
 }
 
@@ -605,8 +613,9 @@ function handleLogs(
                 error: 'Usage: assistant logs [recent|stats|errors] [--limit N] [--category CAT] [--tool TOOL] [--outcome success|error|partial] [--stats]',
             };
         }
-    } catch (e: any) {
-        return { ok: false, error: `Failed to read command logs: ${e.message}` };
+    } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : String(e);
+        return { ok: false, error: `Failed to read command logs: ${message}` };
     }
 }
 
@@ -693,8 +702,9 @@ function handleCursor(
                 error: 'Usage: assistant cursor [recent|stats|errors] [--limit N] [--category CAT] [--command CMD] [--stats]',
             };
         }
-    } catch (e: any) {
-        return { ok: false, error: `Failed to read cursor command logs: ${e.message}` };
+    } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : String(e);
+        return { ok: false, error: `Failed to read cursor command logs: ${message}` };
     }
 }
 
@@ -712,8 +722,9 @@ async function handleCursorEval(
         });
 
         return toCliResult(result);
-    } catch (e: any) {
-        return { ok: false, error: `Failed to evaluate cursor commands: ${e.message}` };
+    } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : String(e);
+        return { ok: false, error: `Failed to evaluate cursor commands: ${message}` };
     }
 }
 
@@ -973,7 +984,7 @@ async function handleExplain(
         runtime.config
     );
 
-    const explanation: any = {
+    const explanation: Record<string, unknown> = {
         input,
         routing_result: {
             stage: isRouteError(routed) ? 'error' : routed._debug?.path || 'unknown',

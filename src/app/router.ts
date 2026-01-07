@@ -17,7 +17,7 @@ import {
     parseArgs,
     resolveConfig,
 } from '../core';
-import type { RouteReply, RouteResult, RouteToolCall } from '../core/types';
+import type { RouteReply, RouteResult, RouteToolCall, ToolResult } from '../core/types';
 import { SAFE_TOOLS } from '../core/types';
 import {
     parseHeuristicCommand,
@@ -672,11 +672,12 @@ export async function route(
                 console.error(`[LLM Error] ${errorMsg}`);
                 if (history.length > 0) return { error: errorMsg, code: 2 };
             }
-        } catch (err: any) {
-            console.error('LLM Error:', err.message); // Log it
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            console.error('LLM Error:', message); // Log it
             if (history.length > 0) {
                 // In agent loop, failure is fatal
-                return { error: `LLM Error: ${err.message}`, code: 2 };
+                return { error: `LLM Error: ${message}`, code: 2 };
             }
         }
     }
@@ -709,7 +710,7 @@ export async function route(
 function success(
     intent: string,
     tool: string,
-    args: any,
+    args: Record<string, unknown>,
     path: string,
     start: number
 ): RouteToolCall {
@@ -806,7 +807,7 @@ if (require.main === module) {
                 resolvedConfig
             );
 
-            let toolResult: any = undefined;
+            let toolResult: ToolResult | undefined = undefined;
 
             if ('error' in result) {
                 // Log command with routing error
