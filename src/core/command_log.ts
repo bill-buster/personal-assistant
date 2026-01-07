@@ -145,7 +145,7 @@ export class CommandLogger {
 
             // Write to log file
             fs.appendFileSync(this.logPath, JSON.stringify(finalEntry) + '\n', 'utf8');
-        } catch (_err) {
+        } catch {
             // Silently ignore logging failures to not break execution
             // Could optionally log to stderr in development
         }
@@ -229,7 +229,7 @@ export class CommandLogger {
             entries.sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
 
             return limit ? entries.slice(0, limit) : entries;
-        } catch (_err) {
+        } catch {
             return [];
         }
     }

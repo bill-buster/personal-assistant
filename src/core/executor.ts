@@ -174,7 +174,7 @@ export class Executor {
                 return null;
             }
             return canonical;
-        } catch (_err) {
+        } catch {
             // Path doesn't exist yet (e.g., for write operations) - return resolved
             // but verify parent directory is within baseDir
             const parentDir = path.dirname(resolved);
@@ -697,7 +697,7 @@ export class Executor {
         // Handle spawn failures (ENOENT, etc.)
         // spawnSync returns result.error when command cannot be spawned
         if (result.error) {
-            const err = result.error as any; // Error may have code property
+            const err = result.error as { code?: string; message?: string };
             const errorCode = err.code || '';
             let errorMsg = err.message || 'Unknown spawn error';
 

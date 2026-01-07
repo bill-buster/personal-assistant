@@ -19,7 +19,7 @@ function isRlClosed(rl: readline.Interface): boolean {
 import { route } from './router';
 import { isRouteError, isRouteToolCall } from '../core';
 import { saveConfig } from '../core';
-import type { AppConfig, Message, Agent } from '../core';
+import type { AppConfig, Message, Agent, ToolSpec } from '../core';
 import { AGENTS } from '../agents';
 import { Dispatcher } from '../dispatcher';
 import { initializeRuntime, TOOL_SCHEMAS } from '../runtime';
@@ -608,8 +608,8 @@ function showTools(currentAgent: Agent) {
     const agentTools = new Set(currentAgent.tools);
 
     // Group tools by status
-    const readyTools: Array<[string, any]> = [];
-    const experimentalTools: Array<[string, any]> = [];
+    const readyTools: Array<[string, ToolSpec]> = [];
+    const experimentalTools: Array<[string, ToolSpec]> = [];
 
     for (const [name, spec] of Object.entries(TOOL_SCHEMAS)) {
         if (!agentTools.has(name)) continue;
@@ -624,8 +624,8 @@ function showTools(currentAgent: Agent) {
     if (readyTools.length > 0) {
         console.log('\n✅ Ready:');
         for (const [name, spec] of readyTools) {
-            const desc =
-                spec.description.substring(0, 50) + (spec.description.length > 50 ? '...' : '');
+            const description = spec.description || '';
+            const desc = description.substring(0, 50) + (description.length > 50 ? '...' : '');
             console.log(`  ${name.padEnd(22)} ${desc}`);
         }
     }
@@ -633,7 +633,8 @@ function showTools(currentAgent: Agent) {
     if (experimentalTools.length > 0) {
         console.log('\n⚠️  Experimental:');
         for (const [name, spec] of experimentalTools) {
-            const desc = spec.description.replace('[EXPERIMENTAL] ', '').substring(0, 45);
+            const description = spec.description || '';
+            const desc = description.replace('[EXPERIMENTAL] ', '').substring(0, 45);
             console.log(`  ${name.padEnd(22)} ${desc}`);
         }
     }
