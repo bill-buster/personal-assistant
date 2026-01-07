@@ -90,7 +90,7 @@ export class CursorCommandLogger {
             };
 
             fs.appendFileSync(this.logPath, JSON.stringify(entry) + '\n', 'utf8');
-        } catch (err) {
+        } catch (_err) {
             // Silently ignore logging failures
         }
     }
@@ -124,7 +124,7 @@ export class CursorCommandLogger {
             entries.sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
 
             return limit ? entries.slice(0, limit) : entries;
-        } catch (err) {
+        } catch (_err) {
             return [];
         }
     }

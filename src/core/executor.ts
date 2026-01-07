@@ -174,7 +174,7 @@ export class Executor {
                 return null;
             }
             return canonical;
-        } catch (err) {
+        } catch (_err) {
             // Path doesn't exist yet (e.g., for write operations) - return resolved
             // but verify parent directory is within baseDir
             const parentDir = path.dirname(resolved);
@@ -488,8 +488,9 @@ export class Executor {
 
                 // Add current directory entry
                 entries.push({ path: dirPath, size: totalSize });
-            } catch (err: any) {
-                throw new Error(`Cannot access ${dirPath}: ${err.message}`);
+            } catch (err: unknown) {
+                const message = err instanceof Error ? err.message : String(err);
+                throw new Error(`Cannot access ${dirPath}: ${message}`);
             }
 
             return { size: totalSize, entries };
@@ -562,7 +563,7 @@ export class Executor {
             });
         };
 
-        const getIndicator = (stat: fs.Stats, name: string): string => {
+        const getIndicator = (stat: fs.Stats, _name: string): string => {
             if (!showIndicator) return '';
             if (stat.isDirectory()) return '/';
             if (stat.isSymbolicLink()) return '@';
@@ -570,7 +571,7 @@ export class Executor {
             return '';
         };
 
-        const formatLongLine = (name: string, stat: fs.Stats, fullPath: string): string => {
+        const formatLongLine = (name: string, stat: fs.Stats, _fullPath: string): string => {
             const mode = stat.mode.toString(8).slice(-3);
             const size = formatSize(stat.size);
             const date = formatDate(stat.mtime);
@@ -634,8 +635,9 @@ export class Executor {
                         lines.push(...subLines);
                     }
                 }
-            } catch (err: any) {
-                throw new Error(`Cannot read directory ${dirPath}: ${err.message}`);
+            } catch (err: unknown) {
+                const message = err instanceof Error ? err.message : String(err);
+                throw new Error(`Cannot read directory ${dirPath}: ${message}`);
             }
             return lines;
         };
@@ -663,8 +665,9 @@ export class Executor {
                         allLines.push(''); // Blank line between directories
                     }
                 }
-            } catch (err: any) {
-                throw new Error(`Cannot access ${dirPath}: ${err.message}`);
+            } catch (err: unknown) {
+                const message = err instanceof Error ? err.message : String(err);
+                throw new Error(`Cannot access ${dirPath}: ${message}`);
             }
         }
 
@@ -854,8 +857,9 @@ export class Executor {
             try {
                 const result = this.listDirectory(targetPaths, flags);
                 return { ok: true, result };
-            } catch (err: any) {
-                return { ok: false, error: err.message || 'ls failed' };
+            } catch (err: unknown) {
+                const message = err instanceof Error ? err.message : 'ls failed';
+                return { ok: false, error: message };
             }
         }
         if (cmd === 'pwd') {
@@ -863,8 +867,9 @@ export class Executor {
                 // Use process.cwd() instead of spawning pwd command
                 const cwd = process.cwd();
                 return { ok: true, result: cwd };
-            } catch (err: any) {
-                return { ok: false, error: err.message || 'pwd failed' };
+            } catch (err: unknown) {
+                const message = err instanceof Error ? err.message : 'pwd failed';
+                return { ok: false, error: message };
             }
         }
         if (cmd === 'cat') {
@@ -928,8 +933,9 @@ export class Executor {
                 // Use fs.readFileSync instead of spawning cat command
                 const content = fs.readFileSync(safePath, 'utf8');
                 return { ok: true, result: content };
-            } catch (err: any) {
-                return { ok: false, error: err.message || 'cat failed' };
+            } catch (err: unknown) {
+                const message = err instanceof Error ? err.message : 'cat failed';
+                return { ok: false, error: message };
             }
         }
         if (cmd === 'du') {
@@ -1028,8 +1034,9 @@ export class Executor {
                     threshold: threshold ?? undefined,
                 });
                 return { ok: true, result };
-            } catch (err: any) {
-                return { ok: false, error: err.message || 'du failed' };
+            } catch (err: unknown) {
+                const message = err instanceof Error ? err.message : 'du failed';
+                return { ok: false, error: message };
             }
         }
 

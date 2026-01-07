@@ -6,16 +6,8 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import type {
-    RouteResult,
-    RouteError,
-    RouteToolCall,
-    RouteReply,
-    ToolResult,
-    DebugInfo,
-} from './types';
+import type { RouteResult, ToolResult } from './types';
 import { isRouteError, isRouteToolCall, isRouteReply } from './types';
-import { nowMs } from './index';
 
 export interface CommandLogEntry {
     ts: string;
@@ -153,7 +145,7 @@ export class CommandLogger {
 
             // Write to log file
             fs.appendFileSync(this.logPath, JSON.stringify(finalEntry) + '\n', 'utf8');
-        } catch (err) {
+        } catch (_err) {
             // Silently ignore logging failures to not break execution
             // Could optionally log to stderr in development
         }
@@ -237,7 +229,7 @@ export class CommandLogger {
             entries.sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
 
             return limit ? entries.slice(0, limit) : entries;
-        } catch (err) {
+        } catch (_err) {
             return [];
         }
     }

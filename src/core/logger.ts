@@ -53,7 +53,7 @@ export function generateCorrelationId(): string {
  * @param msg - The log message.
  * @param data - Optional additional data to log.
  */
-export function log(level: LogLevel, msg: string, data?: Record<string, any>): void {
+export function log(level: LogLevel, msg: string, data?: Record<string, unknown>): void {
     if (level < currentLevel) return;
 
     const entry: LogEntry = {
@@ -92,25 +92,25 @@ export function log(level: LogLevel, msg: string, data?: Record<string, any>): v
  * Logger object with convenience methods for each log level.
  */
 export const logger = {
-    debug: (msg: string, data?: Record<string, any>): void => log(LogLevel.DEBUG, msg, data),
-    info: (msg: string, data?: Record<string, any>): void => log(LogLevel.INFO, msg, data),
-    warn: (msg: string, data?: Record<string, any>): void => log(LogLevel.WARN, msg, data),
-    error: (msg: string, data?: Record<string, any>): void => log(LogLevel.ERROR, msg, data),
+    debug: (msg: string, data?: Record<string, unknown>): void => log(LogLevel.DEBUG, msg, data),
+    info: (msg: string, data?: Record<string, unknown>): void => log(LogLevel.INFO, msg, data),
+    warn: (msg: string, data?: Record<string, unknown>): void => log(LogLevel.WARN, msg, data),
+    error: (msg: string, data?: Record<string, unknown>): void => log(LogLevel.ERROR, msg, data),
 };
 
 /**
  * Create a child logger with preset context (e.g., correlationId).
  * Useful for maintaining context across a request.
  */
-export function createChildLogger(baseContext: Record<string, any>) {
+export function createChildLogger(baseContext: Record<string, unknown>) {
     return {
-        debug: (msg: string, data?: Record<string, any>): void =>
+        debug: (msg: string, data?: Record<string, unknown>): void =>
             log(LogLevel.DEBUG, msg, { ...baseContext, ...data }),
-        info: (msg: string, data?: Record<string, any>): void =>
+        info: (msg: string, data?: Record<string, unknown>): void =>
             log(LogLevel.INFO, msg, { ...baseContext, ...data }),
-        warn: (msg: string, data?: Record<string, any>): void =>
+        warn: (msg: string, data?: Record<string, unknown>): void =>
             log(LogLevel.WARN, msg, { ...baseContext, ...data }),
-        error: (msg: string, data?: Record<string, any>): void =>
+        error: (msg: string, data?: Record<string, unknown>): void =>
             log(LogLevel.ERROR, msg, { ...baseContext, ...data }),
     };
 }
