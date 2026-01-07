@@ -1,0 +1,1 @@
+{"allow_paths":["./test-write.txt"],"require_confirmation_for":["write_file"]}
