@@ -21,7 +21,7 @@
  * @module llm/openai_compatible
  */
 
-import { request as httpRequest } from 'node:http';
+import { request as httpRequest, IncomingMessage } from 'node:http';
 import { request as httpsRequest } from 'node:https';
 import { URL } from 'node:url';
 import { LLMProvider, CompletionResult, StreamChunk } from './provider';
@@ -30,9 +30,24 @@ import { formatToolsCompact } from '../../tools/compact';
 import { withRetry } from './retry';
 import { validateToolCall } from '../../core/tool_contract';
 
-type FetchLike = (url: string, options?: any) => Promise<any>;
+interface FetchOptions {
+    method?: string;
+    headers?: Record<string, string>;
+    body?: string;
+    signal?: AbortSignal;
+}
 
-function fetchFallback(url: string, options: any): Promise<any> {
+interface FetchResponse {
+    ok: boolean;
+    status: number;
+    statusText?: string;
+    text: () => Promise<string>;
+    json: () => Promise<unknown>;
+}
+
+type FetchLike = (url: string, options?: FetchOptions) => Promise<FetchResponse>;
+
+function fetchFallback(url: string, options?: FetchOptions): Promise<FetchResponse> {
     return new Promise((resolve, reject) => {
         const urlObj = new URL(url);
         const requestFn = urlObj.protocol === 'https:' ? httpsRequest : httpRequest;
@@ -40,7 +55,7 @@ function fetchFallback(url: string, options: any): Promise<any> {
         // Handle AbortController signal for timeout
         const signal = options?.signal;
         let timeoutId: NodeJS.Timeout | null = null;
-        let req: any = null;
+        let req: ReturnType<typeof httpsRequest> | null = null;
 
         const cleanup = () => {
             if (timeoutId) {
@@ -54,14 +69,14 @@ function fetchFallback(url: string, options: any): Promise<any> {
             if (req) {
                 req.destroy();
             }
-            const abortError = new Error('Request aborted') as any;
+            const abortError = new Error('Request aborted');
             abortError.name = 'AbortError';
             reject(abortError);
         };
 
         if (signal) {
             if (signal.aborted) {
-                const abortError = new Error('Request aborted') as any;
+                const abortError = new Error('Request aborted');
                 abortError.name = 'AbortError';
                 reject(abortError);
                 return;
@@ -101,7 +116,7 @@ function fetchFallback(url: string, options: any): Promise<any> {
             }
         );
 
-        req.on('error', (err: any) => {
+        req.on('error', (err: Error) => {
             cleanup();
             if (signal) {
                 signal.removeEventListener('abort', abortHandler);
@@ -145,7 +160,7 @@ export class OpenAICompatibleProvider implements LLMProvider {
         options?: { toolFormat?: 'standard' | 'compact' }
     ): Promise<CompletionResult> {
         // Build messages array with system prompt first
-        const messages: any[] = [
+        const messages: Array<{ role: string; content?: string | null }> = [
             {
                 role: 'system',
                 content:
@@ -185,7 +200,7 @@ export class OpenAICompatibleProvider implements LLMProvider {
                             type: 'object',
                             properties: Object.fromEntries(
                                 Object.entries(spec.parameters || {}).map(([arg, param]) => {
-                                    const schema: Record<string, any> = {
+                                    const schema: Record<string, unknown> = {
                                         type: param.type,
                                         description: param.description,
                                     };
@@ -242,20 +257,22 @@ export class OpenAICompatibleProvider implements LLMProvider {
 
                         // Throw on retryable errors so withRetry can handle them
                         if (!response.ok && (response.status === 429 || response.status >= 500)) {
-                            const error = new Error(`API Error ${response.status}`) as any;
-                            error.status = response.status;
+                            const error = Object.assign(new Error(`API Error ${response.status}`), {
+                                status: response.status,
+                            });
                             throw error;
                         }
 
                         return response;
-                    } catch (err: any) {
+                    } catch (err: unknown) {
                         clearTimeout(timeoutId);
                         // Handle timeout/abort errors
-                        if (err.name === 'AbortError' || controller.signal.aborted) {
-                            const timeoutError = new Error(
-                                'Request timeout after 60 seconds'
-                            ) as any;
-                            timeoutError.status = 408; // Request Timeout
+                        const errObj = err as { name?: string };
+                        if (errObj.name === 'AbortError' || controller.signal.aborted) {
+                            const timeoutError = Object.assign(
+                                new Error('Request timeout after 60 seconds'),
+                                { status: 408 }
+                            ); // Request Timeout
                             throw timeoutError;
                         }
                         throw err;
@@ -266,8 +283,9 @@ export class OpenAICompatibleProvider implements LLMProvider {
                     baseDelayMs: 1000,
                     onRetry: (attempt, delayMs, error) => {
                         if (verbose) {
+                            const msg = error instanceof Error ? error.message : String(error);
                             console.log(
-                                `[Verbose] ${error.message}. Retrying in ${Math.round(delayMs)}ms... (attempt ${attempt}/${this.maxRetries})`
+                                `[Verbose] ${msg}. Retrying in ${Math.round(delayMs)}ms... (attempt ${attempt}/${this.maxRetries})`
                             );
                         }
                     },
@@ -287,7 +305,19 @@ export class OpenAICompatibleProvider implements LLMProvider {
                 return { ok: false, error: `API Error ${res.status}: ${text}` };
             }
 
-            const data = await res.json();
+            const rawData = await res.json();
+            // Type assertion for OpenAI-compatible response format
+            const data = rawData as {
+                usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+                choices?: Array<{
+                    message: {
+                        content?: string | null;
+                        tool_calls?: Array<{
+                            function: { name: string; arguments: string };
+                        }>;
+                    };
+                }>;
+            };
 
             if (verbose) {
                 console.log(`[Verbose] Response Body:\n${JSON.stringify(data, null, 2)}`);
@@ -428,8 +458,9 @@ export class OpenAICompatibleProvider implements LLMProvider {
                 reply: message.content,
                 usage,
             };
-        } catch (err: any) {
-            return { ok: false, error: err.message };
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            return { ok: false, error: message };
         }
     }
 
@@ -443,7 +474,7 @@ export class OpenAICompatibleProvider implements LLMProvider {
         _verbose: boolean = false,
         systemPrompt?: string
     ): AsyncGenerator<StreamChunk, void, unknown> {
-        const messages: any[] = [
+        const messages: Array<{ role: string; content?: string | null }> = [
             {
                 role: 'system',
                 content: systemPrompt || 'You are a helpful assistant.',
@@ -468,11 +499,11 @@ export class OpenAICompatibleProvider implements LLMProvider {
         const timeoutMs = 60000; // 60 second timeout
         let timeoutId: NodeJS.Timeout | null = null;
         let requestCompleted = false;
-        let req: any = null;
+        let req: ReturnType<typeof httpsRequest> | null = null;
 
-        let response: any;
+        let response: IncomingMessage;
         try {
-            response = await new Promise<any>((resolve, reject) => {
+            response = await new Promise<IncomingMessage>((resolve, reject) => {
                 timeoutId = setTimeout(() => {
                     if (!requestCompleted) {
                         requestCompleted = true;
@@ -504,7 +535,7 @@ export class OpenAICompatibleProvider implements LLMProvider {
                     }
                 );
 
-                req.on('error', (err: any) => {
+                req.on('error', (err: Error) => {
                     if (timeoutId) {
                         clearTimeout(timeoutId);
                         timeoutId = null;
@@ -516,18 +547,19 @@ export class OpenAICompatibleProvider implements LLMProvider {
                 req.write(bodyStr);
                 req.end();
             });
-        } catch (err: any) {
+        } catch (err: unknown) {
             // Handle timeout and other errors
             if (timeoutId) {
                 clearTimeout(timeoutId);
                 timeoutId = null;
             }
+            const message = err instanceof Error ? err.message : 'Stream request failed';
             yield {
                 content: '',
                 done: true,
                 error: {
-                    message: err.message || 'Stream request failed',
-                    code: err.message?.includes('timeout') ? 'TIMEOUT' : 'STREAM_ERROR',
+                    message,
+                    code: message.includes('timeout') ? 'TIMEOUT' : 'STREAM_ERROR',
                 },
             } as StreamChunk & { error?: { message: string; code: string; statusCode?: number } };
             return;
@@ -577,13 +609,14 @@ export class OpenAICompatibleProvider implements LLMProvider {
             }
 
             yield { content: '', done: true };
-        } catch (err: any) {
+        } catch (err: unknown) {
             // Handle stream reading errors
+            const message = err instanceof Error ? err.message : 'Stream read error';
             yield {
                 content: '',
                 done: true,
                 error: {
-                    message: err.message || 'Stream read error',
+                    message,
                     code: 'STREAM_READ_ERROR',
                 },
             } as StreamChunk & { error?: { message: string; code: string; statusCode?: number } };

@@ -17,7 +17,7 @@ export interface CompletionResult {
     reply?: string | null; // Conversational reply (if no tool)
     error?: string;
     usage?: TokenUsage | null; // Token usage statistics
-    raw?: any; // Raw API response (for debugging)
+    raw?: unknown; // Raw API response (for debugging)
 }
 
 /**

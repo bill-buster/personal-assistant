@@ -15,9 +15,9 @@ export interface RetryOptions {
     /** Maximum delay in milliseconds. Default: 30000 */
     maxDelayMs?: number;
     /** Custom function to determine if error is retryable. Default: 429 and 5xx */
-    retryOn?: (error: Error) => boolean;
+    retryOn?: (error: unknown) => boolean;
     /** Called before each retry with attempt number and delay. */
-    onRetry?: (attempt: number, delayMs: number, error: Error) => void;
+    onRetry?: (attempt: number, delayMs: number, error: unknown) => void;
 }
 
 const DEFAULT_OPTIONS: Required<Omit<RetryOptions, 'onRetry' | 'retryOn'>> = {
@@ -29,9 +29,15 @@ const DEFAULT_OPTIONS: Required<Omit<RetryOptions, 'onRetry' | 'retryOn'>> = {
 /**
  * Check if an error is retryable based on HTTP status codes.
  */
-export function isRetryableError(error: Error | any): boolean {
+export function isRetryableError(error: unknown): boolean {
     // Check for status code in error or response
-    const status = error.status || error.statusCode || error.response?.status;
+    const err = error as {
+        status?: number;
+        statusCode?: number;
+        response?: { status?: number };
+        message?: string;
+    };
+    const status = err.status || err.statusCode || err.response?.status;
 
     if (status) {
         // Retry on 429 (rate limit) and 5xx (server errors)
@@ -40,7 +46,7 @@ export function isRetryableError(error: Error | any): boolean {
     }
 
     // Retry on network errors
-    const message = error.message?.toLowerCase() || '';
+    const message = err.message?.toLowerCase() || '';
     return (
         message.includes('econnreset') ||
         message.includes('etimedout') ||
@@ -95,8 +101,8 @@ export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions =
     for (let attempt = 0; attempt <= opts.maxRetries; attempt++) {
         try {
             return await fn();
-        } catch (error: any) {
-            lastError = error;
+        } catch (error: unknown) {
+            lastError = error instanceof Error ? error : new Error(String(error));
 
             // Don't retry if we've exhausted attempts
             if (attempt >= opts.maxRetries) {
@@ -129,7 +135,7 @@ export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions =
  * @param options - Retry configuration options
  * @returns Wrapped function with retry behavior
  */
-export function withRetryWrapper<T extends (...args: any[]) => Promise<any>>(
+export function withRetryWrapper<T extends (...args: unknown[]) => Promise<unknown>>(
     fn: T,
     options: RetryOptions = {}
 ): T {

@@ -64,36 +64,38 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
                 input: text,
             });
 
-            const response = await new Promise<any>((resolve, reject) => {
-                const req = httpsRequest(
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            Authorization: `Bearer ${this.apiKey}`,
+            const response = await new Promise<{ ok: boolean; status?: number; data: string }>(
+                (resolve, reject) => {
+                    const req = httpsRequest(
+                        {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${this.apiKey}`,
+                            },
+                            hostname: urlObj.hostname,
+                            port: urlObj.port,
+                            path: `${urlObj.pathname}${urlObj.search}`,
                         },
-                        hostname: urlObj.hostname,
-                        port: urlObj.port,
-                        path: `${urlObj.pathname}${urlObj.search}`,
-                    },
-                    res => {
-                        let data = '';
-                        res.setEncoding('utf8');
-                        res.on('data', chunk => (data += chunk));
-                        res.on('end', () => {
-                            resolve({
-                                ok: res.statusCode! >= 200 && res.statusCode! < 300,
-                                status: res.statusCode,
-                                data,
+                        res => {
+                            let data = '';
+                            res.setEncoding('utf8');
+                            res.on('data', chunk => (data += chunk));
+                            res.on('end', () => {
+                                resolve({
+                                    ok: res.statusCode! >= 200 && res.statusCode! < 300,
+                                    status: res.statusCode,
+                                    data,
+                                });
                             });
-                        });
-                    }
-                );
+                        }
+                    );
 
-                req.on('error', reject);
-                req.write(bodyStr);
-                req.end();
-            });
+                    req.on('error', reject);
+                    req.write(bodyStr);
+                    req.end();
+                }
+            );
 
             if (!response.ok) {
                 return { ok: false, error: `API Error ${response.status}` };
@@ -107,8 +109,9 @@ export class OpenAIEmbeddingProvider implements EmbeddingProvider {
             }
 
             return { ok: true, embedding };
-        } catch (err: any) {
-            return { ok: false, error: err.message };
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            return { ok: false, error: message };
         }
     }
 }

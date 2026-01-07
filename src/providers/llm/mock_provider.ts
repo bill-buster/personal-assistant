@@ -4,7 +4,7 @@ import { ToolSpec, Message } from '../../core/types';
 interface MockResponse {
     toolCall?: {
         tool_name: string;
-        args: any;
+        args: Record<string, unknown>;
     };
     reply?: string;
     error?: string;
@@ -38,7 +38,7 @@ export class MockLLMProvider implements LLMProvider {
         const lastMessageContent =
             history.length > 0 ? history[history.length - 1].content || '' : '';
         const lookupKey = prompt || lastMessageContent;
-        const response = (this.responses as any)[lookupKey] || this.defaultResponse;
+        const response = this.responses[lookupKey] || this.defaultResponse;
 
         if (verbose) {
             console.log(`[MockProvider] Prompt: "${prompt}" | Lookup Key: "${lookupKey}"`);
@@ -79,7 +79,7 @@ export class MockLLMProvider implements LLMProvider {
         const lastMessageContent =
             history.length > 0 ? history[history.length - 1].content || '' : '';
         const lookupKey = prompt || lastMessageContent;
-        const response = (this.responses as any)[lookupKey] || this.defaultResponse;
+        const response = this.responses[lookupKey] || this.defaultResponse;
 
         if (response.reply) {
             yield { content: response.reply, done: true };
