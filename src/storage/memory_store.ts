@@ -3,12 +3,13 @@ import * as path from 'node:path';
 import * as crypto from 'node:crypto';
 import { MemoryEntry } from '../core/types';
 
-function normalizeMemory(raw: any): { version: number; entries: MemoryEntry[] } {
+function normalizeMemory(raw: unknown): { version: number; entries: MemoryEntry[] } {
     if (Array.isArray(raw)) {
         return { version: 1, entries: raw };
     }
-    if (raw && typeof raw === 'object' && Array.isArray(raw.entries)) {
-        return { version: raw.version || 1, entries: raw.entries };
+    if (raw && typeof raw === 'object' && 'entries' in raw && Array.isArray(raw.entries)) {
+        const obj = raw as { version?: number; entries: MemoryEntry[] };
+        return { version: obj.version || 1, entries: obj.entries };
     }
     return { version: 1, entries: [] };
 }
@@ -21,8 +22,9 @@ export function readMemory(filePath: string): { version: number; entries: Memory
         const raw = fs.readFileSync(filePath, 'utf8');
         const parsed = JSON.parse(raw);
         return normalizeMemory(parsed);
-    } catch (err: any) {
-        console.error(`[Memory Error] Failed to parse memory file: ${err.message}`);
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error(`[Memory Error] Failed to parse memory file: ${message}`);
         const ts = new Date().toISOString().replace(/[:.]/g, '-');
         const corruptPath = `${filePath}.corrupt.${ts}`;
         try {

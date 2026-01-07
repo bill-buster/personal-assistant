@@ -59,7 +59,7 @@ export interface IntentPattern {
     /** Tool to invoke when pattern matches */
     tool: string;
     /** Default arguments for the tool */
-    defaultArgs?: Record<string, any>;
+    defaultArgs?: Record<string, unknown>;
     /** Priority for pattern matching (higher = checked first) */
     priority?: number;
 }
@@ -358,8 +358,8 @@ export class Dispatcher {
     /**
      * Extract arguments from text for a given tool.
      */
-    private extractArgsFromText(text: string, toolName: string): Record<string, any> {
-        const args: Record<string, any> = {};
+    private extractArgsFromText(text: string, toolName: string): Record<string, unknown> {
+        const args: Record<string, unknown> = {};
 
         // For recall tool, extract the query
         if (toolName === 'recall') {
@@ -443,7 +443,7 @@ export class Dispatcher {
     /**
      * Get default arguments for a tool.
      */
-    private getDefaultArgsForTool(toolName: string): Record<string, any> {
+    private getDefaultArgsForTool(toolName: string): Record<string, unknown> {
         switch (toolName) {
             case 'task_list':
                 return { status: 'open' };
@@ -475,7 +475,7 @@ export class Dispatcher {
     /**
      * Build a validated tool call, applying defaults where appropriate.
      */
-    private buildToolCall(toolName: string, args: Record<string, any>): ToolCall | null {
+    private buildToolCall(toolName: string, args: Record<string, unknown>): ToolCall | null {
         const mergedArgs = { ...this.getDefaultArgsForTool(toolName), ...args };
         const validation = validateToolCall({ tool_name: toolName, args: mergedArgs });
         if (!validation.ok) {
