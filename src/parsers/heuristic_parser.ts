@@ -65,6 +65,23 @@ export function parseHeuristicCommand(input: string): ParserResult | null {
         return { tool: { name: 'list_files', args: {} } };
     }
 
+    // 3b. Create directory
+    const createDirMatch = trimmed.match(/^create\s+(?:directory|dir|folder)\s+(.+)/i);
+    if (createDirMatch) {
+        return { tool: { name: 'create_directory', args: { path: createDirMatch[1].trim() } } };
+    }
+
+    // 3c. Grep pattern search
+    const grepMatch = trimmed.match(/^grep\s+(.+?)\s+(.+)/i);
+    if (grepMatch) {
+        return {
+            tool: {
+                name: 'grep',
+                args: { pattern: grepMatch[1].trim(), path: grepMatch[2].trim() },
+            },
+        };
+    }
+
     // 4. Task Management
     const addTaskMatch = trimmed.match(/^add task (.+)/i);
     if (addTaskMatch) {
@@ -78,9 +95,15 @@ export function parseHeuristicCommand(input: string): ParserResult | null {
         return { tool: { name: 'task_list', args: { status } } };
     }
 
-    const completeTaskMatch = trimmed.match(/^(?:complete|done)\s+task\s+(\d+)/i);
-    if (completeTaskMatch) {
-        return { tool: { name: 'task_done', args: { id: parseInt(completeTaskMatch[1], 10) } } };
+    // Extended task completion patterns: "complete task X", "done task X", "mark task X done", "task X done", "done X"
+    const completeTaskMatch = trimmed.match(/^(?:complete|done|finish)\s+task\s+(\d+)/i);
+    const markTaskDoneMatch = trimmed.match(/^mark\s+task\s+(\d+)\s+(?:as\s+)?done$/i);
+    const taskXDoneMatch = trimmed.match(/^task\s+(\d+)\s+done$/i);
+    const justDoneMatch = trimmed.match(/^done\s+(\d+)$/i);
+
+    if (completeTaskMatch || markTaskDoneMatch || taskXDoneMatch || justDoneMatch) {
+        const match = completeTaskMatch || markTaskDoneMatch || taskXDoneMatch || justDoneMatch;
+        return { tool: { name: 'task_done', args: { id: parseInt(match![1], 10) } } };
     }
 
     // 5. Memory Search
@@ -98,6 +121,19 @@ export function parseHeuristicCommand(input: string): ParserResult | null {
     const noteMatch = trimmed.match(/^note[:\s]+(.+)/i);
     if (noteMatch) {
         return { tool: { name: 'remember', args: { text: noteMatch[1].trim() } } };
+    }
+
+    // 5c. Natural language recall: "What do you remember about X?"
+    const recallQuestionMatch = trimmed.match(
+        /^(?:what do you remember|what's remembered|recall)\s+(?:about\s+)?(.+)/i
+    );
+    if (recallQuestionMatch) {
+        return {
+            tool: {
+                name: 'recall',
+                args: { query: recallQuestionMatch[1].trim().replace(/\?$/, '') },
+            },
+        };
     }
 
     // 6. Communication Aliases

@@ -11,6 +11,41 @@ export function validateToolInput(input: string): string | null {
         return 'Error: Input cannot be empty.';
     }
 
+    // SECURITY: Sensitive file access refusal (check early, before any routing)
+    const sensitivePatterns = [
+        /~\/\.ssh/i,
+        /\bid_rsa\b/i,
+        /\.env\b/i,
+        /\bcredentials?\b/i,
+        /\bsecrets?\b/i,
+        /\bkeychain\b/i,
+        /\/etc\/passwd/i,
+        /\/etc\/shadow/i,
+        /\.aws\/credentials/i,
+        /\.npmrc/i,
+        /\.netrc/i,
+    ];
+    for (const pattern of sensitivePatterns) {
+        if (pattern.test(input)) {
+            return 'Error: Cannot access sensitive files for security reasons.';
+        }
+    }
+
+    // SECURITY: Destructive/Injection prompt refusal
+    const injectionPatterns = [
+        /ignore\s+(?:all\s+)?(?:previous\s+)?(?:rules?|instructions?)/i,
+        /delete\s+(?:my\s+)?files?/i,
+        /\brm\s+-rf\b/i,
+        /bypass\s+(?:security|rules?)/i,
+        /steal\s+(?:secrets?|data|credentials?)/i,
+        /run\s+(?:a\s+)?command\s+to\s+delete/i,
+    ];
+    for (const pattern of injectionPatterns) {
+        if (pattern.test(input)) {
+            return "Error: I can't perform potentially destructive operations.";
+        }
+    }
+
     // Check for command patterns that are missing required content
     const colonPatterns = [
         { pattern: /^remember:\s*$/, error: 'Error: remember: requires text to remember.' },

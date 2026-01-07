@@ -9,8 +9,8 @@
  * @module dispatcher
  */
 
-import { Agent, Message, ToolCall } from './core/types';
 import { validateToolCall } from './core/tool_contract';
+import { Agent, Message, ToolCall } from './core/types';
 
 /**
  * Dispatcher options for controlling routing behavior.
@@ -137,6 +137,18 @@ export const DEFAULT_INTENT_PATTERNS: IntentPattern[] = [
         pattern: /^my\s+(age|birthday|name|address|phone|email)[?]?$/i,
         tool: 'recall',
         priority: 68,
+    },
+
+    // Weather queries - auto-dispatch for common patterns
+    {
+        pattern: /\bweather\b.*\b(?:in|for|at)\s+(\S+)/i,
+        tool: 'get_weather',
+        priority: 65,
+    },
+    {
+        pattern: /^(\S+)\s+weather\b/i,
+        tool: 'get_weather',
+        priority: 64,
     },
 ];
 

@@ -22,6 +22,7 @@ const READY_TOOLS = [
     'task_done',
     'calculate',
     'get_time',
+    'get_weather',
     'git_status',
     'git_diff',
     'git_log',

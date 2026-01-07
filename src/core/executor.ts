@@ -3,10 +3,10 @@
  * @module core/executor
  */
 
+import { spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { spawnSync } from 'node:child_process';
 import { appendJsonl, readJsonlSafely, writeJsonlAtomic } from '../storage/jsonl';
 import { readMemory, writeMemory } from '../storage/memory_store';
 import { buildShellCommand, parseShellArgs } from './arg_parser';
@@ -74,7 +74,27 @@ export class Executor {
     private limits: { maxReadSize: number; maxWriteSize: number };
 
     constructor(config: ExecutorConfig) {
-        this.baseDir = config.baseDir;
+        // Canonicalize baseDir to ensure single source of truth for path checks
+        const rawBaseDir = path.resolve(config.baseDir);
+        if (!fs.existsSync(rawBaseDir)) {
+            fs.mkdirSync(rawBaseDir, { recursive: true });
+        }
+        this.baseDir = fs.realpathSync(rawBaseDir);
+
+        if (process.env.DEBUG_PATHS) {
+            console.error(`[DEBUG_PATHS] Constructor:`);
+            console.error(`  config.baseDir: ${config.baseDir}`);
+            console.error(`  rawBaseDir: ${rawBaseDir}`);
+            console.error(`  this.baseDir: ${this.baseDir}`);
+            try {
+                console.error(`  realpath.native: ${fs.realpathSync.native(config.baseDir)}`);
+            } catch (e) {
+                console.error(`  realpath.native failed: ${e}`);
+            }
+        }
+
+        // console.log(`[Executor] BaseDir: resolved=${this.baseDir}`);
+
         this.memoryPath = config.memoryPath || path.join(this.baseDir, 'memory.json');
         this.tasksPath = config.tasksPath || path.join(this.baseDir, 'tasks.jsonl');
         this.memoryLogPath = config.memoryLogPath || path.join(this.baseDir, 'memory.jsonl');
@@ -103,6 +123,7 @@ export class Executor {
         // Normalize allow_paths for fast checking
         this.allowedPaths = [];
         for (const p of this.permissions.allow_paths) {
+            // Because baseDir is canonical, we must canonicalize allowed paths too
             const resolved = this.safeResolve(p);
             if (!resolved) continue;
             let isDir = false;
@@ -120,6 +141,10 @@ export class Executor {
                 isDir && resolved.endsWith(path.sep) ? resolved.slice(0, -1) : resolved;
             this.allowedPaths.push({ path: normalized, isDir });
         }
+        console.log(
+            `[Executor] AllowedPaths: ${this.allowedPaths.length}`,
+            JSON.stringify(this.allowedPaths)
+        );
 
         this.agent = config.agent;
 
@@ -130,19 +155,26 @@ export class Executor {
     // Helper methods from original file
     private safeResolve(relPath: unknown): string | null {
         if (!relPath || typeof relPath !== 'string') return null;
-        if (path.isAbsolute(relPath)) return null;
+        // Removed path.isAbsolute check to allow absolute paths (if they resolve to baseDir)
         if (relPath.includes('..')) return null;
         const resolved = path.resolve(this.baseDir, relPath);
-        // Allow exact baseDir match (for '.') or paths under baseDir
-        if (resolved !== this.baseDir && !resolved.startsWith(this.baseDir + path.sep)) return null;
+
+        // Note: We skip the simple string prefix check here because 'resolved' might contain
+        // symlinks (e.g. /tmp vs /private/tmp) that make it look like it's outside baseDir
+        // even when it's safe. We rely on fs.realpathSync to verify.
+
         // Canonicalize to prevent symlink bypass attacks
         try {
             const canonical = fs.realpathSync(resolved);
             // Allow exact baseDir match or paths under baseDir
-            if (canonical !== this.baseDir && !canonical.startsWith(this.baseDir + path.sep))
+            if (canonical !== this.baseDir && !canonical.startsWith(this.baseDir + path.sep)) {
+                console.log(
+                    `[SafeResolve] Denied: canonical=${canonical}, baseDir=${this.baseDir}`
+                );
                 return null;
+            }
             return canonical;
-        } catch {
+        } catch (err) {
             // Path doesn't exist yet (e.g., for write operations) - return resolved
             // but verify parent directory is within baseDir
             const parentDir = path.dirname(resolved);
@@ -153,9 +185,17 @@ export class Executor {
                     canonicalParent !== this.baseDir
                 )
                     return null;
+
+                // Return canonical parent + basename to ensure we return a canonical-like path
+                // This fixes issues where 'resolved' has symlinks but 'canonical' baseDir doesn't
+                return path.join(canonicalParent, path.basename(resolved));
             } catch {
                 // Parent doesn't exist either - allow if resolved is still under baseDir
+                // Fallback to string check if we can't canonicalize anything
             }
+
+            if (resolved !== this.baseDir && !resolved.startsWith(this.baseDir + path.sep))
+                return null;
             return resolved;
         }
     }

@@ -6,27 +6,27 @@
  */
 
 // All imports consolidated at the top of the file
+import type { Agent, Message, ResolvedConfig, ToolSpec } from '../core';
 import {
-    makeToolCall,
-    makeDebug,
-    nowMs,
-    parseArgs,
+    generateCorrelationId,
     getPackageVersion,
     loadConfig,
+    makeDebug,
+    makeToolCall,
+    nowMs,
+    parseArgs,
     resolveConfig,
-    generateCorrelationId,
 } from '../core';
-import type { ResolvedConfig, ToolSpec, Message, Agent } from '../core';
-import type { RouteResult, RouteToolCall, RouteReply } from '../core/types';
+import type { RouteReply, RouteResult, RouteToolCall } from '../core/types';
 import { SAFE_TOOLS } from '../core/types';
 import {
-    parseTaskCommand,
-    parseMemoryCommand,
     parseHeuristicCommand,
+    parseMemoryCommand,
+    parseTaskCommand,
     validateToolInput,
 } from '../parsers';
 import type { LLMProvider } from '../runtime';
-import { TOOL_SCHEMAS, SYSTEM as DEFAULT_SYSTEM_AGENT, buildRuntime } from '../runtime';
+import { SYSTEM as DEFAULT_SYSTEM_AGENT, TOOL_SCHEMAS, buildRuntime } from '../runtime';
 
 const VERSION = getPackageVersion();
 
@@ -55,7 +55,7 @@ const USAGE = [
  * @param {string[]} argv - Command line arguments.
  * @returns {Object} Parsed arguments.
  */
-function runParseArgs(argv: string[]) {
+export function runParseArgs(argv: string[]) {
     const { flags, rawInput, error } = parseArgs(argv, {
         valueFlags: ['intent'],
         booleanFlags: ['json', 'tool-json', 'help', 'version', 'repl', 'execute', 'verbose'],
@@ -117,12 +117,19 @@ const RE_REMEMBER = /^remember:\s+([\s\S]+)$/i;
 const RE_RECALL = /^recall:\s+([\s\S]+)$/i;
 const RE_WRITE = /^write\s+(\S+)\s+([\s\S]+)$/i;
 const RE_READ_URL = /^(?:read\s+url\s+(\S+)|read\s+(https?:\/\/\S+))$/i;
-const RE_READ = /^read\s+((?!https?:\/\/)\S+)\s*$/i; // Exclude http/https
+const RE_READ = /^read\s+((?!https?:\/\/)[^\s.]+(?:\.[^\s.]+)?(?:\/\S*)?)\s*$/i; // Exclude http/https and bare domains
 const RE_LIST = /^list(\s+files)?$/i;
 const RE_RUN_CMD = /^(?:run\s+)?(ls|pwd|cat|du)\s*([\s\S]*)$/i;
 const RE_TIME = /^(?:what time is it|current time|time now|what's the time|time|date)$/i;
 const RE_CALC = /^(?:calculate|calc|compute|eval|math)[:\s]+(.+)$/i;
 const RE_GIT = /^git\s+(status|diff|log)(?:\s+(.*))?$/i;
+
+// Weather patterns - capture multi-word locations
+const RE_WEATHER =
+    /^(?:(?:get\s+)?weather\s+(?:in|for|at)\s+(.+)|(?:get\s+)?weather\s+(.+)|(.+)\s+weather|what(?:'s| is) the weather (?:in|for|like in)\s+(.+))$/i;
+
+// Bare domain detection (e.g., "read github.com" -> read_url)
+const RE_BARE_DOMAIN = /^read\s+([a-z0-9][-a-z0-9]*(?:\.[a-z0-9][-a-z0-9]*)+(?:\/\S*)?)$/i;
 
 // Cache for filtered tools per agent to avoid recreating on every route call
 // Key: agent name + tool schemas hash, Value: filtered tools object
@@ -237,10 +244,25 @@ export async function route(
         const recallMatch = body.match(RE_RECALL);
         const writeMatch = body.match(RE_WRITE);
         const readUrlMatch = body.match(RE_READ_URL);
+        const bareDomainMatch = body.match(RE_BARE_DOMAIN);
         const readMatch = body.match(RE_READ);
         const listMatch = body.match(RE_LIST);
         const timeMatch = body.match(RE_TIME);
         const calcMatch = body.match(RE_CALC);
+        const weatherMatch = body.match(RE_WEATHER);
+
+        // Weather has high priority - check before other patterns
+        if (weatherMatch && isToolAllowed('get_weather')) {
+            const location = (
+                weatherMatch[1] ||
+                weatherMatch[2] ||
+                weatherMatch[3] ||
+                weatherMatch[4]
+            )
+                .trim()
+                .replace(/[?.]$/, '');
+            return success(intent, 'get_weather', { location }, 'regex_fast_path', start);
+        }
 
         if (rememberMatch && isToolAllowed('remember'))
             return success(
@@ -268,6 +290,11 @@ export async function route(
                 'regex_fast_path',
                 start
             );
+        // Bare domain detection (e.g., "read github.com" -> normalized to https://...)
+        if (bareDomainMatch && isToolAllowed('read_url')) {
+            const url = `https://${bareDomainMatch[1]}`;
+            return success(intent, 'read_url', { url }, 'regex_fast_path', start);
+        }
         if (readMatch && isToolAllowed('read_file'))
             return success(intent, 'read_file', { path: readMatch[1] }, 'regex_fast_path', start);
         if (listMatch && isToolAllowed('list_files'))

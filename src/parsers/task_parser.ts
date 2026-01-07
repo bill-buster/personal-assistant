@@ -78,12 +78,33 @@ export function parseTaskCommand(input: string): ParserResult | null {
 function parseTaskAdd(text: string): ParserResult {
     if (!text) return { error: 'Error: task add requires text.' };
 
-    // Check for --due YYYY-MM-DD
-    const dueMatch = text.match(/--due\s+(\d{4}-\d{2}-\d{2})/);
+    let due: string | undefined;
+
+    // Check for --due tomorrow (resolve to ISO date in America/Los_Angeles timezone)
+    const dueTomorrowMatch = text.match(/--due\s+tomorrow\b/i);
+    if (dueTomorrowMatch) {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        // Format as YYYY-MM-DD in America/Los_Angeles timezone
+        // 'en-CA' locale gives YYYY-MM-DD format
+        due = tomorrow.toLocaleDateString('en-CA', {
+            timeZone: 'America/Los_Angeles',
+        });
+        text = text.replace(dueTomorrowMatch[0], '');
+    }
+
+    // Check for --due YYYY-MM-DD (only if not already set by tomorrow)
+    if (!due) {
+        const dueMatch = text.match(/--due\s+(\d{4}-\d{2}-\d{2})/);
+        if (dueMatch) {
+            due = dueMatch[1];
+            text = text.replace(dueMatch[0], '');
+        }
+    }
+
     const priorityMatch = text.match(/--priority\s+(low|medium|high)/);
 
     let cleanText = text;
-    if (dueMatch) cleanText = cleanText.replace(dueMatch[0], '');
     if (priorityMatch) cleanText = cleanText.replace(priorityMatch[0], '');
     cleanText = cleanText.trim();
 
@@ -92,7 +113,7 @@ function parseTaskAdd(text: string): ParserResult {
             name: 'task_add',
             args: {
                 text: cleanText,
-                due: dueMatch ? dueMatch[1] : undefined,
+                due: due,
                 priority: priorityMatch ? priorityMatch[1] : undefined,
             },
         },
