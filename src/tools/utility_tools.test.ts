@@ -824,7 +824,7 @@ try {
     // ============================================
 
     // T69: GetTime with null format
-    const result69 = handleGetTime({ format: null as any });
+    const result69 = handleGetTime({ format: null as unknown as string });
     const result69Data =
         result69.ok &&
         typeof result69.result === 'object' &&
@@ -858,7 +858,7 @@ try {
     }
 
     // T71: GetTime with number format (should use default)
-    const result71 = handleGetTime({ format: 123 as any });
+    const result71 = handleGetTime({ format: 123 as unknown as string });
     const result71Data =
         result71.ok &&
         typeof result71.result === 'object' &&
@@ -875,7 +875,7 @@ try {
     }
 
     // T72: GetTime with object format (should use default)
-    const result72 = handleGetTime({ format: {} as any });
+    const result72 = handleGetTime({ format: {} as unknown as string });
     const result72Data =
         result72.ok &&
         typeof result72.result === 'object' &&
@@ -959,7 +959,7 @@ try {
     }
 
     // T77: Delegate with null task (should fail at schema level, but test runtime)
-    const result77 = handleDelegateToCoder({ task: null as any });
+    const result77 = handleDelegateToCoder({ task: null as unknown as string });
     // Should fail validation or work if null is converted
     if (result77.ok === undefined) {
         failures += 1;
@@ -970,7 +970,7 @@ try {
     }
 
     // T78: Delegate with undefined task (should fail at schema level)
-    const result78 = handleDelegateToCoder({ task: undefined as any });
+    const result78 = handleDelegateToCoder({ task: undefined as unknown as string });
     // Should fail validation or work if undefined is handled
     if (result78.ok === undefined) {
         failures += 1;
@@ -1076,7 +1076,7 @@ try {
     // ============================================
 
     // T83: Calculate with expression as number
-    const result83 = handleCalculate({ expression: 123 as any });
+    const result83 = handleCalculate({ expression: 123 as unknown as string });
     if (result83.ok || result83.error?.code !== 'EXEC_ERROR') {
         failures += 1;
         logLine(
@@ -1086,7 +1086,7 @@ try {
     }
 
     // T84: Calculate with expression as null
-    const result84 = handleCalculate({ expression: null as any });
+    const result84 = handleCalculate({ expression: null as unknown as string });
     if (result84.ok || result84.error?.code !== 'EXEC_ERROR') {
         failures += 1;
         logLine(
@@ -1096,7 +1096,7 @@ try {
     }
 
     // T85: Calculate with expression as undefined
-    const result85 = handleCalculate({ expression: undefined as any });
+    const result85 = handleCalculate({ expression: undefined as unknown as string });
     if (result85.ok || result85.error?.code !== 'EXEC_ERROR') {
         failures += 1;
         logLine(
@@ -1106,7 +1106,7 @@ try {
     }
 
     // T86: Calculate with expression as object
-    const result86 = handleCalculate({ expression: {} as any });
+    const result86 = handleCalculate({ expression: {} as unknown as string });
     if (result86.ok || result86.error?.code !== 'EXEC_ERROR') {
         failures += 1;
         logLine(
@@ -1116,7 +1116,7 @@ try {
     }
 
     // T87: Calculate with expression as array
-    const result87 = handleCalculate({ expression: [] as any });
+    const result87 = handleCalculate({ expression: [] as unknown as string });
     if (result87.ok || result87.error?.code !== 'EXEC_ERROR') {
         failures += 1;
         logLine(
