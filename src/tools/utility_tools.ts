@@ -1,11 +1,11 @@
+import { makeError } from '../core/tool_contract';
 import {
-    ToolResult,
     CalculateArgs,
+    DelegateArgs,
     GetTimeArgs,
     GetWeatherArgs,
-    DelegateArgs,
+    ToolResult,
 } from '../core/types';
-import { makeError } from '../core/tool_contract';
 
 /**
  * Safe math expression evaluator.
@@ -413,7 +413,7 @@ export function handleGetTime(args: GetTimeArgs): ToolResult {
  */
 export async function handleGetWeather(args: GetWeatherArgs): Promise<ToolResult> {
     const { location } = args;
-    const TIMEOUT_MS = 6000; // 6 second timeout
+    const TIMEOUT_MS = 15000; // 15 second timeout
     const MAX_RETRIES = 1;
 
     const encodedLocation = encodeURIComponent(location);

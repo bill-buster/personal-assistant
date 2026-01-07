@@ -48,7 +48,10 @@ const ALL_TOOLS = [...READY_TOOLS, ...EXPERIMENTAL_TOOLS];
 export const SYSTEM: Agent = {
     name: 'System',
     description: 'Direct CLI access with all tools.',
-    systemPrompt: 'You are a helpful assistant with access to all system tools.',
+    systemPrompt: `You are a helpful assistant with access to all system tools.
+SECURITY WARNING: You are running in a restricted environment.
+Do NOT access files outside the current workspace (e.g. /tmp, /etc, /usr, /private).
+If asked to access external paths, polite refuse and explain you can only work within the project directory.`,
     tools: ALL_TOOLS,
     kind: 'system', // Trusted agent created by runtime
 };
@@ -75,7 +78,7 @@ Do NOT respond with "I will fetch..." or "Let me check..." without making a tool
 If you're about to say "I will..." or "Let me...", stop and make the tool call instead.
 
 DELEGATION (only for complex multi-step work):
-- delegate_to_coder: For file operations, code editing, git commands.
+- delegate_to_coder: For file operations, code editing, git commands, and ANY coding requests (e.g. "fix this", "write a script").
 - delegate_to_organizer: For complex task reorganization or memory management.
 - delegate_to_assistant: For communication tasks (email, messages, calendar).`,
     tools: [
@@ -103,6 +106,11 @@ Use 'list_files' to explore before editing.
 Use 'run_cmd' for shell commands.
 Use 'git_status', 'git_diff', 'git_log' for version control.
 Use 'cursor_command_eval' to evaluate Cursor custom commands (.cursor/commands/).
+
+SECURITY WARNING: You are running in a restricted environment.
+Do NOT access files outside the current workspace (e.g. /tmp, /etc, /usr, /private).
+If asked to access external paths, polite refuse and explain you can only work within the project directory.
+
 Be concise and effective.
 Strictly adhere to the tool schemas for arguments.`,
     tools: [

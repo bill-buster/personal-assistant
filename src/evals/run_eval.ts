@@ -171,15 +171,15 @@ async function evaluateCase(
         // Route
         const result = await route(input, 'spike', null, [], false, agent, provider);
         const endTs = Date.now();
-        
+
         // Use type guards to safely access properties
         const isError = isRouteError(result);
         const isToolCall = isRouteToolCall(result);
         const isReplyResult = isRouteReply(result);
-        
+
         // Get latency from debug info if available
         const debugInfo = !isError && '_debug' in result ? result._debug : null;
-        const latency = debugInfo?.duration_ms ?? (endTs - startTs);
+        const latency = debugInfo?.duration_ms ?? endTs - startTs;
 
         if (expected_error) {
             const passed = isError;

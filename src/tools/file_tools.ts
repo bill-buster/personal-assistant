@@ -5,27 +5,27 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {
-    makeError,
-    makePermissionError,
-    makeConfirmationError,
-    ErrorCode,
-} from '../core/tool_contract';
 import { makeDebug } from '../core/debug';
 import { getStatCache } from '../core/stat_cache';
 import {
-    ExecutorContext,
-    ToolResult,
-    WriteFileArgs,
-    ReadFileArgs,
-    ListFilesArgs,
-    DeleteFileArgs,
-    MoveFileArgs,
+    ErrorCode,
+    makeConfirmationError,
+    makeError,
+    makePermissionError,
+} from '../core/tool_contract';
+import {
     CopyFileArgs,
-    FileInfoArgs,
     CountWordsArgs,
     CreateDirectoryArgs,
     DeleteDirectoryArgs,
+    DeleteFileArgs,
+    ExecutorContext,
+    FileInfoArgs,
+    ListFilesArgs,
+    MoveFileArgs,
+    ReadFileArgs,
+    ToolResult,
+    WriteFileArgs,
 } from '../core/types';
 
 /**
@@ -139,7 +139,11 @@ export function handleWriteFile(args: WriteFileArgs, context: ExecutorContext): 
 
     return {
         ok: true,
-        result: { bytes: content.length },
+        result: {
+            path: args.path,
+            bytes: content.length,
+            message: `File written to ${args.path}`,
+        },
         error: null,
         _debug: makeDebug({
             path: 'tool_json',
@@ -694,7 +698,11 @@ export function handleMoveFile(args: MoveFileArgs, context: ExecutorContext): To
 
     return {
         ok: true,
-        result: { source: args.source, destination: args.destination },
+        result: {
+            source: args.source,
+            destination: args.destination,
+            message: `Successfully moved ${args.source} to ${args.destination}`,
+        },
         error: null,
         _debug: makeDebug({
             path: 'tool_json',
@@ -881,7 +889,11 @@ export function handleCopyFile(args: CopyFileArgs, context: ExecutorContext): To
 
     return {
         ok: true,
-        result: { source: args.source, destination: args.destination },
+        result: {
+            source: args.source,
+            destination: args.destination,
+            message: `Copied ${args.source} to ${args.destination}`,
+        },
         error: null,
         _debug: makeDebug({
             path: 'tool_json',
@@ -1327,6 +1339,7 @@ export function handleCountWords(args: CountWordsArgs, context: ExecutorContext)
             path: args.path,
             characters,
             words,
+            word_count: words, // Alias for eval expectation
             lines,
         },
         error: null,
