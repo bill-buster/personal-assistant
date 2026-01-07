@@ -109,7 +109,7 @@ try {
     }
 
     // T8: Null input (runtime check)
-    const result8 = validateInput(null as any);
+    const result8 = validateInput(null as unknown as string);
     if (result8.ok || result8.error?.code !== 'INPUT_ERROR') {
         failures += 1;
         logLine(
@@ -119,7 +119,7 @@ try {
     }
 
     // T9: Non-string input
-    const result9 = validateInput(123 as any);
+    const result9 = validateInput(123 as unknown as string);
     if (result9.ok || result9.error?.code !== 'INPUT_ERROR') {
         failures += 1;
         logLine(
@@ -129,7 +129,7 @@ try {
     }
 
     // T10: Undefined input
-    const result10 = validateInput(undefined as any);
+    const result10 = validateInput(undefined as unknown as string);
     if (result10.ok || result10.error?.code !== 'INPUT_ERROR') {
         failures += 1;
         logLine(
@@ -227,7 +227,7 @@ try {
     }
 
     // T19: Null path
-    const result19 = validatePath(null as any);
+    const result19 = validatePath(null as unknown as string);
     if (result19.ok || result19.error?.code !== 'VALIDATION_ERROR') {
         failures += 1;
         logLine(
@@ -237,7 +237,7 @@ try {
     }
 
     // T20: Non-string path
-    const result20 = validatePath(123 as any);
+    const result20 = validatePath(123 as unknown as string);
     if (result20.ok || result20.error?.code !== 'VALIDATION_ERROR') {
         failures += 1;
         logLine(
@@ -364,7 +364,7 @@ try {
     }
 
     // T32: Null command
-    const result32 = validateCommand(null as any);
+    const result32 = validateCommand(null as unknown as string);
     if (result32.ok || result32.error?.code !== 'VALIDATION_ERROR') {
         failures += 1;
         logLine(

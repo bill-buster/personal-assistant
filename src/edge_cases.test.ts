@@ -2,11 +2,19 @@ import assert from 'node:assert';
 import { createDispatcher } from './dispatcher';
 import { withRetry, isRetryableError } from './providers/llm/retry';
 
+interface PrivateDispatcher {
+    extractArgsFromText(text: string, intent: string): { query?: string };
+}
+
+interface StatusError extends Error {
+    status?: number | string;
+}
+
 async function runTests() {
     console.log('Running Dispatcher Recall Edge Cases...');
     const dispatcher = createDispatcher();
     // Access private method via casting
-    const d = dispatcher as any;
+    const d = dispatcher as unknown as PrivateDispatcher;
 
     try {
         // Test 1: Multi-word properties
@@ -49,9 +57,10 @@ async function runTests() {
         // Test 4b: Multi-word "my X"
         const result4b = d.extractArgsFromText('my favorite food', 'recall');
         assert.strictEqual(result4b.query, 'favorite food', 'Should capture "favorite food"');
-    } catch (e: any) {
-        console.error('Dispatcher Tests Failed:', e.message);
-        console.error(e.stack);
+    } catch (e: unknown) {
+        const err = e instanceof Error ? e : new Error(String(e));
+        console.error('Dispatcher Tests Failed:', err.message);
+        console.error(err.stack);
         process.exit(1);
     }
 
@@ -64,7 +73,7 @@ async function runTests() {
         const fn500 = async () => {
             attempts++;
             if (attempts < 3) {
-                const e: any = new Error('Server Error');
+                const e = new Error('Server Error') as StatusError;
                 e.status = 500;
                 throw e;
             }
@@ -79,15 +88,16 @@ async function runTests() {
         attempts = 0;
         const fn400 = async () => {
             attempts++;
-            const e: any = new Error('Bad Request');
+            const e = new Error('Bad Request') as StatusError;
             e.status = 400;
             throw e;
         };
         try {
             await withRetry(fn400, { maxRetries: 3, baseDelayMs: 1 });
             assert.fail('Should have thrown');
-        } catch (e: any) {
-            assert.strictEqual(e.status, 400);
+        } catch (e: unknown) {
+            const err = e as StatusError;
+            assert.strictEqual(err.status, 400);
         }
         assert.strictEqual(attempts, 1);
 
@@ -97,7 +107,7 @@ async function runTests() {
         const fnStr = async () => {
             attempts++;
             if (attempts < 2) {
-                const e: any = new Error('Server Error');
+                const e = new Error('Server Error') as StatusError;
                 e.status = '503';
                 throw e;
             }
@@ -129,9 +139,10 @@ async function runTests() {
             true,
             'Number 429 should be retryable'
         );
-    } catch (e: any) {
-        console.error('Retry Tests Failed:', e.message);
-        console.error(e.stack);
+    } catch (e: unknown) {
+        const err = e instanceof Error ? e : new Error(String(e));
+        console.error('Retry Tests Failed:', err.message);
+        console.error(err.stack);
         process.exit(1);
     }
 

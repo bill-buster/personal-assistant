@@ -39,8 +39,9 @@ try {
     assert.deepStrictEqual(res5?.tool?.name, 'task_add');
     assert.deepStrictEqual(res5?.tool?.args?.text, 'clean room');
     console.log('PASS');
-} catch (err: any) {
-    console.error('FAIL:', err.message);
+} catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('FAIL:', message);
     failures++;
 }
 

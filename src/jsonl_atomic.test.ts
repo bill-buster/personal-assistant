@@ -39,8 +39,9 @@ try {
     const expected2 = '{"id":1}\n{"id":2}\n{"id":3}\n';
     assert.strictEqual(content2, expected2, 'File content should include appended item');
     console.log('PASS');
-} catch (err: any) {
-    console.error('FAIL:', err.message);
+} catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('FAIL:', message);
     failures++;
 } finally {
     cleanup();

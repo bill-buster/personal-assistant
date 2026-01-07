@@ -42,12 +42,23 @@ function runCli(args: string[], cwd?: string): { status: number; stdout: string;
     };
 }
 
-function parseJson(output: string): any {
+interface CommandResponse {
+    ok?: boolean;
+    result?: {
+        total_time_ms?: number;
+        tool_name?: string;
+        entries?: number;
+        [key: string]: unknown;
+    };
+    [key: string]: unknown;
+}
+
+function parseJson(output: string): CommandResponse | null {
     try {
         const lines = output.trim().split('\n');
         for (let i = lines.length - 1; i >= 0; i--) {
             try {
-                return JSON.parse(lines[i]);
+                return JSON.parse(lines[i]) as CommandResponse;
             } catch {
                 continue;
             }
@@ -68,8 +79,9 @@ function runTests() {
         const json = parseJson(result.stdout);
         assert.ok(json?.ok === true || result.status === 0, 'Generate tool should succeed');
         console.log('PASS: Generate tool command');
-    } catch (e: any) {
-        console.error('FAIL: Generate tool command', e.message);
+    } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : String(e);
+        console.error('FAIL: Generate tool command', message);
         failures++;
     }
 
@@ -82,8 +94,9 @@ function runTests() {
         const json = parseJson(result.stdout);
         assert.ok(json?.ok === true || result.status === 0, 'Generate tests should succeed');
         console.log('PASS: Generate tests command');
-    } catch (e: any) {
-        console.error('FAIL: Generate tests command', e.message);
+    } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : String(e);
+        console.error('FAIL: Generate tests command', message);
         failures++;
     }
 
@@ -95,8 +108,9 @@ function runTests() {
         assert.ok(typeof json?.result?.total_time_ms === 'number', 'Should have timing');
         assert.ok(typeof json?.result?.tool_name === 'string', 'Should have tool name');
         console.log('PASS: Profile command');
-    } catch (e: any) {
-        console.error('FAIL: Profile command', e.message);
+    } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : String(e);
+        console.error('FAIL: Profile command', message);
         failures++;
     }
 
@@ -111,8 +125,9 @@ function runTests() {
         assert.ok(statsJson?.ok === true, 'Cache stats should succeed');
         assert.ok(typeof statsJson?.result?.entries === 'number', 'Should have entries count');
         console.log('PASS: Cache commands');
-    } catch (e: any) {
-        console.error('FAIL: Cache commands', e.message);
+    } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : String(e);
+        console.error('FAIL: Cache commands', message);
         failures++;
     }
 
@@ -121,8 +136,9 @@ function runTests() {
         const result = runCli(['--help']);
         assert.ok(result.stdout.includes('Usage') || result.stdout.includes('Commands'));
         console.log('PASS: Help command');
-    } catch (e: any) {
-        console.error('FAIL: Help command', e.message);
+    } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : String(e);
+        console.error('FAIL: Help command', message);
         failures++;
     }
 
@@ -131,8 +147,9 @@ function runTests() {
         const result = runCli(['--version']);
         assert.ok(result.stdout.trim().length > 0);
         console.log('PASS: Version command');
-    } catch (e: any) {
-        console.error('FAIL: Version command', e.message);
+    } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : String(e);
+        console.error('FAIL: Version command', message);
         failures++;
     }
 

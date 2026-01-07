@@ -13,6 +13,8 @@
 import { route } from '../app/router';
 import { SYSTEM } from '../agents';
 import { MockLLMProvider } from '../providers/llm/mock_provider';
+import { LLMProvider } from '../providers/llm/provider';
+import { ToolSpec, Message } from '../core/types';
 
 let failures = 0;
 
@@ -76,24 +78,22 @@ async function testCustomAgent() {
 
     // We create a "Spy" provider that stores the system prompt it received
     let capturedSystemPrompt = '';
-    const spyProvider = {
-        complete: async (prompt: any, tools: any, history: any, verbose: any, sysPrompt: any) => {
-            capturedSystemPrompt = sysPrompt;
+    const spyProvider: LLMProvider = {
+        complete: async (
+            prompt: string,
+            tools: Record<string, ToolSpec>,
+            history?: Message[],
+            verbose?: boolean,
+            sysPrompt?: string
+        ) => {
+            capturedSystemPrompt = sysPrompt || '';
             return { ok: true, reply: 'ok' };
         },
     };
 
     const customAgent = { ...SYSTEM, systemPrompt: 'CUSTOM_PROMPT_123' };
 
-    await route(
-        'any input',
-        'spike',
-        null,
-        [],
-        false,
-        customAgent,
-        spyProvider as any // Cast to satisfy type checker in this script
-    );
+    await route('any input', 'spike', null, [], false, customAgent, spyProvider);
 
     assert(
         capturedSystemPrompt === 'CUSTOM_PROMPT_123',

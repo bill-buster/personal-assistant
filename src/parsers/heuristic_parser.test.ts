@@ -10,7 +10,7 @@ import { parseHeuristicCommand } from './heuristic_parser';
 interface TestCase {
     input: string;
     expectedTool: string | null;
-    expectedArgs?: Record<string, any>;
+    expectedArgs?: Record<string, unknown>;
     description: string;
 }
 

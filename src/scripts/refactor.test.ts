@@ -115,8 +115,8 @@ function runTests() {
         assert.equal(isToolHandlerFile('src/tools/'), false, 'Should handle directory path');
 
         console.log('PASS: isToolHandlerFile() - all cases');
-    } catch (e: any) {
-        console.error('FAIL: isToolHandlerFile()', e.message);
+    } catch (e: unknown) {
+        console.error('FAIL: isToolHandlerFile()', e instanceof Error ? e.message : String(e));
         failures++;
     }
 
@@ -156,8 +156,8 @@ function runTests() {
         );
 
         console.log('PASS: isCommentLine() - all cases');
-    } catch (e: any) {
-        console.error('FAIL: isCommentLine()', e.message);
+    } catch (e: unknown) {
+        console.error('FAIL: isCommentLine()', e instanceof Error ? e.message : String(e));
         failures++;
     }
 
@@ -201,8 +201,8 @@ function runTests() {
         );
 
         console.log('PASS: hasThrowStatement() - all cases');
-    } catch (e: any) {
-        console.error('FAIL: hasThrowStatement()', e.message);
+    } catch (e: unknown) {
+        console.error('FAIL: hasThrowStatement()', e instanceof Error ? e.message : String(e));
         failures++;
     }
 
@@ -243,8 +243,8 @@ function runTests() {
         );
 
         console.log('PASS: generateThrowFix() - all cases');
-    } catch (e: any) {
-        console.error('FAIL: generateThrowFix()', e.message);
+    } catch (e: unknown) {
+        console.error('FAIL: generateThrowFix()', e instanceof Error ? e.message : String(e));
         failures++;
     }
 
@@ -287,8 +287,8 @@ function runTests() {
         );
 
         console.log('PASS: hasCatchBlock() - all cases');
-    } catch (e: any) {
-        console.error('FAIL: hasCatchBlock()', e.message);
+    } catch (e: unknown) {
+        console.error('FAIL: hasCatchBlock()', e instanceof Error ? e.message : String(e));
         failures++;
     }
 
@@ -317,8 +317,8 @@ function runTests() {
         assert.equal(hasJSDoc(lines5, 0), false, 'Should handle empty array');
 
         console.log('PASS: hasJSDoc() - all cases');
-    } catch (e: any) {
-        console.error('FAIL: hasJSDoc()', e.message);
+    } catch (e: unknown) {
+        console.error('FAIL: hasJSDoc()', e instanceof Error ? e.message : String(e));
         failures++;
     }
 
@@ -368,8 +368,8 @@ function runTests() {
         assert.equal(hasSyncFileOperation('const x = 5;'), false, 'Should handle non-file code');
 
         console.log('PASS: hasSyncFileOperation() - all cases');
-    } catch (e: any) {
-        console.error('FAIL: hasSyncFileOperation()', e.message);
+    } catch (e: unknown) {
+        console.error('FAIL: hasSyncFileOperation()', e instanceof Error ? e.message : String(e));
         failures++;
     }
 
@@ -398,8 +398,8 @@ function runTests() {
         assert.equal(validateFile(''), false, 'Should handle empty path');
 
         console.log('PASS: validateFile() - all cases');
-    } catch (e: any) {
-        console.error('FAIL: validateFile()', e.message);
+    } catch (e: unknown) {
+        console.error('FAIL: validateFile()', e instanceof Error ? e.message : String(e));
         failures++;
     }
 
@@ -433,8 +433,8 @@ function runTests() {
         assert.ok(report2.includes('Found 2 issue(s)'), 'Should handle empty file path');
 
         console.log('PASS: generateReport() - all cases');
-    } catch (e: any) {
-        console.error('FAIL: generateReport()', e.message);
+    } catch (e: unknown) {
+        console.error('FAIL: generateReport()', e instanceof Error ? e.message : String(e));
         failures++;
     }
 
@@ -515,7 +515,7 @@ export function handleTool() {
     try {
         doSomething();
     } catch (e) {
-        return { ok: false, error: makeError('EXEC_ERROR', e.message) };
+        return { ok: false, error: makeError('EXEC_ERROR', (e instanceof Error ? e.message : String(e))) };
     }
     return { ok: true };
 }`
@@ -568,8 +568,8 @@ export function anotherFunction() {
         assert.equal(issues11.length, 0, 'Should handle comment-only file');
 
         console.log('PASS: analyzeFile() - all cases');
-    } catch (e: any) {
-        console.error('FAIL: analyzeFile()', e.message);
+    } catch (e: unknown) {
+        console.error('FAIL: analyzeFile()', e instanceof Error ? e.message : String(e));
         failures++;
     }
 
@@ -590,7 +590,7 @@ export function anotherFunction() {
             const helpResult = runRefactorScript(['--help']);
             assert.ok(helpResult.stdout.includes('Usage'), 'Should show usage with --help');
             assert.equal(helpResult.status, 0, 'Should exit with 0 for help');
-        } catch (e: any) {
+        } catch (e: unknown) {
             // Script might not exist if build failed
             if (!buildSucceeded) {
                 console.log('SKIP: Help flag test (build failed)');
@@ -604,7 +604,7 @@ export function anotherFunction() {
             const noArgsResult = runRefactorScript([]);
             assert.ok(noArgsResult.stdout.includes('Usage'), 'Should show usage with no args');
             assert.equal(noArgsResult.status, 0, 'Should exit with 0 for no args');
-        } catch (e: any) {
+        } catch (e: unknown) {
             if (!buildSucceeded) {
                 console.log('SKIP: No args test (build failed)');
             } else {
@@ -668,8 +668,8 @@ export function handleTool() {
                 'SKIP: Script execution tests (build failed due to other TypeScript errors in project)'
             );
         }
-    } catch (e: any) {
-        console.error('FAIL: Script execution', e.message);
+    } catch (e: unknown) {
+        console.error('FAIL: Script execution', e instanceof Error ? e.message : String(e));
         failures++;
     }
 
@@ -708,8 +708,8 @@ export function handleTool() {
         assert.ok(unicodeIssues.length > 0, 'Should handle unicode characters');
 
         console.log('PASS: Boundary conditions - all cases');
-    } catch (e: any) {
-        console.error('FAIL: Boundary conditions', e.message);
+    } catch (e: unknown) {
+        console.error('FAIL: Boundary conditions', e instanceof Error ? e.message : String(e));
         failures++;
     }
 
@@ -736,8 +736,8 @@ export function handleTool() {
         assert.ok(Array.isArray(nullIssues), 'Should handle null bytes');
 
         console.log('PASS: Error handling - all cases');
-    } catch (e: any) {
-        console.error('FAIL: Error handling', e.message);
+    } catch (e: unknown) {
+        console.error('FAIL: Error handling', e instanceof Error ? e.message : String(e));
         failures++;
     }
 

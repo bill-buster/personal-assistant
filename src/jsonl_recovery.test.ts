@@ -31,7 +31,10 @@ try {
 
     const results = readJsonlSafely<{ id: number; text: string }>({
         filePath: tmpJsonl,
-        isValid: (entry: any) => typeof entry.id === 'number',
+        isValid: (entry: unknown) => {
+            const e = entry as { id?: unknown };
+            return typeof e?.id === 'number';
+        },
     });
 
     assert.strictEqual(results.length, 3, 'Should have 3 valid entries');
@@ -61,8 +64,9 @@ try {
     readJsonlSafely({ filePath: tmpJsonl });
     assert.strictEqual(fs.existsSync(tmpCorrupt), false, 'Corrupt file should not exist');
     console.log('PASS');
-} catch (err: any) {
-    console.error('FAIL:', err.message);
+} catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('FAIL:', message);
     failures++;
 } finally {
     cleanup();

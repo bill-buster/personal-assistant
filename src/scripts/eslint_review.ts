@@ -116,8 +116,9 @@ async function analyzeFileWithESLint(filePath: string): Promise<ReviewIssue[]> {
         }
 
         return issues;
-    } catch (err: any) {
-        console.error(`Error analyzing ${filePath}: ${err.message}`);
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error(`Error analyzing ${filePath}: ${message}`);
         return [];
     }
 }

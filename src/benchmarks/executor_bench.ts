@@ -3,6 +3,7 @@ import * as path from 'node:path';
 import { handleMemorySearch } from '../tools/memory_tools';
 import { handleListFiles } from '../tools/file_tools';
 import { nowMs } from '../core/debug';
+import { ExecutorContext, MemoryEntry } from '../core/types';
 
 const ITERATIONS = 100;
 const BENCH_DIR = path.join(__dirname, 'bench_data');
@@ -15,7 +16,7 @@ if (!fs.existsSync(BENCH_DIR)) {
 const memoryPath = path.join(BENCH_DIR, 'memory.json');
 const memoryData = {
     version: 1,
-    entries: [] as any[],
+    entries: [] as MemoryEntry[],
 };
 for (let i = 0; i < 1000; i++) {
     memoryData.entries.push({ ts: '2026-01-01', text: `memory entry ${i} about benchmarking` });
@@ -27,28 +28,29 @@ for (let i = 0; i < 100; i++) {
     fs.writeFileSync(path.join(BENCH_DIR, `file_${i}.txt`), 'content');
 }
 
-const context = {
+const context: ExecutorContext = {
     baseDir: BENCH_DIR,
     memoryLogPath: memoryPath,
     start: nowMs(),
-    debug: {} as any,
     // Mocked helpers to match executor.ts implementation
-    readJsonl: <T>(filePath: string, isValid: (entry: any) => boolean): T[] => {
+    readJsonl: <T>(filePath: string, isValid: (entry: unknown) => boolean): T[] => {
         if (!fs.existsSync(filePath)) return [];
         const raw = fs.readFileSync(filePath, 'utf8');
         const lines = raw.split(/\r?\n/).filter(Boolean);
         const entries: T[] = [];
         for (const line of lines) {
             try {
-                const parsed = JSON.parse(line);
+                const parsed: unknown = JSON.parse(line);
                 if (isValid(parsed)) entries.push(parsed as T);
-            } catch {}
+            } catch {
+                // ignore
+            }
         }
         return entries;
     },
 
-    scoreEntry: (entry: any, needle: string, _terms: string[]) => {
-        const text = typeof entry.text === 'string' ? entry.text.toLowerCase() : '';
+    scoreEntry: (entry: MemoryEntry, needle: string, _terms: string[]) => {
+        const text = entry.text.toLowerCase();
         let score = 0;
         if (needle) {
             let index = text.indexOf(needle);
@@ -60,11 +62,17 @@ const context = {
         return score;
     },
 
-    sortByScoreAndRecency: (entries: any[], _needle: string) => {
+    sortByScoreAndRecency: (entries: MemoryEntry[], _needle: string) => {
         return entries; // Simplified sort for bench to avoid full re-impl
     },
 
-    permissions: { allowlist: null } as any, // allow all
+    permissions: {
+        allow_paths: [],
+        allow_commands: [],
+        require_confirmation_for: [],
+        deny_tools: [],
+        version: 1,
+    },
     paths: {
         resolve: (p: string) => path.resolve(BENCH_DIR, p),
         assertAllowed: () => {},
@@ -74,7 +82,29 @@ const context = {
         runAllowed: () => ({ ok: true, result: '' }),
     },
     requiresConfirmation: () => false,
-} as any;
+
+    // Additional required fields
+    memoryPath: memoryPath,
+    memoryLimit: null,
+    tasksPath: path.join(BENCH_DIR, 'tasks.json'),
+    remindersPath: path.join(BENCH_DIR, 'reminders.json'),
+    emailsPath: path.join(BENCH_DIR, 'emails.json'),
+    messagesPath: path.join(BENCH_DIR, 'messages.json'),
+    contactsPath: path.join(BENCH_DIR, 'contacts.json'),
+    calendarPath: path.join(BENCH_DIR, 'calendar.json'),
+    permissionsPath: path.join(BENCH_DIR, 'permissions.json'),
+    auditPath: path.join(BENCH_DIR, 'audit.log'),
+    auditEnabled: false,
+    limits: {
+        maxReadSize: 1024 * 1024,
+        maxWriteSize: 1024 * 1024,
+    },
+    readMemory: () => ({ entries: [] }),
+    writeMemory: () => {},
+    writeJsonl: () => {},
+    appendJsonl: () => {},
+    agent: undefined,
+};
 
 async function benchAsync(name: string, fn: () => Promise<void>) {
     const start = nowMs();
@@ -93,9 +123,6 @@ async function benchAsync(name: string, fn: () => Promise<void>) {
 
     await benchAsync('Memory Search (1k entries, File I/O)', async () => {
         // handleMemorySearch(null, toolCall, permissions, context)
-        // Check signature... memory_tools exports handle(intent, toolCall, context)?
-        // Wait, handleMemorySearch signature in memory_tools.ts?
-        // It is: export async function handleMemorySearch(intent: string, toolCall: ToolCall, context: ExecutorContext)
         await handleMemorySearch({ query: 'benchmarking' }, context);
     });
 

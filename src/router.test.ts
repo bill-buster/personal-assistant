@@ -93,7 +93,7 @@ describe('Router Logic', () => {
         input: string,
         intent: string = 'spike',
         forcedInstruction: string | null = null,
-        toolJson: boolean = false
+        _toolJson: boolean = false
     ) => {
         const agent = MOCK_SYSTEM_AGENT;
 

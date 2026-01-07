@@ -1,5 +1,5 @@
 interface ParserResult {
-    tool?: { name: string; args: any };
+    tool?: { name: string; args: Record<string, unknown> };
     error?: string;
 }
 

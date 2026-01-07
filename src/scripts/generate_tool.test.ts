@@ -84,8 +84,11 @@ function runTests() {
         } finally {
             process.chdir(originalCwd);
         }
-    } catch (e: any) {
-        console.error('FAIL: Generate tool with required args', e.message);
+    } catch (e: unknown) {
+        console.error(
+            'FAIL: Generate tool with required args',
+            e instanceof Error ? e.message : String(e)
+        );
         failures++;
     }
 
@@ -118,8 +121,11 @@ function runTests() {
         } finally {
             process.chdir(originalCwd);
         }
-    } catch (e: any) {
-        console.error('FAIL: Generate tool with optional args', e.message);
+    } catch (e: unknown) {
+        console.error(
+            'FAIL: Generate tool with optional args',
+            e instanceof Error ? e.message : String(e)
+        );
         failures++;
     }
 
@@ -129,8 +135,8 @@ function runTests() {
         assert.equal(result.status, 0);
         assert.ok(result.stdout.includes('Usage'), 'Should show usage');
         console.log('PASS: Help flag');
-    } catch (e: any) {
-        console.error('FAIL: Help flag', e.message);
+    } catch (e: unknown) {
+        console.error('FAIL: Help flag', e instanceof Error ? e.message : String(e));
         failures++;
     }
 
@@ -140,8 +146,11 @@ function runTests() {
         // Should still work but might warn
         assert.equal(result.status, 0);
         console.log('PASS: Invalid tool name handling');
-    } catch (e: any) {
-        console.error('FAIL: Invalid tool name handling', e.message);
+    } catch (e: unknown) {
+        console.error(
+            'FAIL: Invalid tool name handling',
+            e instanceof Error ? e.message : String(e)
+        );
         failures++;
     }
 

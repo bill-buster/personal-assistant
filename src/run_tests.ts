@@ -4,7 +4,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { TestCache } from './core/test_cache';
-import { runTestsInParallel, type TestResult } from './core/test_worker';
+import { runTestsInParallel } from './core/test_worker';
 
 const baseDir = __dirname;
 // Detect dist mode: either via env var or if running as compiled JS
@@ -239,8 +239,9 @@ async function runAllTests(): Promise<void> {
                     failed++;
                 }
             }
-        } catch (err: any) {
-            console.error(`\n❌ Parallel execution failed: ${err.message}`);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            console.error(`\n❌ Parallel execution failed: ${message}`);
             process.exit(1);
         }
     } else {

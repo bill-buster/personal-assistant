@@ -126,12 +126,12 @@ async function run() {
     // Due should be an ISO date (YYYY-MM-DD format)
     assert.ok(taskTomorrowResult?.tool?.args.due, 'due should be set');
     assert.ok(
-        /^\d{4}-\d{2}-\d{2}$/.test(taskTomorrowResult?.tool?.args.due),
+        /^\d{4}-\d{2}-\d{2}$/.test(taskTomorrowResult?.tool?.args.due as string),
         `due should be ISO format, got: ${taskTomorrowResult?.tool?.args.due}`
     );
 
     // Verify it's tomorrow's date (within 2 days to handle timezone edge cases)
-    const dueDate = new Date(taskTomorrowResult?.tool?.args.due);
+    const dueDate = new Date(taskTomorrowResult?.tool?.args.due as string);
     const today = new Date();
     const diffDays = Math.round((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     assert.ok(

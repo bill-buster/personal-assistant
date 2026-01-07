@@ -5,6 +5,27 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { AppConfig, resolveConfig } from './core/config';
 import { buildRuntime, SYSTEM } from './runtime';
 
+interface FileReadResult {
+    content: string;
+}
+
+interface FileListResult {
+    entries: { name: string }[];
+}
+
+interface TaskListResult {
+    entries: { text: string; priority?: string }[];
+}
+
+interface MemoryRecallResult {
+    entries: { text: string }[];
+}
+
+interface GitStatusResult {
+    clean: boolean;
+    files: { path: string }[];
+}
+
 describe('Executor (In-Process)', () => {
     let tempRoot: string;
     let baseDir: string;
@@ -76,7 +97,7 @@ describe('Executor (In-Process)', () => {
             });
             if (!readRes.ok) console.error('Read failed:', readRes.error);
             expect(readRes.ok).toBe(true);
-            expect((readRes.result as any).content).toBe('hello world');
+            expect((readRes.result as unknown as FileReadResult).content).toBe('hello world');
         });
 
         it('should list files', async () => {
@@ -87,7 +108,7 @@ describe('Executor (In-Process)', () => {
             const listRes = await runtime.executor.execute('list_files', {});
             if (!listRes.ok) console.error('List failed:', listRes.error);
             expect(listRes.ok).toBe(true);
-            const entries = (listRes.result as any).entries.map((e: any) => e.name);
+            const entries = (listRes.result as unknown as FileListResult).entries.map(e => e.name);
             expect(entries).toContain('a.txt');
             expect(entries).toContain('b.txt');
         });
@@ -131,9 +152,9 @@ describe('Executor (In-Process)', () => {
 
             const listRes = await runtime.executor.execute('task_list', { status: 'open' });
             expect(listRes.ok).toBe(true);
-            const entries = (listRes.result as any).entries;
-            expect(entries.some((t: any) => t.text === 'buy milk')).toBe(true);
-            expect(entries.some((t: any) => t.priority === 'high')).toBe(true);
+            const entries = (listRes.result as unknown as TaskListResult).entries;
+            expect(entries.some(t => t.text === 'buy milk')).toBe(true);
+            expect(entries.some(t => t.priority === 'high')).toBe(true);
         });
 
         it('should complete tasks', async () => {
@@ -146,8 +167,8 @@ describe('Executor (In-Process)', () => {
             expect(doneRes.ok).toBe(true);
 
             const listRes = await runtime.executor.execute('task_list', { status: 'done' });
-            const entries = (listRes.result as any).entries;
-            expect(entries.some((t: any) => t.text === 'test task')).toBe(true);
+            const entries = (listRes.result as unknown as TaskListResult).entries;
+            expect(entries.some(t => t.text === 'test task')).toBe(true);
         });
     });
 
@@ -161,8 +182,8 @@ describe('Executor (In-Process)', () => {
 
             const recallRes = await runtime.executor.execute('recall', { query: 'cat' });
             expect(recallRes.ok).toBe(true);
-            const entries = (recallRes.result as any).entries;
-            expect(entries.some((e: any) => e.text.includes('Luna'))).toBe(true);
+            const entries = (recallRes.result as unknown as MemoryRecallResult).entries;
+            expect(entries.some(e => e.text.includes('Luna'))).toBe(true);
         });
     });
 
@@ -182,8 +203,10 @@ describe('Executor (In-Process)', () => {
             const statusRes = await runtime.executor.execute('git_status', {});
             if (!statusRes.ok) console.error('Git status failed:', statusRes.error);
             expect(statusRes.ok).toBe(true);
-            expect((statusRes.result as any).clean).toBe(false);
-            expect((statusRes.result as any).files[0].path).toBe('permissions.json');
+            expect((statusRes.result as unknown as GitStatusResult).clean).toBe(false);
+            expect((statusRes.result as unknown as GitStatusResult).files[0].path).toBe(
+                'permissions.json'
+            );
         });
     });
 

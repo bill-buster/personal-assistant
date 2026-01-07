@@ -76,8 +76,11 @@ function runTests() {
         assert.ok(testContent.includes('Missing required arg'), 'Should have validation tests');
 
         console.log('PASS: Generate tests for existing tool');
-    } catch (e: any) {
-        console.error('FAIL: Generate tests for existing tool', e.message);
+    } catch (e: unknown) {
+        console.error(
+            'FAIL: Generate tests for existing tool',
+            e instanceof Error ? e.message : String(e)
+        );
         failures++;
     }
 
@@ -87,8 +90,8 @@ function runTests() {
         assert.notEqual(result.status, 0, 'Should fail for nonexistent tool');
         assert.ok(result.stderr.includes('not found') || result.stdout.includes('not found'));
         console.log('PASS: Tool not found error');
-    } catch (e: any) {
-        console.error('FAIL: Tool not found error', e.message);
+    } catch (e: unknown) {
+        console.error('FAIL: Tool not found error', e instanceof Error ? e.message : String(e));
         failures++;
     }
 
