@@ -96,7 +96,7 @@ function createTempDataDir(): string {
         JSON.stringify({
             version: 1,
             allow_paths: ['.', tempDir],
-            allow_commands: ['ls', 'pwd', 'cat', 'du'],
+            allow_commands: ['ls', 'pwd', 'cat', 'du', 'git'],
         })
     );
     return tempDir;
@@ -298,7 +298,9 @@ async function runEval(datasetPath: string): Promise<void> {
     }
 
     // Build runtime with executor
-    const runtime = buildRuntime(configResult.config);
+    const runtime = buildRuntime(configResult.config, {
+        permissionsPath: path.join(tempDir, 'permissions.json'),
+    });
 
     // Use SYSTEM agent for full tool access
     const agent = AGENTS.system;

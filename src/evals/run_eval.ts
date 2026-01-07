@@ -262,11 +262,12 @@ for (let i = 0; i < args.length; i++) {
     }
 }
 
-const evalDir = path.dirname(__filename);
-const dataset = positionals[0] || path.join(evalDir, 'routing_accuracy.jsonl');
+const projectRoot = path.resolve(__dirname, '..', '..');
+const dataset = positionals[0] || 'src/evals/routing_accuracy.jsonl';
+const datasetAbs = path.resolve(projectRoot, dataset);
 
-if (!fs.existsSync(dataset)) {
-    console.error(`Dataset not found: ${dataset}`);
+if (!fs.existsSync(datasetAbs)) {
+    console.error(`Dataset not found: ${datasetAbs}`);
     console.error(
         `Try: node dist/evals/run_eval.js packages/personal-assistant/src/evals/routing_accuracy.jsonl`
     );
@@ -278,7 +279,7 @@ const agentName = (flags['agent'] as string) || 'system';
 const systemPromptPath = flags['system-prompt'] as string | undefined;
 const mockResponsesPath = flags['mock-responses'] as string | undefined;
 
-runEval(dataset, useLlm, agentName, systemPromptPath, mockResponsesPath).catch(err => {
+runEval(datasetAbs, useLlm, agentName, systemPromptPath, mockResponsesPath).catch(err => {
     console.error('Eval failed:', err);
     process.exit(1);
 });

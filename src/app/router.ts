@@ -259,6 +259,7 @@ export async function route(
         // New patterns for File Ops and Delegation
         const copyMatch = body.match(/^(?:copy|cp)\s+([^\s]+)\s+([^\s]+)$/i);
         const moveMatch = body.match(/^(?:move|mv|rename)\s+([^\s]+)\s+([^\s]+)$/i);
+        const deleteMatch = body.match(/^(?:delete|rm)\s+([^\s]+)$/i);
         const fileInfoMatch = body.match(/^(?:file\s+info|stat|info)\s+(.+)$/i);
         const countWordsMatch = body.match(/^(?:count\s+words|wc(?:-w)?)\s+(.+)$/i);
         const delegateCodeMatch = body.match(
@@ -307,6 +308,17 @@ export async function route(
                     intent,
                     'delegate_to_coder',
                     { task: body },
+                    'regex_fast_path',
+                    start
+                );
+            }
+        }
+        if (deleteMatch && isToolAllowed('delete_file')) {
+            if (!isSuspiciousPath(deleteMatch[1])) {
+                return success(
+                    intent,
+                    'delete_file',
+                    { path: deleteMatch[1] },
                     'regex_fast_path',
                     start
                 );
@@ -671,7 +683,7 @@ export async function route(
 
     // 4. Default Fallback
     if (intent === 'spike') {
-        return { error: 'Error: input did not match any tool pattern.', code: 1 };
+        return { error: "I can't do that. No tool found for your request.", code: 1 };
     }
 
     return {

@@ -28,7 +28,16 @@ function findTestFiles(dir: string): string[] {
 
     for (const file of files) {
         if (file.endsWith(testExt) && file !== runnerName) {
-            testFiles.push(path.join(dir, file));
+            const filePath = path.join(dir, file);
+            const content = fs.readFileSync(filePath, 'utf-8');
+            if (
+                content.includes(`from 'vitest'`) ||
+                content.includes(`require('vitest')`) ||
+                content.includes(`require("vitest")`)
+            ) {
+                continue;
+            }
+            testFiles.push(filePath);
         }
     }
     return testFiles;
