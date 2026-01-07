@@ -123,7 +123,8 @@ const RE_RUN_CMD = /^(?:run\s+)?(ls|pwd|cat|du)\s*([\s\S]*)$/i;
 const RE_TIME = /^(?:what time is it|current time|time now|what's the time|time|date)$/i;
 const RE_CALC = /^(?:calculate|calc|compute|eval|math)[:\s]+(.+)$/i;
 const RE_GIT = /^git\s+(status|diff|log)(?:\s+(.*))?$/i;
-const RE_DELEGATE = /^(?:delegate|ask)\s+(?:to\s+)?(coder|organizer|assistant)(?:\s+(?:to\s+|for\s+)(.+))?$/i;
+const RE_DELEGATE =
+    /^(?:delegate|ask)\s+(?:to\s+)?(coder|organizer|assistant)(?:\s+(?:to\s+|for\s+)(.+))?$/i;
 
 // Weather patterns - capture multi-word locations
 const RE_WEATHER =
@@ -131,7 +132,8 @@ const RE_WEATHER =
 
 // Bare domain detection (e.g., "read github.com" -> read_url)
 // Exlude common file extensions to avoid collision with read_file fast path
-const RE_BARE_DOMAIN = /^read\s+(?!.*\.(?:txt|md|js|ts|json|py|rb|go|rs|c|h|cpp|java|xml|yml|yaml|sh)$)([a-z0-9][-a-z0-9]*(?:\.[a-z0-9][-a-z0-9]*)+(?:\/\S*)?)$/i;
+const RE_BARE_DOMAIN =
+    /^read\s+(?!.*\.(?:txt|md|js|ts|json|py|rb|go|rs|c|h|cpp|java|xml|yml|yaml|sh)$)([a-z0-9][-a-z0-9]*(?:\.[a-z0-9][-a-z0-9]*)+(?:\/\S*)?)$/i;
 
 // Cache for filtered tools per agent to avoid recreating on every route call
 // Key: agent name + tool schemas hash, Value: filtered tools object
@@ -259,15 +261,16 @@ export async function route(
         const moveMatch = body.match(/^(?:move|mv|rename)\s+([^\s]+)\s+([^\s]+)$/i);
         const fileInfoMatch = body.match(/^(?:file\s+info|stat|info)\s+(.+)$/i);
         const countWordsMatch = body.match(/^(?:count\s+words|wc(?:-w)?)\s+(.+)$/i);
-        const delegateCodeMatch = body.match(/^(?:please\s+)?(?:write|create|implement)\s+(?:a|an)?\s*(?:typescript|python|js|ts|node|code|function|script|app|application).*/i);
-
+        const delegateCodeMatch = body.match(
+            /^(?:please\s+)?(?:write|create|implement)\s+(?:a|an)?\s*(?:typescript|python|js|ts|node|code|function|script|app|application).*/i
+        );
 
         // Security Check: Helper to detect suspicious paths (absolute or traversal)
         const isSuspiciousPath = (p: string): boolean => {
-             if (!p) return false;
-             // Check for absolute paths (start with /) or traversal (..)
-             // We want these to go to LLM for refusal explanation/policy check
-             return p.trim().startsWith('/') || p.includes('..');
+            if (!p) return false;
+            // Check for absolute paths (start with /) or traversal (..)
+            // We want these to go to LLM for refusal explanation/policy check
+            return p.trim().startsWith('/') || p.includes('..');
         };
 
         // Weather has high priority - check before other patterns
@@ -291,39 +294,69 @@ export async function route(
             const target = delegateMatch[1].toLowerCase(); // coder | organizer | assistant
             const task = delegateMatch[2].trim();
             const toolName = `delegate_to_${target}`;
-            
+
             if (isToolAllowed(toolName)) {
                 return success(intent, toolName, { task }, 'regex_fast_path', start);
             }
         }
-        
+
         // Implicit Code Delegation (before RE_WRITE)
         if (delegateCodeMatch) {
             if (isToolAllowed('delegate_to_coder')) {
-               return success(intent, 'delegate_to_coder', { task: body }, 'regex_fast_path', start);
+                return success(
+                    intent,
+                    'delegate_to_coder',
+                    { task: body },
+                    'regex_fast_path',
+                    start
+                );
             }
         }
 
         // File Operations
         if (copyMatch && isToolAllowed('copy_file')) {
-             if (!isSuspiciousPath(copyMatch[1]) && !isSuspiciousPath(copyMatch[2])) {
-                 return success(intent, 'copy_file', { source: copyMatch[1], destination: copyMatch[2] }, 'regex_fast_path', start);
-             }
+            if (!isSuspiciousPath(copyMatch[1]) && !isSuspiciousPath(copyMatch[2])) {
+                return success(
+                    intent,
+                    'copy_file',
+                    { source: copyMatch[1], destination: copyMatch[2] },
+                    'regex_fast_path',
+                    start
+                );
+            }
         }
         if (moveMatch && isToolAllowed('move_file')) {
-             if (!isSuspiciousPath(moveMatch[1]) && !isSuspiciousPath(moveMatch[2])) {
-                 return success(intent, 'move_file', { source: moveMatch[1], destination: moveMatch[2] }, 'regex_fast_path', start);
-             }
+            if (!isSuspiciousPath(moveMatch[1]) && !isSuspiciousPath(moveMatch[2])) {
+                return success(
+                    intent,
+                    'move_file',
+                    { source: moveMatch[1], destination: moveMatch[2] },
+                    'regex_fast_path',
+                    start
+                );
+            }
         }
         if (fileInfoMatch && isToolAllowed('file_info')) {
-             if (!isSuspiciousPath(fileInfoMatch[1])) {
-                 return success(intent, 'file_info', { path: fileInfoMatch[1] }, 'regex_fast_path', start);
-             }
+            if (!isSuspiciousPath(fileInfoMatch[1])) {
+                return success(
+                    intent,
+                    'file_info',
+                    { path: fileInfoMatch[1] },
+                    'regex_fast_path',
+                    start
+                );
+            }
         }
         if (countWordsMatch && isToolAllowed('count_words')) {
-             if (!isSuspiciousPath(countWordsMatch[1])) {
-                 return success(intent, 'count_words', { path: countWordsMatch[1] }, 'regex_fast_path', start);
-             }
+            if (!isSuspiciousPath(countWordsMatch[1])) {
+                return success(
+                    intent,
+                    'count_words',
+                    { path: countWordsMatch[1] },
+                    'regex_fast_path',
+                    start
+                );
+            }
         }
 
         if (rememberMatch && isToolAllowed('remember'))
@@ -337,8 +370,8 @@ export async function route(
         if (recallMatch && isToolAllowed('recall'))
             return success(intent, 'recall', { query: recallMatch[1] }, 'regex_fast_path', start);
         if (writeMatch && isToolAllowed('write_file')) {
-             const pathArg = writeMatch[1];
-             if (!isSuspiciousPath(pathArg)) {
+            const pathArg = writeMatch[1];
+            if (!isSuspiciousPath(pathArg)) {
                 return success(
                     intent,
                     'write_file',
@@ -346,8 +379,8 @@ export async function route(
                     'regex_fast_path',
                     start
                 );
-             }
-             // If suspicious, fall through to LLM for proper refusal
+            }
+            // If suspicious, fall through to LLM for proper refusal
         }
         if (readUrlMatch && isToolAllowed('read_url'))
             return success(
@@ -363,16 +396,16 @@ export async function route(
             return success(intent, 'read_url', { url }, 'regex_fast_path', start);
         }
         if (readMatch && isToolAllowed('read_file')) {
-             const pathArg = readMatch[1];
-             if (!isSuspiciousPath(pathArg)) {
+            const pathArg = readMatch[1];
+            if (!isSuspiciousPath(pathArg)) {
                 return success(intent, 'read_file', { path: pathArg }, 'regex_fast_path', start);
-             }
+            }
         }
         if (listMatch && isToolAllowed('list_files')) {
-             // listMatch currently ignores args regex-side: RE_LIST = /^list(\s+files)?$/i;
-             // If the user typed "list /tmp", RE_LIST won't match, so it falls through.
-             // But check RE_RUN_CMD below for "ls /tmp".
-             return success(intent, 'list_files', {}, 'regex_fast_path', start);
+            // listMatch currently ignores args regex-side: RE_LIST = /^list(\s+files)?$/i;
+            // If the user typed "list /tmp", RE_LIST won't match, so it falls through.
+            // But check RE_RUN_CMD below for "ls /tmp".
+            return success(intent, 'list_files', {}, 'regex_fast_path', start);
         }
         if (timeMatch && isToolAllowed('get_time'))
             return success(intent, 'get_time', {}, 'regex_fast_path', start);
@@ -415,20 +448,20 @@ export async function route(
             // We want "ls /tmp" to go to LLM so it can say "I cannot access /tmp"
             // instead of trying to run `ls /tmp` and failing or succeeding.
             if (!args.includes('/') && !args.includes('..')) {
-                  // Wait, isSuspiciousPath checks if it starts with /.
-                  // args " /tmp" starts with " ".
-                  // But helper does trim().
-                  // But args could be "-l /tmp". trim() starts with -.
-                  // So we must check contains "/" or "..".
-                  if (!args.includes('/') && !args.includes('..')) {
-                     return success(
+                // Wait, isSuspiciousPath checks if it starts with /.
+                // args " /tmp" starts with " ".
+                // But helper does trim().
+                // But args could be "-l /tmp". trim() starts with -.
+                // So we must check contains "/" or "..".
+                if (!args.includes('/') && !args.includes('..')) {
+                    return success(
                         intent,
                         'run_cmd',
                         { command: `${cmd} ${args}`.trim() },
                         'regex_fast_path',
                         start
                     );
-                  }
+                }
             }
         }
     }
