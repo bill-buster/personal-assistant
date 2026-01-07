@@ -163,7 +163,7 @@ export function handleMemoryAdd(args: MemoryAddArgs, context: ExecutorContext): 
  * @returns {Object} Result object with ok, result, error, debug.
  */
 export function handleMemorySearch(args: MemorySearchArgs, context: ExecutorContext): ToolResult {
-    const { readJsonl, memoryLogPath, sortByScoreAndRecency, start } = context;
+    const { readMemory, memoryPath, sortByScoreAndRecency, start } = context;
     const query = args.query.trim();
 
     const limit = args.limit || 5;
@@ -200,16 +200,7 @@ export function handleMemorySearch(args: MemorySearchArgs, context: ExecutorCont
         };
     }
 
-    const entries = readJsonl<MemoryEntry>(
-        memoryLogPath,
-        (entry: unknown): entry is MemoryEntry =>
-            typeof entry === 'object' &&
-            entry !== null &&
-            'text' in entry &&
-            'ts' in entry &&
-            typeof (entry as { text: unknown }).text === 'string' &&
-            typeof (entry as { ts: unknown }).ts === 'string'
-    );
+    const entries = readMemory(memoryPath).entries;
 
     const needle = query.toLowerCase();
     const matches = entries.filter(entry => entry.text.toLowerCase().includes(needle));
